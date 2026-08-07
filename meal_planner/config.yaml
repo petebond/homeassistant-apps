@@ -1,0 +1,69 @@
+name: Home Meal Planner
+version: "1.11.1"
+slug: meal_planner
+description: Family meal planning and kitchen display, served from Home Assistant.
+url: https://github.com/petebond/homeassistant-apps
+
+# Only the architectures python:3.12-slim actually publishes. armhf and i386
+# were listed before but have no matching base image, so a build there fails.
+arch:
+  - aarch64
+  - amd64
+  - armv7
+
+# The container's own process is PID 1 (no s6 overlay in this image).
+init: false
+
+# Start automatically when Home Assistant boots, and restart if it dies.
+boot: auto
+startup: application
+watchdog: "tcp://[HOST]:[PORT:8080]"
+
+hostname: meal-planner
+
+ports:
+  8080/tcp: 8080
+  8443/tcp: 8443
+ports_description:
+  8080/tcp: Web interface - phones, tablets and the kitchen display
+  8443/tcp: Same interface over https - needed for reading the week offline
+
+# Deliberately NOT using ingress: the app serves absolute paths (/api/...,
+# /images/...) which ingress's URL prefix would break, and the Nest Hub needs a
+# plain URL it can load without a Home Assistant login. Direct port instead.
+
+# Mounts the local add-ons folder (this folder's parent) at /addons inside the
+# container, so dev_mode can run the source directly instead of the copy baked
+# into the image.
+map:
+  - type: addons
+    read_only: false
+
+# Lets the add-on call the Home Assistant core API through Supervisor's proxy,
+# which is how it lists the Cast devices in the house and asks DashCast to put
+# /kitchen on one. Supervisor supplies SUPERVISOR_TOKEN for it. Nothing else
+# depends on this: without it, casting reports itself as off and the planner
+# works exactly as before.
+homeassistant_api: true
+
+# Every option below is explained on screen in the Configuration panel; the text
+# lives in translations/en.yaml, which is the only place Home Assistant will read
+# it from. Keep the two in step - a comment here is invisible to anyone using
+# the add-on.
+#
+# A word of warning about this section: `schema` takes a *type*, not a value.
+# Writing `dev_mode: false` under schema instead of `bool` makes the whole
+# add-on config invalid, which Supervisor reports by quietly hiding the local
+# add-on and offering you the last version it built.
+options:
+  dev_mode: false
+  https_enabled: false
+  cert_hosts: ""
+  cast_device: ""
+  cast_url: ""
+schema:
+  dev_mode: bool
+  https_enabled: bool
+  cert_hosts: "str?"
+  cast_device: "str?"
+  cast_url: "str?"

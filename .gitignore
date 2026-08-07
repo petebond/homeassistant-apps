@@ -1,0 +1,17 @@
+# Python
+__pycache__/
+*.py[cod]
+
+# Local test artefacts
+.bintest.png
+
+# Anything that looks like live data or keys - none of this belongs in git.
+data.json
+data.json.backup-*
+certs/
+*.pem
+*.key
+
+# OS noise
+.DS_Store
+Thumbs.db

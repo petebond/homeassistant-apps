@@ -1,0 +1,33 @@
+# What Home Assistant shows under each field in the add-on's Configuration
+# panel. Comments in config.yaml are invisible there; this file is the only
+# place the person changing a setting will ever read.
+#
+# Home Assistant renders each of these as one grey line under the field, so
+# keep them to a sentence or two. Anything longer belongs in config.yaml, where
+# the reasoning goes, or in the README.
+configuration:
+  dev_mode:
+    name: Development mode
+    description: >-
+      Runs the code from the addons folder instead of the built copy, so edits
+      need only a Restart. Leave off for normal use.
+  https_enabled:
+    name: Serve https as well
+    description: >-
+      Also listen on port 8443. Phones need it to read the week away from home;
+      set each one up once at http://<your-ha-ip>:8080/setup.
+  cert_hosts:
+    name: Extra addresses for the certificate
+    description: >-
+      Comma separated, and only for an address the add-on can't work out itself.
+      A missing one shows as an https warning on the phone.
+  cast_device:
+    name: Kitchen displays (Cast devices)
+    description: >-
+      Leave empty to choose screens on the Household tab. Entity ids here pin
+      the choice instead. Needs DashCast installed.
+  cast_url:
+    name: Kitchen display address
+    description: >-
+      Only if the address the add-on works out is wrong. It must work from
+      across the house, e.g. http://192.168.1.50:8080/kitchen.

@@ -1,0 +1,526 @@
+/* Kitchen display, aimed at a Google Nest Hub (1024x600) but sized in
+   viewport units so it also fills a 1280x800 Hub Max or a spare tablet.
+   High contrast, readable from across a room. No interactivity - the Hub's
+   touch handling is unreliable and this is a glanceable screen.
+
+   Dark by default, which suits a Hub. A light variant is available for a
+   bright kitchen: add ?theme=light to the URL, or set it on the device.
+   The choice is written to localStorage and to data-theme on <html>. */
+
+:root {
+  --k-bg: #14171a;
+  --k-ink: #f3f0ea;
+  --k-dim: #8b939c;
+  --k-line: #2c3238;
+  --k-card: #1d2227;
+  --k-card-2: #232a30;
+  --k-soft: #c8cfd6;
+  --k-body: #eae6de;
+  --k-faint: #565e66;
+  --k-empty: #6c747d;
+  --k-note: #d9a441;
+  --k-warn: #d98b6a;
+  --k-strip: #dfe4e9;
+  --k-strip-2: #a8b1ba;
+  --k-accent: #6fbf95;
+  --k-rule-1: var(--k-accent);
+  --k-rule-2: #c9772f;
+  --k-rule-3: #5b7db1;
+  color-scheme: dark;
+}
+
+/* The accent, set from the app (Household -> Kitchen display) and applied by
+   kitchen.js as data-accent on <html>. Same twelve names and the same shades as
+   the app's own accents - the dark set here, the light set further down - so
+   "rose" means one colour in this house, not two. The first meal card's rule
+   follows the accent; the second and third stay contrasting, or three meals on
+   a Wednesday would be three identical stripes. */
+html[data-accent="green"]    { --k-accent: #6fbf95; }
+html[data-accent="olive"]    { --k-accent: #a6c479; }
+html[data-accent="teal"]     { --k-accent: #5cb5b5; }
+html[data-accent="blue"]     { --k-accent: #74a9d4; }
+html[data-accent="indigo"]   { --k-accent: #949bde; }
+html[data-accent="plum"]     { --k-accent: #b18fd4; }
+html[data-accent="rose"]     { --k-accent: #e58aa6; }
+html[data-accent="rust"]     { --k-accent: #e0906a; }
+html[data-accent="amber"]    { --k-accent: #d9ac54; }
+html[data-accent="cocoa"]    { --k-accent: #cb9c82; }
+html[data-accent="slate"]    { --k-accent: #9aa7b4; }
+html[data-accent="charcoal"] { --k-accent: #a3adb6; }
+
+html[data-theme="light"] {
+  --k-bg: #f7f5f0;
+  --k-ink: #1e1c19;
+  --k-dim: #6d6862;
+  --k-line: #ded8cd;
+  --k-card: #ffffff;
+  --k-card-2: #fdf6e3;
+  --k-soft: #3f3b36;
+  --k-body: #2a2723;
+  --k-faint: #a9a49b;
+  --k-empty: #9b958c;
+  --k-note: #9a6b06;
+  --k-warn: #a8502a;
+  --k-strip: #2f2c28;
+  --k-strip-2: #6d6862;
+  --k-accent: #2f6a4e;
+  color-scheme: light;
+}
+
+/* The light set. Darker versions of the same twelve, for a bright kitchen. */
+html[data-theme="light"][data-accent="green"]    { --k-accent: #2f6a4e; }
+html[data-theme="light"][data-accent="olive"]    { --k-accent: #4a6228; }
+html[data-theme="light"][data-accent="teal"]     { --k-accent: #226161; }
+html[data-theme="light"][data-accent="blue"]     { --k-accent: #2a5474; }
+html[data-theme="light"][data-accent="indigo"]   { --k-accent: #40478a; }
+html[data-theme="light"][data-accent="plum"]     { --k-accent: #63497f; }
+html[data-theme="light"][data-accent="rose"]     { --k-accent: #8f3855; }
+html[data-theme="light"][data-accent="rust"]     { --k-accent: #944d2c; }
+html[data-theme="light"][data-accent="amber"]    { --k-accent: #7d5710; }
+html[data-theme="light"][data-accent="cocoa"]    { --k-accent: #6d4632; }
+html[data-theme="light"][data-accent="slate"]    { --k-accent: #424b54; }
+html[data-theme="light"][data-accent="charcoal"] { --k-accent: #31383e; }
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;               /* never scroll on a fixed display */
+  background: var(--k-bg);
+  color: var(--k-ink);
+  font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Text size, from the app, as a multiplier on the whole display.
+
+   Everything here is sized in vh and vw, so there is no single font-size to
+   turn up. Scaling the screen itself does the job instead: the box is laid out
+   at 1/zoom of the viewport and then scaled back up to fill it, which grows
+   every part of the design in step - text, photos, rules and gaps - rather than
+   leaving a bigger font in a box that was drawn for a smaller one.
+
+   At the default size there is no transform at all - not even scale(1) - so
+   the display on the wall renders exactly as it did before this existed. A
+   transform is a compositing decision as much as a visual one, and the default
+   is not the place to find out what a Nest Hub makes of it. */
+.screen {
+  width: 100vw;
+  height: 100vh;
+  padding: 2.6vh 2.4vw;
+  display: flex;
+  flex-direction: column;
+  position: relative;             /* the "not updating" warning hangs off this */
+}
+
+html[data-zoomed] .screen {
+  width: calc(100vw / var(--k-zoom, 1));
+  height: calc(100vh / var(--k-zoom, 1));
+  transform: scale(var(--k-zoom, 1));
+  transform-origin: top left;
+}
+
+/* Night dimming. A flat sheet of black at low opacity, rather than a filter on
+   the screen: it costs the Hub nothing to composite, and it can't be tapped
+   through to by accident because it isn't in the way of anything.
+
+   Never fully opaque - see MAX_DIM in display.py. A display that goes black at
+   ten o'clock looks like a display that has died. */
+.nightfall {
+  position: fixed;
+  inset: 0;
+  background: #000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 2s linear;      /* slow enough not to catch the eye */
+  z-index: 10;
+}
+
+/* ---------- who's cooking ---------- */
+
+/* It sits at the foot of the clock panel, under the date. It used to have a
+   header row of its own across the top of the screen, which cost every meal
+   card seven vertical percent of the display to say one name. Down here it
+   reads as part of the same answer as the day and the time, and the cards got
+   the height back. */
+.cooking {
+  display: flex;
+  align-items: baseline;
+  justify-content: flex-end;
+  gap: 1vw;
+  min-width: 0;
+  max-width: 100%;
+  margin-top: 2.4vh;
+  padding-top: 1.8vh;
+  border-top: 1px solid var(--k-line);
+}
+
+.cooking-label {
+  font-size: 2.4vh;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--k-dim);
+  flex: none;
+}
+
+.cook-name {
+  font-size: 4.4vh;
+  font-weight: 700;
+  color: var(--k-ink);
+  line-height: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Out of the flow entirely: it is a rare warning, and it is not worth a row of
+   the display on the days it has nothing to say. */
+.stale {
+  display: block;
+  position: absolute;
+  top: 1.2vh;
+  right: 2.4vw;
+  z-index: 5;
+  font-size: 2vh;
+  color: var(--k-warn);
+}
+
+/* Without this the warning is on permanently. `display: block` above is an
+   author rule, and author rules beat the browser's built-in
+   `[hidden] { display: none }`, so setting .hidden from kitchen.js has no
+   effect on its own. */
+.stale[hidden] {
+  display: none;
+}
+
+/* ---------- tonight ---------- */
+
+/* The centre strip is a row: the meal cards take two thirds, and a panel with
+   the day, date, clock and cook takes the remaining third on the right.
+
+   With the header row gone it starts at the top of the screen, so there is no
+   padding above it - that gap was the space under a rule that no longer
+   exists. */
+.strip {
+  flex: 1 1 auto;
+  display: flex;
+  gap: 2vw;
+  padding: 0 0 1.8vh;
+  min-height: 0;                  /* let it shrink rather than overflow */
+}
+
+.meals {
+  flex: 2 1 0;                    /* two thirds - the meal cards */
+  min-width: 0;
+  display: flex;
+  gap: 2vw;
+}
+
+.info {
+  flex: 1 1 0;                    /* one third - day, date, clock and cook */
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-end;
+  text-align: right;
+  padding-left: 2vw;
+  border-left: 1px solid var(--k-line);
+}
+
+.info .clock {
+  font-size: 19vh;                /* the headline of the whole display */
+  font-weight: 300;
+  color: var(--k-soft);
+  font-variant-numeric: tabular-nums;
+  line-height: .95;
+  white-space: nowrap;
+}
+
+/* Shown only when a day other than today is on screen, so it's clear the big
+   day and date below are a look-ahead, not the current date. */
+.info-showing {
+  font-size: 2.4vh;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--k-accent);
+  margin-bottom: -.6vh;          /* sit close to the day name it labels */
+}
+.info-showing[hidden] { display: none; }
+
+.info-day {
+  font-size: 6.6vh;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.05;
+  margin-top: 1.4vh;
+}
+
+.info-date {
+  font-size: 5vh;
+  font-weight: 600;
+  color: var(--k-soft);
+  margin-top: .6vh;
+}
+
+.meal {
+  flex: 1 1 0;
+  min-width: 0;
+  background: var(--k-card);
+  border-radius: 1.6vh;
+  padding: 2.4vh 2vw;
+  display: flex;
+  flex-direction: column;
+  border-left: .7vh solid var(--k-rule-1);
+  overflow: hidden;
+}
+.meal:nth-child(2) { border-left-color: var(--k-rule-2); }
+.meal:nth-child(3) { border-left-color: var(--k-rule-3); }
+
+/* Taller now the header has gone: the picture is what carries the card from
+   across a kitchen, and it was the first thing squeezed when the cook had a
+   row of its own. */
+.meal-photo {
+  width: calc(100% + 4vw);
+  margin: -2.4vh -2vw 1.4vh;
+  height: 31vh;
+  object-fit: cover;
+  display: block;
+  flex: none;
+  background: var(--k-line);
+}
+
+.meal-name {
+  font-size: 5.6vh;
+  font-weight: 700;
+  line-height: 1.1;
+  margin-bottom: 1.4vh;
+  /* Long names wrap rather than spill off the screen. */
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+}
+.meal-name.tbc { color: var(--k-empty); font-weight: 400; font-style: italic; }
+
+.eaters {
+  font-size: 3.9vh;
+  line-height: 1.35;
+  color: var(--k-body);
+  margin-bottom: auto;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+}
+
+.meal-foot {
+  margin-top: 1.4vh;
+  font-size: 2.8vh;
+  color: var(--k-dim);
+}
+.meal-foot .note {
+  display: block;
+  margin-top: .5vh;
+  color: var(--k-note);
+  font-style: italic;
+}
+
+/* ---------- flip card: picture <-> ingredients ---------- */
+.meal > .flip { flex: 1 1 auto; min-height: 0; }
+.flip { perspective: 1600px; }
+.flip-inner {
+  display: grid;                 /* both faces share one cell */
+  height: 100%;
+  transition: transform .55s cubic-bezier(.2, .7, .2, 1);
+  transform-style: preserve-3d;
+  -webkit-transform-style: preserve-3d;
+}
+.flip.flipped .flip-inner { transform: rotateY(180deg); }
+.meal-face {
+  grid-area: 1 / 1;
+  position: relative;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+.meal-back {
+  transform: rotateY(180deg);
+  cursor: pointer;
+}
+
+.king-title {
+  font-size: 3.6vh;
+  font-weight: 700;
+  line-height: 1.12;
+  margin-bottom: 1.6vh;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+}
+.king-list {
+  flex: 1 1 0;                    /* fills the card between title and hint */
+  min-height: 0;
+  overflow: hidden;              /* a long list is paged on tap, not scrolled */
+}
+.king-item {
+  display: flex;
+  gap: 1vw;
+  align-items: baseline;
+  padding: .55vh 0;
+  border-bottom: 1px solid var(--k-line);
+  font-size: 2.6vh;
+  line-height: 1.15;
+}
+.king-item:last-child { border-bottom: 0; }
+.king-qty {
+  font-weight: 700;
+  color: var(--k-accent);
+  white-space: nowrap;
+  min-width: 11vw;              /* quantity kept tight so the item gets the room */
+}
+.king-name { color: var(--k-body); overflow-wrap: break-word; word-wrap: break-word; }
+.king-item.staple .king-name { color: var(--k-dim); }
+.king-hint {
+  margin-top: auto;
+  padding-top: 1vh;
+  text-align: right;
+  color: var(--k-accent);        /* it's a tap target now, so give it presence */
+  font-weight: 700;
+  font-size: 2.4vh;
+}
+.king-front-hint {
+  position: absolute;
+  top: 1.4vh;
+  right: 1.4vh;
+  background: rgba(0, 0, 0, .58);
+  color: #fff;
+  padding: .4vh 1.4vh;
+  border-radius: 999px;
+  font-size: 2.4vh;
+  font-weight: 600;
+}
+
+/* Nothing planned at all */
+.nothing {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--k-empty);
+  font-size: 4.6vh;
+  font-style: italic;
+}
+
+/* ---------- what's on screen ----------
+
+   Set from the app, applied by kitchen.js as classes on .screen. Each of these
+   does two things: takes a part away, and gives the space it was using to
+   whatever is left. A hidden week strip that left a third of the screen empty
+   would be a worse display than the one it replaced. */
+
+.no-cook .cooking { display: none; }
+.no-clock .info .clock { display: none; }
+.no-date .info-date { display: none; }
+
+/* With the clock gone the day name is the headline, and the panel it sits in
+   has no reason to take a third of the width. */
+.no-clock .info-day { font-size: 7vh; }
+.no-clock .info { flex: 0 1 auto; }
+
+/* Nothing left in the right-hand panel at all - the cook lives there now, so
+   that has to be off as well - and then no border, no gap, and no third of the
+   screen given over to white space. */
+.no-clock.no-date.no-cook .info { display: none; }
+.no-clock.no-date.no-cook .strip { gap: 0; }
+
+/* The rule above the cook is only there to separate it from the date. With
+   nothing above it there is nothing to separate it from. */
+.no-clock.no-date .cooking { margin-top: 0; padding-top: 0; border-top: 0; }
+
+/* The meal cards take the room the strip was using. */
+.no-week .week { display: none; }
+.no-week .strip { padding-bottom: 0; }
+
+.no-photos .meal-photo { display: none; }
+
+/* ---------- the rest of the week ---------- */
+
+.week {
+  flex: none;
+  display: flex;
+  gap: 1vw;
+  border-top: 1px solid var(--k-line);
+  padding-top: 1.4vh;
+  height: 23vh;
+}
+
+.wday {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  padding: .8vh .6vw;
+  border-radius: .9vh;
+  overflow: hidden;
+}
+.wday { cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.wday:active { background: var(--k-card); }
+.wday.is-today { background: var(--k-card-2); box-shadow: inset 0 0 0 1px var(--k-line); }
+.wday.is-selected {
+  background: var(--k-card);
+  box-shadow: inset 0 0 0 2px var(--k-accent);
+}
+
+.wday-name {
+  font-size: 3vh;
+  font-weight: 700;
+  color: var(--k-dim);
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  margin-bottom: .9vh;
+  flex: none;
+}
+.wday.is-today .wday-name { color: var(--k-accent); }
+
+.wday-meal {
+  font-size: 2.7vh;
+  line-height: 1.25;
+  color: var(--k-strip);
+  margin-bottom: .4vh;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+}
+.wday-meal.second { color: var(--k-strip-2); }
+.wday-empty { font-size: 2.5vh; color: var(--k-faint); font-style: italic; }
+
+/* Very small screens (a phone propped up, or a 7" Hub in portrait) */
+@media (max-aspect-ratio: 1/1) {
+  .strip { flex-direction: column; }
+  .meals { flex-direction: column; }
+  .info {
+    order: -1;                    /* day, date and clock on top when stacked */
+    flex: none;
+    flex-direction: row;
+    align-items: baseline;
+    justify-content: space-between;
+    text-align: left;
+    padding-left: 0;
+    padding-bottom: 1.2vh;
+    margin-bottom: 1.2vh;
+    border-left: 0;
+    border-bottom: 1px solid var(--k-line);
+  }
+  .info .clock { font-size: 8vh; }
+  .info-day { font-size: 4.6vh; margin-top: 0; }
+  .info-date { font-size: 3.6vh; }
+  /* Stacked, the panel is a row across the top, so the cook joins the end of
+     that row rather than sitting under a rule. */
+  .cooking { margin-top: 0; padding-top: 0; border-top: 0; }
+  .cooking-label { font-size: 2vh; }
+  .cook-name { font-size: 3.6vh; }
+  .week { display: none; }
+  .meal-name { font-size: 3.6vh; }
+  .meal-photo { height: 12vh; }
+}

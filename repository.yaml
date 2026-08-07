@@ -1,0 +1,6 @@
+# Tells Home Assistant this repository holds apps (add-ons), and what to call
+# the section in the store. One entry per repository, not per app - the apps
+# themselves are the subfolders, each with its own config.yaml.
+name: Pete Bond's Home Assistant Apps
+url: https://github.com/petebond/homeassistant-apps
+maintainer: Pete Bond <petebond@users.noreply.github.com>

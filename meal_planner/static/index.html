@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#3d8361">
+<title>Home Meal Planner</title>
+<script>
+/* Runs before the stylesheet paints, so the wrong theme never flashes up.
+   Deliberately inline and tiny - do not move this to a separate file. */
+(function () {
+  var t = "auto", a = "green";
+  /* Only the storage read is guarded - the theme still gets applied if
+     storage is blocked, which it is in some private browsing modes. */
+  try {
+    t = localStorage.getItem("mp-theme") || t;
+    a = localStorage.getItem("mp-accent") || a;
+  } catch (e) {}
+  var dark = t === "dark" || (t === "auto" && window.matchMedia &&
+             window.matchMedia("(prefers-color-scheme: dark)").matches);
+  var h = document.documentElement;
+  h.setAttribute("data-theme", dark ? "dark" : "light");
+  h.setAttribute("data-accent", a);
+})();
+</script>
+<link rel="stylesheet" href="/style.css">
+<!-- The favicon is the app icon, drawn by icon.py, rather than a second copy
+     of the artwork in SVG that would drift the first time either was edited. -->
+<link rel="icon" type="image/png" id="favicon-link" href="/icon-64.png">
+
+<!-- Installable, so the week's meals can be read away from the house. The
+     hrefs below are rewritten by the script underneath before the browser gets
+     round to fetching them; the plain versions are the green default, and what
+     a browser with scripting off would use. -->
+<link rel="manifest" id="manifest-link" href="/manifest.webmanifest">
+<link rel="apple-touch-icon" id="apple-icon-link" href="/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Meals">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+<script>
+/* Points the status bar, the home-screen icon and the launch splash at the
+   accent this device chose, before anything is painted or fetched - otherwise
+   the status bar flashes green on every launch, and a phone installing the app
+   could grab the default green icon.
+
+   This has to sit *after* the stylesheet link: a script waits for a pending
+   stylesheet, which is what makes the theme variables readable here. It also
+   has to sit after the two <link>s it rewrites. The colours are read out of
+   the stylesheet rather than listed here, so a new accent needs no change in
+   this file. app.js keeps all three in step from here on - see paintShell(). */
+(function () {
+  var s = getComputedStyle(document.documentElement);
+  var accent = s.getPropertyValue("--accent").trim().replace("#", "");
+  var ink = s.getPropertyValue("--accent-ink").trim().replace("#", "");
+  var page = s.getPropertyValue("--bg").trim().replace("#", "");
+  if (accent.length !== 6) return;
+  var m = document.querySelector('meta[name="theme-color"]');
+  if (m) m.setAttribute("content", "#" + accent);
+  var tint = "c=" + accent + "&f=" + ink;
+  var mf = document.getElementById("manifest-link");
+  if (mf) mf.href = "/manifest.webmanifest?" + tint + "&b=" + page;
+  var ai = document.getElementById("apple-icon-link");
+  if (ai) ai.href = "/icon-192.png?" + tint;
+  var fv = document.getElementById("favicon-link");
+  if (fv) fv.href = "/icon-64.png?" + tint;
+})();
+</script>
+</head>
+<body>
+
+<!-- Shown only when the app can't reach the server, e.g. away from home. -->
+<div class="offline-bar" id="offline-bar" hidden>
+  <span class="offline-dot" aria-hidden="true"></span>
+  <span id="offline-text">Offline &mdash; showing the last saved copy. You can look, but not change anything.</span>
+</div>
+
+<header class="topbar">
+  <div class="brand">
+    <!-- The same drawing again. Its background is the accent and so is the bar
+         behind it, so the square disappears and only the house shows.
+
+         Deliberately no src: the head script above can't reach into the body,
+         and a default-green square would flash on a rose bar before app.js
+         corrected it. paintShell() fills it in a few milliseconds later. -->
+    <img class="brand-mark" id="brand-mark" alt="" aria-hidden="true" width="64" height="64">
+    <span class="brand-text">Home Meal Planner</span>
+    <button class="theme-toggle" id="theme-btn" type="button"
+            aria-haspopup="true" aria-expanded="false" aria-label="Appearance">
+      <span id="theme-icon" aria-hidden="true">&#9681;</span>
+    </button>
+  </div>
+
+  <div class="theme-panel" id="theme-panel" hidden>
+    <h2>Appearance</h2>
+    <p class="muted small">Just for this device &mdash; everyone else keeps their own.</p>
+    <div class="theme-row" id="theme-modes" role="group" aria-label="Light or dark"></div>
+    <p class="theme-label">Accent colour</p>
+    <div class="theme-row swatches" id="theme-accents" role="group" aria-label="Accent colour"></div>
+  </div>
+  <!-- A row of pills in the header on a wide screen; a fixed bottom bar on a
+       phone, where the top of the screen is the hardest place to reach. Same
+       buttons either way - only the stylesheet moves them. The icons are
+       stroked with currentColor so the active one picks up the accent. -->
+  <nav class="tabs" id="tabs">
+    <button class="tab" data-view="week">
+      <svg class="tab-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4.5" width="18" height="17" rx="2"/><path d="M8 2.5v4M16 2.5v4M3 10h18"/></svg>
+      <span class="tab-txt">The Week</span>
+    </button>
+    <button class="tab" data-view="plan">
+      <svg class="tab-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.5h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7.5 18.5l-4 1 1-4Z"/></svg>
+      <span class="tab-txt">Plan</span>
+    </button>
+    <button class="tab" data-view="shopping">
+      <svg class="tab-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9.5" cy="20" r="1.4"/><circle cx="18.5" cy="20" r="1.4"/><path d="M2 3h3l2.4 11.2a1.8 1.8 0 0 0 1.8 1.4h8.5a1.8 1.8 0 0 0 1.8-1.4L21.5 7H6"/></svg>
+      <span class="tab-txt">Shopping</span>
+    </button>
+    <button class="tab" data-view="meals">
+      <svg class="tab-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12.5h19a9.5 9.5 0 0 1-19 0Z"/><path d="M22 21H2"/><path d="M8 8.5c0-2 2-2.5 2-4M12 8c0-2 2-2.5 2-4M16 8.5c0-2 2-2.5 2-4"/></svg>
+      <span class="tab-txt">Meals</span>
+    </button>
+    <button class="tab" data-view="people">
+      <svg class="tab-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M16 20.5v-1.8a3.7 3.7 0 0 0-3.7-3.7H6.2a3.7 3.7 0 0 0-3.7 3.7v1.8"/><circle cx="9.2" cy="7.7" r="3.7"/><path d="M21.5 20.5v-1.8a3.7 3.7 0 0 0-2.8-3.6M15.5 4.2a3.7 3.7 0 0 1 0 7.1"/></svg>
+      <span class="tab-txt">Household</span>
+    </button>
+  </nav>
+</header>
+
+<main id="main">
+
+  <!-- ================= WEEK VIEW ================= -->
+  <section class="view" id="view-week">
+    <div class="weekbar">
+      <button class="nav-btn" id="w-prev" aria-label="Previous week">&#8249;</button>
+      <h1 class="sr-only" id="w-title">This week</h1>
+      <p class="weekbar-range" id="w-range" aria-live="polite"></p>
+      <button class="nav-btn" id="w-next" aria-label="Next week">&#8250;</button>
+      <button class="btn ghost small" id="w-today">Today</button>
+    </div>
+    <div id="w-grid" class="week-grid"></div>
+    <p class="footnote">Updates automatically. Anyone in the house can change the plan from the <strong>Plan</strong> tab.</p>
+  </section>
+
+  <!-- ================= PLANNER ================= -->
+  <section class="view" id="view-plan" hidden>
+    <div class="weekbar">
+      <button class="nav-btn" id="p-prev" aria-label="Previous week">&#8249;</button>
+      <h1 class="sr-only" id="p-title">Plan the week</h1>
+      <p class="weekbar-range" id="p-range" aria-live="polite"></p>
+      <button class="nav-btn" id="p-next" aria-label="Next week">&#8250;</button>
+      <button class="btn ghost small" id="p-today">Today</button>
+    </div>
+
+    <div class="toolbar">
+      <button class="btn ghost small" id="p-copy-last">Copy last week's plan</button>
+      <button class="btn ghost small danger" id="p-clear">Clear this week</button>
+      <span class="save-flag" id="p-saved" hidden>Saved</span>
+    </div>
+
+    <div id="p-grid" class="plan-grid"></div>
+  </section>
+
+  <!-- ================= SHOPPING ================= -->
+  <section class="view" id="view-shopping" hidden>
+    <div class="weekbar">
+      <button class="nav-btn" id="s-prev" aria-label="Previous week">&#8249;</button>
+      <h1 class="sr-only" id="s-title">Shopping list</h1>
+      <p class="weekbar-range" id="s-range" aria-live="polite"></p>
+      <button class="nav-btn" id="s-next" aria-label="Next week">&#8250;</button>
+      <button class="btn ghost small" id="s-today">This week</button>
+    </div>
+
+    <!-- Actions live below the sticky bar, not in it: that row has to stay
+         short enough to keep the arrows and the dates readable on a phone. -->
+    <div class="toolbar">
+      <button class="btn ghost small" id="s-share" disabled>Share list</button>
+      <button class="btn ghost small" id="s-print">Print</button>
+      <span class="footnote" id="s-share-note"></span>
+    </div>
+
+    <!-- Things no recipe will ever mention: baking paper, foil, a card for
+         somebody's birthday. Above the food on purpose - they are the ones
+         nothing else on the page will remind you of. One standing list, the
+         same whichever week is on screen: it isn't part of the plan, and the
+         week rolling over used to take everything unbought with it. -->
+    <div class="card extras-card" id="s-extras-card">
+      <h2>Also needed</h2>
+      <form class="extras-add" id="extras-form">
+        <!-- The suggestions are everything ever typed here before, newest and
+             most-used first, offered by the browser itself. A datalist rather
+             than a dropdown of our own: it is one attribute, it behaves the way
+             every other field on the phone behaves, and it does not fight with
+             the on-screen keyboard. autocomplete="off" turns off the browser's
+             own form history, which would otherwise offer the same things
+             twice. -->
+        <input type="text" id="extras-item" maxlength="80" autocomplete="off"
+               list="extras-known" enterkeyhint="done"
+               placeholder="Baking paper, foil, bin bags…" aria-label="Something else to buy">
+        <datalist id="extras-known"></datalist>
+        <button class="btn small" type="submit">Add</button>
+      </form>
+      <ul class="extras-list" id="extras-list"></ul>
+      <!-- Only there while something is ticked. It sits at the bottom of the
+           screen rather than in the card because that is where a thumb is
+           when the other hand is holding a trolley. -->
+      <div class="extras-bar" id="extras-bar" hidden></div>
+      <p class="form-error" id="extras-error" hidden></p>
+    </div>
+
+    <div id="s-missing"></div>
+    <div id="s-body"></div>
+    <p class="footnote" id="s-note"></p>
+  </section>
+
+  <!-- ================= MEALS ================= -->
+  <section class="view" id="view-meals" hidden>
+    <h1>Meal library</h1>
+    <p class="muted">Meals added here become selectable when planning the week.</p>
+
+    <div class="card add-panel" id="add-panel">
+      <button type="button" class="add-panel-toggle" id="add-panel-toggle"
+              aria-expanded="false" aria-controls="add-panel-body">
+        <span class="add-panel-title">Add meals</span>
+        <span class="add-panel-chevron" aria-hidden="true">&#9662;</span>
+      </button>
+
+      <div class="add-panel-body" id="add-panel-body" hidden>
+        <div class="add-tabs" role="tablist">
+          <button type="button" class="add-tab active" id="add-tab-add"
+                  data-addtab="add" role="tab" aria-selected="true">Add a meal</button>
+          <button type="button" class="add-tab" id="add-tab-bulk"
+                  data-addtab="bulk" role="tab" aria-selected="false">Bulk Add</button>
+        </div>
+
+        <div class="add-tab-panel" id="add-panel-form" role="tabpanel">
+    <form class="form" id="meal-form">
+      <h2 id="meal-form-title" class="add-form-title" hidden>Edit meal</h2>
+      <label>Meal name
+        <input type="text" id="meal-name" maxlength="120" placeholder="e.g. Chicken fajitas" required>
+      </label>
+      <label>Tags <span class="muted">(comma separated)</span>
+        <input type="text" id="meal-tags" maxlength="200" placeholder="quick, veggie, freezer">
+      </label>
+
+      <fieldset class="links-box">
+        <legend>Links <span class="muted">for whoever's cooking</span></legend>
+        <p class="muted small">A recipe, or one page per shop-bought item.</p>
+        <div id="link-rows"></div>
+        <button class="btn ghost small" type="button" id="add-link">+ Add another link</button>
+      </fieldset>
+      <label>Description <span class="muted">(shows on the meal card, and the search looks in it)</span>
+        <textarea id="meal-notes" rows="2" maxlength="2000" placeholder="e.g. 2 chicken thighs, peppers, onion, 2 tortillas, sour cream"></textarea>
+      </label>
+
+      <fieldset class="links-box image-box">
+        <legend>Photo</legend>
+        <div class="image-row">
+          <label>Image URL <span class="muted">(or upload below)</span>
+            <input type="url" id="meal-image" maxlength="500" placeholder="https://...">
+          </label>
+          <img id="image-preview" alt="Meal photo preview" hidden>
+        </div>
+        <div class="form-actions image-upload-line">
+          <button class="btn ghost small" type="button" id="upload-image-btn">Upload a picture</button>
+          <input type="file" id="image-file" accept="image/*" hidden>
+          <span class="muted small">A photo or image from this device &mdash; stored with the meal planner.</span>
+        </div>
+      </fieldset>
+
+      <fieldset class="links-box ingredients-box">
+        <legend>Ingredients <span class="muted">for the shopping list</span></legend>
+        <label class="serves-line">This recipe serves
+          <input type="number" id="meal-serves" min="1" max="50" step="1" placeholder="4">
+          <span class="muted small">people &mdash; quantities below are for that many</span>
+        </label>
+        <div id="ing-rows"></div>
+        <button class="btn ghost small" type="button" id="add-ing">+ Add an ingredient</button>
+        <p class="muted small" id="ing-hint"></p>
+      </fieldset>
+
+      <fieldset class="macros-box">
+        <legend>Nutrition <span class="muted">per serving</span></legend>
+
+        <div class="macro-fields">
+          <label>Calories<input type="number" id="m-calories" min="0" max="5000" step="1" placeholder="kcal"></label>
+          <label>Protein<input type="number" id="m-protein" min="0" max="500" step="0.1" placeholder="g"></label>
+          <label>Carbs<input type="number" id="m-carbs" min="0" max="500" step="0.1" placeholder="g"></label>
+          <label>Fat<input type="number" id="m-fat" min="0" max="500" step="0.1" placeholder="g"></label>
+        </div>
+      </fieldset>
+
+      <div class="form-actions">
+        <button class="btn" type="submit" id="meal-submit">Add meal</button>
+        <button class="btn ghost" type="button" id="meal-cancel">Cancel</button>
+      </div>
+      <p class="form-error" id="meal-error" hidden></p>
+    </form>
+        </div>
+
+        <div class="add-tab-panel" id="add-panel-bulk" role="tabpanel" hidden>
+          <p class="muted small">One meal per line. Optionally add tags and notes separated by a vertical bar:<br>
+            <code>Chicken fajitas | quick, mexican | Use the big pan</code></p>
+          <textarea id="import-text" rows="6" placeholder="Spaghetti bolognese&#10;Roast chicken | sunday&#10;Fish pie | freezer | Serves 5"></textarea>
+          <div class="form-actions">
+            <button class="btn" type="button" id="import-btn">Import</button>
+          </div>
+          <p class="form-note" id="import-result" hidden></p>
+        </div>
+      </div>
+    </div>
+
+    <div class="list-head">
+      <h2>Saved meals <span class="count" id="meal-count"></span></h2>
+      <input type="search" id="meal-search" placeholder="Search meals..." aria-label="Search meals">
+    </div>
+    <div id="meal-list" class="meal-list"></div>
+  </section>
+
+  <!-- ================= PEOPLE ================= -->
+  <section class="view" id="view-people" hidden>
+    <h1>Household</h1>
+    <p class="muted">Everyone here can be marked as eating, or as the cook.</p>
+
+    <form class="card form" id="person-form">
+      <label>Add a person
+        <input type="text" id="person-name" maxlength="60" placeholder="Name" required>
+      </label>
+      <div class="form-actions">
+        <button class="btn" type="submit">Add</button>
+      </div>
+      <p class="form-error" id="person-error" hidden></p>
+    </form>
+
+    <div id="person-list" class="person-list"></div>
+
+    <!-- The kitchen display picker. Hidden unless the planner is running as a
+         Home Assistant add-on, which is the only place casting is possible -
+         on a PC there is nothing behind it and an empty dropdown would only
+         raise questions. app.js fills it in; see renderCast(). -->
+    <div class="card cast-card" id="cast-card" hidden>
+      <h2>Kitchen display</h2>
+      <p class="muted small">
+        Keeps this week's meals on a Google Cast screen. It only takes the
+        screen over when nothing else is using it.
+      </p>
+      <p class="theme-label">Show the week on</p>
+      <div class="cast-list" id="cast-list"></div>
+      <label class="display-check cast-show-all">
+        <input type="checkbox" id="cast-show-all">
+        <span>Include speakers and everything else Home Assistant can cast to</span>
+      </label>
+      <!-- Casting hours. A window for taking the screen, not for holding it:
+           outside it nothing is taken over, and the only screen handed back is
+           one still showing the week. -->
+      <div id="cast-hours" hidden>
+        <p class="theme-label">Casting hours</p>
+        <label class="display-check">
+          <input type="checkbox" id="cast-window">
+          <span>Only cast at certain times of day</span>
+        </label>
+        <div class="display-when" id="cast-window-when">
+          <label class="display-time">From <input type="time" id="cast-from"></label>
+          <label class="display-time">until <input type="time" id="cast-to"></label>
+        </div>
+      </div>
+
+      <!-- Chosen displays Home Assistant doesn't have any more. Separate from
+           cast-error because it isn't a fault to wait out: nothing will fix it
+           except letting them go, so it comes with the button that does. -->
+      <p class="muted small" id="cast-gone" hidden></p>
+      <p class="muted small" id="cast-state"></p>
+      <p class="form-error" id="cast-error" hidden></p>
+      <div class="form-actions">
+        <button class="btn ghost small" id="cast-refresh" type="button">Look for displays</button>
+        <button class="btn ghost small" id="cast-forget" type="button" hidden>Forget removed displays</button>
+      </div>
+    </div>
+
+    <!-- How the kitchen display looks. Separate from the Cast card on purpose:
+         these apply to /kitchen wherever it is shown, including a tablet
+         propped up on a shelf with nothing to cast to. Unlike the app's own
+         appearance panel these are shared by the house, because the display
+         has nobody sitting at it to set them. -->
+    <div class="card cast-card" id="display-card" hidden>
+      <h2>How the kitchen display looks</h2>
+      <p class="muted small">
+        Shared by everyone, and picked up by the display within a minute.
+      </p>
+
+      <p class="theme-label">Accent colour</p>
+      <div class="theme-row swatches" id="display-accents" role="group" aria-label="Accent colour"></div>
+
+      <p class="theme-label">Light or dark</p>
+      <div class="theme-row" id="display-themes" role="group" aria-label="Light or dark"></div>
+
+      <label class="display-slider">
+        <span>Text size <output id="display-scale-out">100%</output></span>
+        <input type="range" id="display-scale" min="70" max="140" step="5">
+      </label>
+
+      <p class="theme-label">What's on screen</p>
+      <div class="display-toggles" id="display-toggles"></div>
+
+      <!-- Once the meal has been eaten, "today" stops being the useful answer.
+           Midnight is the default and means the calendar's own rollover. -->
+      <p class="theme-label">Moving on to the next day</p>
+      <label class="display-time">
+        Start showing tomorrow at
+        <input type="time" id="display-rollover">
+      </label>
+      <p class="muted small" id="display-rollover-note"></p>
+
+      <p class="theme-label">At night</p>
+      <label class="display-check">
+        <input type="checkbox" id="display-dim">
+        <span>Dim the screen overnight</span>
+      </label>
+      <div class="display-when" id="display-dim-when">
+        <label class="display-time">From <input type="time" id="display-dim-from"></label>
+        <label class="display-time">until <input type="time" id="display-dim-to"></label>
+        <label class="display-slider">
+          <span>Brightness <output id="display-dim-out">45%</output></span>
+          <input type="range" id="display-dim-level" min="10" max="90" step="5">
+        </label>
+      </div>
+
+      <p class="form-error" id="display-error" hidden></p>
+      <p class="muted small">
+        See it: <a href="/kitchen" target="_blank" rel="noopener">the display itself</a>,
+        or <a href="/preview" target="_blank" rel="noopener">at the Hub's size</a>.
+      </p>
+    </div>
+  </section>
+
+</main>
+
+<div class="toast" id="toast" hidden></div>
+
+<script src="/app.js"></script>
+</body>
+</html>

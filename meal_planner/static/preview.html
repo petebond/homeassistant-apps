@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Kitchen display preview</title>
+<style>
+  /* A design harness for the kitchen display. It frames /kitchen at the Hub's
+     real pixel size and scales the whole thing to fit the screen you're on, so
+     you can tweak the layout from a phone or laptop instead of the Hub itself.
+     Served from the Pi, so the framed page is same-origin http - no mixed
+     content, and no IP to hard-code. */
+  :root {
+    --bg: #0f1215; --panel: #191d22; --line: #2b3138;
+    --ink: #eef1f4; --dim: #9aa2ab; --accent: #6fbf95;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    background: var(--bg); color: var(--ink);
+    font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    display: flex; flex-direction: column; overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .bar {
+    flex: 0 0 auto; display: flex; flex-wrap: wrap; align-items: center;
+    gap: 8px 14px; padding: 10px 14px calc(10px + env(safe-area-inset-bottom, 0));
+    padding-top: calc(10px + env(safe-area-inset-top, 0));
+    background: var(--panel); border-bottom: 1px solid var(--line);
+  }
+  .bar .group { display: flex; align-items: center; gap: 6px; }
+  .bar label { font-size: 12px; color: var(--dim); text-transform: uppercase; letter-spacing: .04em; }
+  select, button {
+    font: inherit; font-size: 14px; color: var(--ink);
+    background: #222831; border: 1px solid var(--line); border-radius: 8px;
+    padding: 7px 11px; cursor: pointer; -webkit-appearance: none; appearance: none;
+  }
+  button:active { transform: translateY(1px); }
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+  .seg button { border: 0; border-radius: 0; background: #222831; }
+  .seg button.on { background: var(--accent); color: #0d1a13; font-weight: 600; }
+  .spacer { flex: 1 1 auto; }
+  .meta { font-size: 12px; color: var(--dim); white-space: nowrap; }
+  .meta b { color: var(--ink); font-weight: 600; }
+
+  .stage { flex: 1 1 auto; position: relative; overflow: hidden; }
+  .device {
+    position: absolute; top: 50%; left: 50%;
+    transform-origin: center center;
+    background: #000; border-radius: 18px; padding: 10px;
+    box-shadow: 0 20px 60px rgba(0,0,0,.55), 0 0 0 1px rgba(255,255,255,.04) inset;
+  }
+  .device iframe {
+    display: block; width: 100%; height: 100%;
+    border: 0; border-radius: 8px; background: #14171a;
+  }
+
+  a.open { color: var(--accent); text-decoration: none; font-size: 13px; }
+  a.open:hover { text-decoration: underline; }
+  @media (max-width: 560px) { .meta { display: none; } }
+</style>
+</head>
+<body>
+
+<div class="bar">
+  <div class="group">
+    <label for="device">Device</label>
+    <select id="device">
+      <option value="1024x600" selected>Nest Hub &mdash; 1024 &times; 600</option>
+      <option value="1280x800">Nest Hub Max &mdash; 1280 &times; 800</option>
+      <option value="800x1280">Hub Max (portrait) &mdash; 800 &times; 1280</option>
+      <option value="1280x720">Tablet 720p &mdash; 1280 &times; 720</option>
+    </select>
+  </div>
+
+  <div class="group">
+    <label>Theme</label>
+    <span class="seg" id="theme">
+      <button data-theme="dark" class="on">Dark</button>
+      <button data-theme="light">Light</button>
+    </span>
+  </div>
+
+  <button id="reload" title="Reload the framed page - use after you edit the design and Restart the add-on">Reload</button>
+
+  <div class="spacer"></div>
+  <span class="meta">Showing <b id="dims">1024 &times; 600</b> at <b id="scale">100%</b></span>
+  <a class="open" id="openraw" href="/kitchen" target="_blank" rel="noopener">Open full screen &nearr;</a>
+</div>
+
+<div class="stage" id="stage">
+  <div class="device" id="device-frame">
+    <iframe id="frame" title="Kitchen display" scrolling="no"></iframe>
+  </div>
+</div>
+
+<script>
+(function () {
+  var stage = document.getElementById("stage");
+  var deviceFrame = document.getElementById("device-frame");
+  var frame = document.getElementById("frame");
+  var deviceSel = document.getElementById("device");
+  var dimsOut = document.getElementById("dims");
+  var scaleOut = document.getElementById("scale");
+  var openRaw = document.getElementById("openraw");
+  var themeSeg = document.getElementById("theme");
+
+  var theme = "dark";
+  var dev = { w: 1024, h: 600 };
+
+  function kitchenURL(bust) {
+    var u = "/kitchen?theme=" + theme;
+    if (bust) u += "&_=" + Date.now();
+    return u;
+  }
+
+  function load(bust) {
+    frame.src = kitchenURL(bust);
+    openRaw.href = kitchenURL(false);
+  }
+
+  function fit() {
+    // The device keeps its true pixel size; we scale the whole thing to fit the
+    // available stage, so what you see is the real layout, just smaller.
+    var pad = 20;                       // the black bezel padding, both sides
+    deviceFrame.style.width = dev.w + "px";
+    deviceFrame.style.height = dev.h + "px";
+    frame.style.width = dev.w + "px";
+    frame.style.height = dev.h + "px";
+    var availW = stage.clientWidth - 24;
+    var availH = stage.clientHeight - 24;
+    var s = Math.min(availW / (dev.w + pad), availH / (dev.h + pad), 1.5);
+    if (!isFinite(s) || s <= 0) s = 1;
+    deviceFrame.style.transform = "translate(-50%,-50%) scale(" + s + ")";
+    dimsOut.innerHTML = dev.w + " &times; " + dev.h;
+    scaleOut.textContent = Math.round(s * 100) + "%";
+  }
+
+  deviceSel.addEventListener("change", function () {
+    var p = deviceSel.value.split("x");
+    dev = { w: parseInt(p[0], 10), h: parseInt(p[1], 10) };
+    fit();
+  });
+
+  themeSeg.addEventListener("click", function (e) {
+    var b = e.target.closest("button");
+    if (!b) return;
+    theme = b.getAttribute("data-theme");
+    Array.prototype.forEach.call(themeSeg.children, function (c) {
+      c.classList.toggle("on", c === b);
+    });
+    load(true);
+  });
+
+  document.getElementById("reload").addEventListener("click", function () { load(true); });
+  window.addEventListener("resize", fit);
+
+  load(false);
+  fit();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Meals</title>
+<script>
+/* Sets the theme before first paint, so a cast display never flashes the
+   wrong one.
+
+   The real setting now comes from the server, with everything else the display
+   is told about how it should look, and is applied by kitchen.js the moment the
+   first poll lands. This runs before that: it uses the last one seen on this
+   device, so a Hub that has been showing the light theme for a month doesn't
+   blink through dark on every reload. ?theme= still wins, and is still
+   remembered, because it is the one way to change this from the casting end. */
+(function () {
+  var t = null;
+  try {
+    var m = /[?&]theme=(light|dark)/.exec(location.search);
+    if (m) { t = m[1]; localStorage.setItem("mp-kitchen-theme", t); }
+    else { t = localStorage.getItem("mp-kitchen-theme"); }
+    var a = localStorage.getItem("mp-kitchen-accent");
+    if (a) { document.documentElement.setAttribute("data-accent", a); }
+    var z = localStorage.getItem("mp-kitchen-zoom");
+    if (z && z !== "1") {
+      document.documentElement.style.setProperty("--k-zoom", z);
+      document.documentElement.setAttribute("data-zoomed", "");
+    }
+  } catch (e) { /* storage disabled - fall through to the defaults */ }
+  document.documentElement.setAttribute("data-theme", t === "light" ? "light" : "dark");
+})();
+</script>
+<link rel="stylesheet" href="/kitchen.css">
+</head>
+<body>
+
+<div id="screen" class="screen">
+
+  <!-- The "not updating" warning used to share a header row with the cook.
+       With the cook moved down into the panel there was nothing left up there
+       worth a row of its own, so the warning floats in the corner instead and
+       the whole of that height goes to the meals. -->
+  <span id="stale" class="stale" hidden>not updating</span>
+
+  <main class="strip">
+    <div id="today" class="meals"></div>
+    <aside class="info">
+      <span id="clock" class="clock">&nbsp;</span>
+      <span id="showing" class="info-showing" hidden>Currently showing</span>
+      <h1 id="day-name" class="info-day">&nbsp;</h1>
+      <p id="day-date" class="info-date">&nbsp;</p>
+      <div class="cooking">
+        <span class="cooking-label">Cooking</span>
+        <span id="cook" class="cook-name">&nbsp;</span>
+      </div>
+    </aside>
+  </main>
+
+  <footer id="week" class="week"></footer>
+
+</div>
+
+<!-- Night dimming, drawn over everything and never in the way of anything.
+     kitchen.js fades it in and out; see applyDisplay(). -->
+<div id="nightfall" class="nightfall"></div>
+
+<script src="/kitchen.js"></script>
+</body>
+</html>

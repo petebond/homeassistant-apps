@@ -61,7 +61,7 @@ bare names, so the number you needed last time doesn't come back with them.
 
 ## Where the data lives
 
-Everything is written to `/data`, the add-on's persistent volume:
+Everything is written to `/data`, the app's persistent volume:
 
 - `/data/data.json` — the meal plan, and the shopping list's weekly extras
 - `/data/images/` — meal photos
@@ -91,12 +91,12 @@ worked out by the server from the plan, so there is nothing to show.
 Browsers only allow offline caching (a *service worker*) in a **secure
 context** — `https://…` or `localhost`. Over `http://<your-ha-ip>:8080` the
 browser refuses to register one and says nothing about why. A home network has
-no public name a real certificate could be issued for, so the add-on runs a
+no public name a real certificate could be issued for, so the app runs a
 small certificate authority of its own.
 
 **On the Pi, once:**
 
-1. Add-on → **Configuration** → turn on **`https_enabled`** → Save → **Restart**.
+1. App → **Configuration** → turn on **`https_enabled`** → Save → **Restart**.
 2. On first start it generates a CA and a server certificate into
    `/data/certs`. Both survive updates. The CA is created once and never
    regenerated — replacing it would silently break every phone already set up.
@@ -144,12 +144,12 @@ catches up. Giving the Pi a static or DHCP-reserved address avoids the question.
 
 ## The kitchen display
 
-`/kitchen` is the display page. The add-on can keep it on a Google Cast screen
+`/kitchen` is the display page. The app can keep it on a Google Cast screen
 by itself:
 
 1. Install **DashCast** in Home Assistant (HACS → custom repository
    `AlexxIT/DashCast`) and restart Home Assistant. Casting is a protocol nothing
-   in the Python standard library speaks, so the add-on asks Home Assistant to
+   in the Python standard library speaks, so the app asks Home Assistant to
    do it rather than growing a dependency.
 2. Open the planner → **Household** → **Kitchen display**, and tick the screens
    you want. **More than one is fine** — the kitchen and a bedroom Hub is an
@@ -177,11 +177,11 @@ around the clock, as it always did.
 
 The choice is kept in `/data/cast.json`, so it survives updates. To pin it
 outside the app instead, put one or more media player entity ids in
-**`cast_device`** in the add-on's Configuration panel, comma separated; the
+**`cast_device`** in the app's Configuration panel, comma separated; the
 app's picker then goes read-only.
 
 The display fetches the page over the network, so it needs an address that works
-from the other side of the house. The add-on takes the one a phone last used to
+from the other side of the house. The app takes the one a phone last used to
 reach it, then Home Assistant's own address, then its own — override it with
 `cast_url` if all three are wrong.
 
@@ -239,8 +239,8 @@ is the only setting that can differ per screen.
 
 Rebuilding the image for every small change is slow on a Pi. Dev mode avoids it.
 
-1. Add-on → **Configuration** → turn **`dev_mode`** on → Save.
-2. **Restart** the add-on.
+1. App → **Configuration** → turn **`dev_mode`** on → Save.
+2. **Restart** the app.
 3. The log should say `DEV MODE: running live source from /addons/meal_planner`.
 
 From then on:
@@ -249,16 +249,16 @@ From then on:
 | --- | --- |
 | `static/` — HTML, CSS, JS | Just refresh the browser. Files are read per request. |
 | `static/sw.js` | Refresh twice, or DevTools → Application → Service Workers → Update. Bump `CACHE_VERSION` inside it or the old shell stays cached. |
-| `server.py`, `cast.py`, `display.py`, `icon.py`, `tls.py` | Restart the add-on (a few seconds). |
+| `server.py`, `cast.py`, `display.py`, `icon.py`, `tls.py` | Restart the app (a few seconds). |
 | The shapes in `icon.py` | `python3 icon.py --brand .` to redraw `icon.png` and `logo.png`, then Rebuild — Home Assistant reads those from the folder. |
 | `config.yaml`, `Dockerfile`, `run.sh` | Rebuild. These are read at build time. |
-| `translations/en.yaml` — the wording in the Configuration panel | Rebuild, or Reload from the add-on store. |
+| `translations/en.yaml` — the wording in the Configuration panel | Rebuild, or Reload from the App store. |
 
 Data lives in `/data` in both modes, so there's no separate dev meal plan to
 keep in step — you're developing against the real one. Worth a Home Assistant
 backup before anything experimental.
 
-If `dev_mode` is on but the folder isn't reachable, the add-on logs a warning
+If `dev_mode` is on but the folder isn't reachable, the app logs a warning
 and starts the baked-in copy instead, so the kitchen display stays up.
 
 ## Releasing
@@ -269,10 +269,10 @@ When a change is ready to bake in:
 2. If anything under `static/` changed, bump `CACHE_VERSION` in `static/sw.js` —
    that string is what evicts the copy already cached on everyone's phones.
 3. If the shapes in `icon.py` changed, run `python3 icon.py --brand .` and bump
-   `icon.REV` — the first redraws the add-on's `icon.png` and `logo.png`, the
+   `icon.REV` — the first redraws the app's `icon.png` and `logo.png`, the
    second is what tells a browser holding the old drawing to fetch it again.
-4. **Rebuild** from the add-on's three-dot menu.
+4. **Rebuild** from the app's three-dot menu.
 5. Turn **`dev_mode` off** and Restart, so it runs the image copy.
 
-The last step matters: left on, the add-on keeps running from the folder and the
+The last step matters: left on, the app keeps running from the folder and the
 version number stops meaning anything.

@@ -1,17 +1,22 @@
 # Home Assistant Apps
 
-Add-ons I run at home, packaged so anyone else can install them. Everything
-here runs on your own Home Assistant machine — no account, no cloud service,
-and nothing leaves the house.
+Apps I run at home, packaged so anyone else can install them. Everything here
+runs on your own Home Assistant machine — no account, no cloud service, and
+nothing leaves the house.
+
+> Home Assistant now calls these **apps**. Older versions call the same thing
+> **add-ons**, and the menus below read *Add-ons* and *Add-on Store* instead.
+> Nothing else differs.
 
 ## Adding this repository
 
 You only need to do this once. Every app below then appears in your store.
 
-1. In Home Assistant, go to **Settings → Add-ons → Add-on Store**.
-2. Open the **⋮** menu, top right, and choose **Repositories**.
-3. Paste `https://github.com/petebond/homeassistant-apps` and click **Add**.
-4. Close the dialog. The apps appear in the store under
+1. Go to **Settings → Apps**.
+2. Click **Install app**, bottom right, to open the **App store**.
+3. Open the **⋮** menu, top right, and choose **Repositories**.
+4. Paste `https://github.com/petebond/homeassistant-apps` and click **Add**.
+5. Close the dialog. The apps appear in the store under
    *Pete Bond's Home Assistant Apps*.
 
 Apps here are built on your own machine rather than pulled as prebuilt images,

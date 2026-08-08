@@ -1,5 +1,40 @@
 # Changelog
 
+## 1.12.1
+
+**Fixed: initialisms typed in lower case came out mangled.** "bbq sauce" was
+stored and shown as "Bbq Sauce". The rule was only ever able to *keep* capitals
+that had already been typed — "BBQ sauce" survived, "bbq sauce" did not, and
+nobody holds shift while writing a shopping list. A short list of initialisms
+(BBQ, UHT, XL, MSG, IPA, PB) is now recognised however it was typed, punctuation
+and all: "3 bbq sauce", "BBQ SAUCE" and "(bbq) sauce" all land on the same
+spelling. Existing entries fix themselves the first time the list is read —
+names are normalised on the way out of the file, not only when something is
+saved, so nothing needs re-typing.
+
+**Changed: joining words stay small.** "a bunch of coriander" was becoming
+"A Bunch Of Coriander", which reads like a shop sign. Words like *of*, *and*,
+*in* and *with* are now left lower case unless they open the name, so it comes
+out as "A Bunch of Coriander" and "Tin of Chopped Tomatoes".
+
+**Changed: "Also needed" is Title Cased like everything else on the list.** It
+used to keep whatever spelling was typed, on the grounds that correcting it
+wasn't worth a settings page. But it sits directly above the shopping list,
+where every line is Title Cased, and the mismatch was the thing you actually
+noticed. Remembered names and the suggestions under the box follow the same
+rule, so the suggestion now reads as the line it is about to become. Matching is
+unchanged: "bbq sauce", "BBQ Sauce" and "3 bbq sauces" still collapse onto one
+entry rather than three.
+
+**Fixed: the action bar for ordered items overlapped itself on a phone.** With
+something ticked, "2 selected" sat on top of the Arrived button. The count had
+been told it could shrink to nothing, and text in a box that narrow spills out
+rather than wrapping — at phone width the three buttons already needed the whole
+row. The count now rides on the button that uses it ("Arrived (2)", "Got it
+(2)"), which puts the number where the decision is, keeps the bar one row tall
+on a screen where a second row costs list you can see, and leaves nothing in
+the bar that is able to overflow.
+
 ## 1.12.0
 
 **New: Backup & restore, at the bottom of the Household tab.** One button

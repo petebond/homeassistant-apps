@@ -390,7 +390,7 @@ _PLURALS = [("ies", "y"), ("ches", "ch"), ("shes", "sh"), ("sses", "ss"),
 def extra_key(name):
     """The form two spellings of one thing have to agree on: no case, no
     padding, no trailing punctuation, and singular. Only ever a lookup key -
-    what gets shown is always the spelling as typed."""
+    what gets shown is the Title Cased name, never this."""
     key = re.sub(r"\s+", " ", (name or "").strip().lower()).strip(" .,;:!?")
     for ending, replacement in _PLURALS:
         # "glass" is not the plural of "glas". Leave a doubled s alone and let
@@ -457,14 +457,16 @@ def remember_extra(data, name):
     up before the one-off that was typed wrong in March.
 
     Keyed on the normalised name, so "Cucumber", "cucumbers" and "3 cucumbers"
-    all land on the one entry, and the spelling first used is the one kept -
-    correcting it afterwards is not worth a settings page."""
+    all land on the one entry. Stored Title Cased, so the suggestion reads the
+    same as the line it will become - and so "bbq sauce" is remembered as
+    "BBQ Sauce" however it was typed the first time."""
     names = data.setdefault("extraNames", {})
     if not isinstance(names, dict):
         names = data["extraNames"] = {}
     slot = extra_key(name)
     if not slot:
         return None
+    name = title_case(name)
     entry = names.get(slot)
     if not isinstance(entry, dict):
         entry = names[slot] = {"item": name, "used": 0}
@@ -496,7 +498,10 @@ def known_extras(data):
     # one's order within each count.
     usable.sort(key=lambda v: v.get("at") or "", reverse=True)
     usable.sort(key=lambda v: -int(v.get("used") or 0))
-    return [clean_str(v["item"], MAX_EXTRA) for v in usable[:MAX_KNOWN_EXTRAS]]
+    # Title Cased here too, so a name remembered before this existed suggests
+    # itself in the spelling it will actually be added as.
+    return [title_case(clean_str(v["item"], MAX_EXTRA))
+            for v in usable[:MAX_KNOWN_EXTRAS]]
 
 
 def clean_extra(entry):
@@ -504,7 +509,10 @@ def clean_extra(entry):
     hand: anything unreadable in a field falls back to the harmless value."""
     if not isinstance(entry, dict):
         return None
-    name = clean_str(entry.get("item"), MAX_EXTRA)
+    # Title Cased on the way out, the same as an ingredient. Done here on the
+    # read rather than only when something is added, so a line typed before this
+    # existed tidies itself up the first time the list is looked at.
+    name = title_case(clean_str(entry.get("item"), MAX_EXTRA))
     if not name:
         return None
     try:
@@ -908,21 +916,56 @@ def clean_str(value, limit=200):
 # ingredient name, so "semi-skimmed milk" and "salt/pepper" both come out right.
 _WORD_SPLIT = re.compile(r"([\s\-/&]+)")
 
+# Initialisms nobody bothers to shift-key when they are typing a shopping list.
+# The all-caps rule below only *keeps* capitals that were already there, so
+# without this "bbq sauce" comes out as "Bbq Sauce". Keyed on the letters alone
+# so "bbq", "BBQ" and "(bbq)" all match. Keep this list short - every entry is a
+# word that can no longer be spelled any other way.
+_INITIALISMS = {
+    "bbq": "BBQ",
+    "uht": "UHT",
+    "xl": "XL",
+    "msg": "MSG",
+    "ipa": "IPA",
+    "pb": "PB",
+}
+
+_LETTER_RUN = re.compile(r"[A-Za-z]+")
+
+# Joining words that look wrong with a capital in the middle of a name: "A Bunch
+# Of Coriander" reads like a shop sign. Lowercased unless they open the name, so
+# "Of" stays "of" but "Of The Day" still starts with a capital.
+_SMALL_WORDS = {"a", "an", "and", "at", "by", "for", "from", "in", "of", "on",
+                "or", "per", "the", "to", "with"}
+
 
 def title_case(text):
     """'chopped TOMATOES' -> 'Chopped Tomatoes'. Capitalises the first letter
     of every word and lowercases the rest, but leaves anything that looks like
-    an acronym or a measurement alone ('BBQ sauce', '2% milk', "hershey's")."""
+    an acronym or a measurement alone ('BBQ sauce', '2% milk', "hershey's"),
+    and keeps joining words small ('A Bunch of Coriander')."""
     parts = _WORD_SPLIT.split(text)
     out = []
+    opening = True          # is the next word the first one in the name?
     for part in parts:
         if not part or _WORD_SPLIT.match(part):
             out.append(part)                       # a separator - keep as typed
             continue
+        first, opening = opening, False
         letters = [c for c in part if c.isalpha()]
+        # A known initialism, however it was typed. Substituted into the word so
+        # any punctuation riding along with it ("bbq," or "(bbq)") survives.
+        canonical = _INITIALISMS.get("".join(letters).lower())
+        if canonical:
+            out.append(_LETTER_RUN.sub(canonical, part, count=1))
+            continue
         # Short all-caps runs are almost always acronyms (BBQ, UHT, XL).
         if letters and len(letters) <= 4 and all(c.isupper() for c in letters):
             out.append(part)
+            continue
+        # A joining word, and not the one the name opens with.
+        if not first and "".join(letters).lower() in _SMALL_WORDS:
+            out.append(part.lower())
             continue
         lowered = part.lower()
         for i, c in enumerate(lowered):

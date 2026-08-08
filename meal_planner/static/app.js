@@ -2100,9 +2100,10 @@
     bar.hidden = !ids.length;
     if (!ids.length) return;
 
-    bar.appendChild(el("span", "extras-bar-count",
-      ids.length + " selected"));
-
+    /* The count rides on the primary button rather than sitting beside it. At
+       phone width the three buttons already need the whole row, so a separate
+       "2 selected" had nowhere to go and spilled underneath them - and on a bar
+       stuck to the bottom of the screen, a second row costs list you can see. */
     function action(label, cls, fn) {
       var button = el("button", "btn " + cls, label);
       button.type = "button";
@@ -2114,8 +2115,12 @@
       bar.appendChild(button);
     }
 
+    /* Only on the action that does the thing. Putting it on both reads like two
+       different numbers, and neither would fit. */
+    var count = " (" + ids.length + ")";
+
     if (extraSel.scope === "ordered") {
-      action("Arrived", "", doneExtras);
+      action("Arrived" + count, "", doneExtras);
       /* Substitutions and things that were out of stock. Straight back onto
          the list, because you still need them - which is the whole reason for
          keeping ordered things visible rather than deleting them on trust. */
@@ -2123,7 +2128,7 @@
         setExtraState(list, "need");
       });
     } else {
-      action("Got it", "", doneExtras);
+      action("Got it" + count, "", doneExtras);
       action("Ordered", "ghost", function (list) {
         setExtraState(list, "ordered");
       });

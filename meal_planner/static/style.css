@@ -1494,6 +1494,10 @@ select:focus, input:focus, textarea:focus { outline: 2px solid var(--green); out
   z-index: 5;
   display: flex;
   align-items: center;
+  /* Right-aligned now the count has gone from the left of the row. Wrapping is
+     kept for the narrowest phones: better a second row than three squashed
+     buttons, and nothing here can overflow its box any more. */
+  justify-content: flex-end;
   gap: .5rem;
   flex-wrap: wrap;
   margin: .8rem -1rem -1rem;
@@ -1503,7 +1507,6 @@ select:focus, input:focus, textarea:focus { outline: 2px solid var(--green); out
   box-shadow: 0 -4px 12px rgba(0, 0, 0, .08);
 }
 .extras-bar[hidden] { display: none; }
-.extras-bar-count { flex: 1; min-width: 0; color: var(--muted); font-size: .9rem; }
 
 .shop-section { margin-bottom: 1.6rem; }
 .shop-section h2 { margin-bottom: .5rem; }
@@ -1554,6 +1557,11 @@ select:focus, input:focus, textarea:focus { outline: 2px solid var(--green); out
 @media (max-width: 560px) {
   .shop-qty { flex-basis: 4.5rem; }
   .shop-from { display: none; }
+  /* Three actions plus a count on a 340px phone is a close-run thing, and
+     "Arrived (12)" is wider than "Arrived (2)". Tightening the padding here
+     keeps the whole bar on one row at any count rather than leaving it to
+     wrap on the day you tick a big order in. */
+  .extras-bar .btn { padding: .5rem .6rem; }
 }
 
 @media print {

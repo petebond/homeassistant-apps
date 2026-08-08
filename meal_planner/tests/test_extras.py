@@ -144,10 +144,18 @@ def test_migration_survives_rubbish():
 # ---------------------------------------------------------------- records
 
 def test_clean_extra():
-    # Missing everything except a name.
+    # Missing everything except a name. The name comes back Title Cased: this
+    # list sits directly above the shopping list, where every line is, and it is
+    # done on the read so a line stored before that was true tidies itself up.
     got = server.clean_extra({"item": "foil"})
     check("defaults", (got["item"], got["qty"], got["unit"], got["state"]),
-          ("foil", 1.0, "each", "need"))
+          ("Foil", 1.0, "each", "need"))
+    # However it was typed, and whatever punctuation it was carrying.
+    check("initialism", server.clean_extra({"item": "bbq sauce"})["item"],
+          "BBQ Sauce")
+    check("joining word stays small",
+          server.clean_extra({"item": "a bunch of coriander"})["item"],
+          "A Bunch of Coriander")
     # A unit the shopping list doesn't know falls back rather than propagating.
     check("unknown unit", server.clean_extra(
         {"item": "foil", "unit": "furlong"})["unit"], "each")

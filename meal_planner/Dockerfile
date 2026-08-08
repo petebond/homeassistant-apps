@@ -31,6 +31,13 @@ WORKDIR /app
 COPY *.py ./
 COPY static/ ./static/
 
+# The app's own manifest, carried into the image for one reason: backup.py reads
+# the version out of it and stamps it into every backup, so a zip found in a
+# downloads folder in two years can say what made it. In dev_mode the file is
+# beside the source anyway; without this line the built image is the only place
+# the version comes out as "unknown".
+COPY config.yaml ./
+
 # First-run seed data. Copied into /data by run.sh only if /data is empty, so
 # it never overwrites the live meal plan on an update.
 COPY seed/ ./seed/

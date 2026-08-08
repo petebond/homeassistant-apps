@@ -1,0 +1,3448 @@
+{
+  "people": [
+    {
+      "id": "p_example1",
+      "name": "Adult 1",
+      "color": "#e07a5f"
+    },
+    {
+      "id": "p_example2",
+      "name": "Adult 2",
+      "color": "#3d8361"
+    },
+    {
+      "id": "p_example3",
+      "name": "Child 1",
+      "color": "#5b7db1"
+    },
+    {
+      "id": "p_guest",
+      "name": "Guest(s)",
+      "color": "#4aa3a3",
+      "guest": true
+    }
+  ],
+  "meals": [
+    {
+      "id": "m_4f18a895",
+      "name": "All day breakfast",
+      "notes": "Grilled bacon and tomatoes, mushrooms, baked beans and a fried egg.",
+      "link": "https://www.nhs.uk/healthier-families/recipes/healthier-full-english-breakfast/",
+      "tags": [
+        "quick",
+        "weekend"
+      ],
+      "macros": {
+        "calories": 520.0,
+        "protein": 22.0,
+        "carbs": 28.0,
+        "fat": 36.0,
+        "source": "ai-description",
+        "confidence": "medium",
+        "note": "Assumed 2 rashers grilled bacon, 1 fried egg, grilled tomatoes and mushrooms, and half a tin of baked beans.",
+        "estimatedAt": "2026-07-20T16:39:41"
+      },
+      "links": [
+        {
+          "label": "Open recipe",
+          "url": "https://www.nhs.uk/healthier-families/recipes/healthier-full-english-breakfast/"
+        }
+      ],
+      "serves": 4,
+      "ingredients": [
+        {
+          "item": "back bacon",
+          "qty": 8.0,
+          "unit": "slice",
+          "staple": false,
+          "note": "lean, fat trimmed"
+        },
+        {
+          "item": "tomato",
+          "qty": 8.0,
+          "unit": "each",
+          "staple": false,
+          "note": "halved"
+        },
+        {
+          "item": "mushrooms",
+          "qty": 250.0,
+          "unit": "g",
+          "staple": false,
+          "note": "closed-cup, thickly sliced"
+        },
+        {
+          "item": "baked beans",
+          "qty": 420.0,
+          "unit": "g",
+          "staple": false,
+          "note": "reduced-salt and sugar"
+        },
+        {
+          "item": "vegetable oil",
+          "qty": 1.0,
+          "unit": "tsp",
+          "staple": true,
+          "note": ""
+        },
+        {
+          "item": "eggs",
+          "qty": 8.0,
+          "unit": "each",
+          "staple": false,
+          "note": ""
+        },
+        {
+          "item": "potato waffle",
+          "qty": 8.0,
+          "unit": "each",
+          "staple": false,
+          "note": "Birds eye"
+        }
+      ],
+      "image": "https://assets.nhs.uk/campaigns-cms-prod/images/Food_Smart_full_English.width-1200.png"
+    },
+    {
+      "id": "m_d240f838",
+      "name": "BBQ chicken skewers and salad",
+      "notes": "Chicken, pepper and onion skewers in a barbecue marinade, with a big salad.",
+      "link": "https://www.nhs.uk/healthier-families/recipes/jerk-style-chicken-skewers/",
+      "tags": [
+        "summer",
+        "bbq"
+      ],
+      "macros": {
+        "calories": 228.0,
+        "protein": 31.9,
+        "carbs": 12.7,
+        "fat": 5.4,
+        "source": "manual",
+        "confidence": "medium",
+        "note": "Calculated estimate | Calculated from the ingredients. The NHS link is the same skewer with jerk seasoning and a corn cobette instead of salad; barbecue sauce carries more sugar than dry jerk seasoning, which is where the extra carbohydrate comes from.  Picture: Photo is the NHS jerk-style skewer, s",
+        "estimatedAt": "2026-07-21T00:21:44"
+      },
+      "links": [
+        {
+          "label": "Open recipe",
+          "url": "https://www.nhs.uk/healthier-families/recipes/jerk-style-chicken-skewers/"
+        }
+      ],
+      "serves": 4,
+      "ingredients": [
+        {
+          "item": "chicken breast",
+          "qty": 500.0,
+          "unit": "g",
+          "staple": false,
+          "note": "cut into chunks"
+        },
+        {
+          "item": "red pepper",
+          "qty": 2.0,
+          "unit": "each",
+          "staple": false,
+          "note": ""
+        },
+        {
+          "item": "onion",
+          "qty": 1.0,
+          "unit": "each",
+          "staple": false,
+          "note": "large"
+        },
+        {
+          "item": "bbq sauce",
+          "qty": 4.0,
+          "unit": "tbsp",
+          "staple": false,
+          "note": ""
+        },
+        {
+          "item": "olive oil",
+          "qty": 1.0,
+          "unit": "tbsp",
+          "staple": true,
+          "note": ""
+        },
+        {
+          "item": "garlic",
+          "qty": 1.0,
+          "unit": "clove",
+          "staple": false,
+          "note": ""
+        },
+        {
+          "item": "lettuce",
+          "qty": 120.0,
+          "unit": "g",
+          "staple": false,
+          "note": ""
+        },
+        {
+          "item": "tomato",
+          "qty": 3.0,
+          "unit": "each",
+          "staple": false,
+          "note": ""
+        },
+        {
+          "item": "cucumber",
+          "qty": 100.0,
+          "unit": "g",
+          "staple": false,
+          "note": ""
+        }
+      ],
+      "image": ""
+    },
+    {
+      "id": "m_7bc3b212",
+      "name": "Beef lasagne",
+      "notes": "Classic ragu with pancetta and a proper bechamel, topped with mozzarella and parmesan.",
+      "link": "https://www.olivemagazine.com/recipes/classic-lasagne/",
+      "tags": [
+        "pasta",
+        "weekend"
+      ],
+      "macros": {
+        "calories": 672.0,
+        "protein": 37.0,
+        "carbs": 42.2,
+        "fat": 39.2,
+        "source": "manual",
+        "confidence": "high",
+        "note": "Published figure | olive magazine published figures, per serving. This is a rich version - noticeably heavier than the NHS recipes here.",
+        "estimatedAt": "2026-07-20T12:56:21"
+      },
+      "links": [
+        {
+          "label": "Open recipe",
+          "url": "https://www.olivemagazine.com/recipes/classic-lasagne/"
+        }
+      ],
+      "serves": 6,
+      "ingredients": [
+        {
+          "item": "carrot",
+          "qty": 1.0,
+          "unit": "each",
+          "staple": false,
+          "note": "finely chopped"
+        },
+        {
+          "item": "celery",
+          "qty": 1.0,
+          "unit": "each",
+          "staple": false,
+          "note": "stick, finely chopped"
+        },
+        {
+          "item": "onion",
+          "qty": 2.0,
+          "unit": "each",
+          "staple": false,
+          "note": "finely chopped"
+        },
+        {
+          "item": "pancetta",
+          "qty": 70.0,
+          "unit": "g",
+          "staple": false,
+          "note": "cubetti"
+        },
+        {
+          "item": "olive oil",
+          "qty": 1.0,
+          "unit": "tbsp",
+          "staple": true,
+          "note": ""
+        },
+        {
+          "item": "garlic",
+          "qty": 2.0,
+          "unit": "clove",
+          "staple": false,
+          "note": "crushed"
+        },
+        {
+          "item": "beef mince",
+          "qty": 250.0,
+          "unit": "g",
+          "staple": false,
+          "note": ""
+        },
+        {
+          "item": "pork mince",
+          "qty": 250.0,
+          "unit": "g",
+          "staple": false,
+          "note": "or veal"
+        },
+        {
+          "item": "white wine",
+          "qty": 250.0,
+          "unit": "ml",
+          "staple": false,
+          "note": ""
+        },
+        {
+          "item": "bay leaves",
+          "qty": 2.0,
+          "unit": "each",
+          "staple": true,
+          "note": ""
+        },
+        {
+          "item": "tomato puree",
+          "qty": 1.0,
+          "unit": "tbsp",
+          "staple": true,
+          "note": ""
+        },
+        {
+          "item": "chopped tomatoes",
+          "qty": 2.0,
+          "unit": "tin",
+          "staple": false,
+          "note": "400g tins"
+        },
+        {
+          "item": "milk",
+          "qty": 950.0,
+          "unit": "ml",
+          "staple": false,
+          "note": "100ml for the ragu, 850ml for the bechamel"
+        },
+        {
+          "item": "fresh basil",
+          "qty": 1.0,
+          "unit": "bunch",
+          "staple": false,
+          "note": "chopped"
+        },
+        {
+          "item": "lasagne sheets",
+          "qty": 9.0,
+          "unit": "each",
+          "staple": false,
+          "note": ""
+        },
+        {
+          "item": "mozzarella",
+          "qty": 1.0,
+          "unit": "each",
+          "staple": false,
+          "note": "ball, chopped"
+        },
+        {
+          "item": "parmesan",
+          "qty": 50.0,
+          "unit": "g",
+          "staple": false,
+          "note": "grated"
+        },
+        {
+          "item": "butter",
+          "qty": 100.0,
+          "unit": "g",
+          "staple": true,
+          "note": ""
+        },
+        {
+          "item": "plain flour",
+          "qty": 80.0,
+          "unit": "g",
+          "staple": true,
+          "note": ""
+        },
+        {
+          "item": "nutmeg",
+          "qty": 1.0,
+          "unit": "pinch",
+          "staple": true,
+          "note": ""
+        }
+      ],
+      "image": "https://images.immediate.co.uk/production/volatile/sites/2/2015/05/6622.jpg?resize=1200%2C630"
+    },
+    {
+      "id": "m_a8ffa8ffae",
+      "name": "Chicken and chorizo jambalaya",
+      "notes": "One-pan rice dish: chicken breast, chorizo, onion, red pepper and Cajun spice, simmered with plum tomatoes and stock. Serves 4.",
+      "link": "https://www.bbcgoodfood.com/recipes/chicken-chorizo-jambalaya",
+      "tags": [
+        "one-pan",
+        "rice",
+        "spicy"
+      ],
+      "macros": {
+        "calories": 494.0,
+        "protein": 32.1,
+        "carbs": 61.6,
+        "fat": 12.7,
+        "source": "manual",
+        "confidence": "medium",
+        "note": "Calculated estimate | Worked out from the ingredient list you gave, divided by 4. Assumes 2 x 175g raw chicken breasts and cured chorizo. BBC Good Food's own figures could not be checked.",
+        "estimatedAt": "2026-07-20T13:37:53"
+      },
+      "links": [
+        {
+          "label": "Open recipe",
+          "url": "https://www.bbcgoodfood.com/recipes/chicken-chorizo-jambalaya"
+        }
+      ],
+      "serves": 4,
+      "ingredients": [
+        {
+          "item": "olive oil",
+          "qty": 1.0,
+          "unit": "tbsp",
+          "staple": true,
+          "note": ""
+        },
+        {
+          "item": "chicken breast",
+          "qty": 350.0,
+          "unit": "g",
+          "staple": false,
+          "note": "chopped"
+        },
+        {
+          "item": "onion",
+          "qty": 1.0,
+          "unit": "each",
+          "staple": false,
+          "note": "diced"
+        },
+        {
+          "item": "red pepper",
+          "qty": 1.0,
+          "unit": "each",
+          "staple": false,
+          "note": "thinly sliced"
+        },
+        {
+          "item": "garlic",
+          "qty": 2.0,
+          "unit": "clove",
+          "staple": false,
+          "note": "crushed"
+        },
+        {
+          "item": "chorizo",
+          "qty": 75.0,
+          "unit": "g",
+          "staple": false,
+          "note": "sliced"
+        },
+        {
+          "item": "cajun seasoning",
+          "qty": 1.0,
+          "unit": "tbsp",
+          "staple": true,
+          "note": ""
+        },
+        {
+          "item": "long grain rice",
+          "qty": 250.0,
+          "unit": "g",
+          "staple": false,
+          "note": ""
+        },
+        {
+          "item": "plum tomatoes",
+          "qty": 1.0,
+          "unit": "tin",
+          "staple": false,
+          "note": "400g tin"
+        },
+        {
+          "item": "stock",
+          "qty": 350.0,
+          "unit": "ml",
+          "staple": true,
+          "note": "chicken"
+        }
+      ],
+      "image": "https://images.immediate.co.uk/production/volatile/sites/30/2020/08/recipe-image-legacy-id-1274503_8-05ae02b.jpg?resize=440%2C230"
+    },
+    {
+      "id": "m_edbcfe34",
+      "name": "Chicken breast, new potatoes and vegetables",
+      "notes": "Plain roast or grilled chicken breast with boiled new potatoes, broccoli and carrots.",
+      "link": "https://www.nhs.uk/healthier-families/recipes/roast-chicken-breast-with-peppers/",
+      "tags": [
+        "easy"
+      ],
+      "macros": {
+        "calories": 382.0,
+        "protein": 43.0,
+        "carbs": 37.5,
+        "fat": 6.6,
+        "source": "manual",
+        "confidence": "medium",
+        "note": "Calculated estimate | Calculated from the ingredients. The NHS link is a close relative (it uses baking potatoes and peppers), so its published 384kcal is a useful sanity check - almost identical.  Picture: Photo is the NHS version with peppers and a baking potato, not new potatoes.",
+        "estimatedAt": "2026-07-21T00:07:43"
+      },
+      "links": [
+        {
+          "label": "Open recipe",
+          "url": "https://www.nhs.uk/healthier-families/recipes/roast-chicken-breast-with-peppers/"
+        }
+      ],
+      "serves": 4,
+      "ingredients": [
+        {
+          "item": "chicken breast",
+          "qty": 600.0,
+          "unit": "g",
+          "staple": false,
+          "note": "4 breasts"
+        },
+        {
+          "item": "new potatoes",
+          "qty": 800.0,
+          "unit": "g",
+          "staple": false,
+          "note": ""
+        },
+        {
+          "item": "broccoli",
+          "qty": 300.0,
+          "unit": "g",
+          "staple": false,
+          "note": ""
+        },
+        {
+          "item": "carrot",
+          "qty": 3.0,
+          "unit": "each",
+          "staple": false,
+          "note": ""
+        },
+        {
+          "item": "olive oil",
+          "qty": 1.0,
+          "unit": "tbsp",
+          "staple": true,
+          "note": ""
+        }
+      ],
+      "image": "https://assets.nhs.uk/campaigns-cms-prod/images/Roast_chicken_breasts_with_peppers_KEhJvFK.width-1200.png"
+    },
+    {
+      "id": "m_e1cc4222",
+      "name": "Chicken burger, salad and corn on the cob",
+      "notes": "Grilled chicken breast in a bun with salad, and a corn cobette each.",
+      "link": "https://www.nhs.uk/healthier-families/recipes/turkey-burgers/",
+      "tags": [
+        "summer",
+        "bbq"
+      ],
+      "macros": {
+        "calories": 468.0,
+        "protein": 45.0,
+        "carbs": 47.7,
+        "fat": 11.1,
+        "source": "manual",
+        "confidence": "medium",
+        "note": "Calculated estimate | Calculated from the ingredients. The NHS link is their turkey-mince burger, which is a different thing - a whole chicken breast in the bun makes this higher in protein than their 354kcal version.  Picture: Photo is the NHS turkey-mince burger, not a whole chicken breast.",
+        "estimatedAt": "2026-07-21T00:07:43"
+      },
+      "links": [
+        {
+          "label": "Open recipe",
+          "url": "https://www.nhs.uk/healthier-families/recipes/turkey-burgers/"
+        }
+      ],
+      "serves": 4,
+      "ingredients": [
+        {
+          "item": "chicken breast",
+          "qty": 600.0,
+          "unit": "g",
+          "staple": false,
+          "note": "4 breasts, butterflied"
+        },
+        {
+          "item": "burger buns",
+          "qty": 4.0,
+          "unit": "each",
+          "staple": false,
+          "note": ""
+        },
+        {
+          "item": "olive oil",
+          "qty": 1.0,
+          "unit": "tbsp",
+          "staple": true,
+          "note": ""
+        },
+        {
+          "item": "lettuce",
+          "qty": 60.0,
+          "unit": "g",
+          "staple": false,
+          "note": ""
+        },
+        {
+          "item": "tomato",
+          "qty": 2.0,
+          "unit": "each",
+          "staple": false,
+          "note": ""
+        },
+        {
+          "item": "sweetcorn cobettes",
+          "qty": 4.0,
+          "unit": "each",
+          "staple": false,
+          "note": ""
+        },
+        {
+          "item": "mayonnaise",
+          "qty": 2.0,
+          "unit": "tbsp",
+          "staple": false,
+          "note": "reduced-fat"
+        }
+      ],
+      "image": "https://assets.nhs.uk/campaigns-cms-prod/images/Turkey-burgers_j4G4vmT.width-320.jpg"
+    },
+    {
+      "id": "m_21b8b627",
+      "name": "Chicken caesar salad with croutons",
+      "notes": "Grilled chicken over cos lettuce with croutons, parmesan and a light caesar dressing.",
+      "link": "https://www.bbcgoodfood.com/recipes/chicken-caesar-salad",
+      "tags": [
+        "light",
+        "summer"
+      ],
+      "macros": {
+        "calories": 304.0,
+        "protein": 36.2,
+        "carbs": 15.5,
+        "fat": 10.5,
+        "source": "manual",
+        "confidence": "low",
+        "note": "Calculated estimate | Calculated from the ingredients, assuming a reduced-fat dressing. A shop-bought full-fat caesar dressing would add roughly 100kcal per serving on its own.",
+        "estimatedAt": "2026-07-21T00:23:53"
+      },
+      "links": [
+        {
+          "label": "Open recipe",
+          "url": "https://www.bbcgoodfood.com/recipes/chicken-caesar-salad"
+        }
+      ],
+      "serves": 4,
+      "ingredients": [
+        {
+          "item": "chicken breast",
+          "qty": 500.0,
+          "unit": "g",
+          "staple": false,
+          "note": "grilled, sliced"
+        },
+        {
+          "item": "lettuce",
+          "qty": 400.0,
+          "unit": "g",
+          "staple": false,
+          "note": "cos or romaine"
+        },
+        {
+          "item": "bread",
+          "qty": 4.0,
+          "unit": "slice",
+          "staple": false,
+          "note": "for croutons"
+        },
+        {
+          "item": "olive oil",
+          "qty": 1.0,
+          "unit": "tbsp",
+          "staple": true,
+          "note": ""
+        },
+        {
+          "item": "caesar dressing",
+          "qty": 4.0,
+          "unit": "tbsp",
+          "staple": false,
+          "note": "reduced-fat"
+        },
+        {
+          "item": "parmesan",
+          "qty": 30.0,
+          "unit": "g",
+          "staple": false,
+          "note": "shaved"
+        }
+      ],
+      "image": ""
+    },
+    {
+      "id": "m_524912dc",
+      "name": "Chicken curry",
+      "notes": "Bengali-style chicken curry with green peppers, served with basmati rice.",
+      "link": "https://www.nhs.uk/healthier-families/recipes/bengali-chicken-curry/",
+      "tags": [
+        "curry"
+      ],
+      "macros": {
+        "calories": 428.0,
+        "protein": 26.0,
+        "carbs": 62.0,
+        "fat": 7.0,
+        "source": "manual",
+        "confidence": "high",
+        "note": "Published figure | NHS published figures, per 1/4 recipe, including the rice.",
+        "estimatedAt": "2026-07-20T12:56:21"
+      },
+      "links": [
+        {
+          "label": "Open recipe",
+          "url": "https://www.nhs.uk/healthier-families/recipes/bengali-chicken-curry/"
+        }
+      ],
+      "serves": 4,
+      "ingredients": [
+        {
+          "item": "chicken pieces",
+          "qty": 500.0,
+          "unit": "g",
+          "staple": false,
+          "note": "skinless, on the bone"
+        },
+        {
+          "item": "chilli powder",
+          "qty": 1.5,
+          "unit": "tsp",
+          "staple": true,
+          "note": ""
+        },
+        {
+          "item": "onion",
+          "qty": 3.0,
+          "unit": "each",
+          "staple": false,
+          "note": "1 pureed, 2 sliced"
+        },
+        {
+          "item": "garlic",
+          "qty": 6.0,
+          "unit": "clove",
+          "staple": false,
+          "note": "crushed"
+        },
+        {
+          "item": "ginger",
+          "qty": 20.0,
+          "unit": "g",
+          "staple": false,
+          "note": "thumb-sized piece, crushed"
+        },
+        {
+          "item": "garam masala",
+          "qty": 0.5,
+          "unit": "tsp",
+          "staple": true,
+          "note": ""
+        },
+        {
+          "item": "vegetable oil",
+          "qty": 1.0,
+          "unit": "tbsp",
+          "staple": true,
+          "note": ""
+        },
+        {
+          "item": "cloves",
+          "qty": 3.0,
+          "unit": "each",
+          "staple": true,
+          "note": ""
+        },
+        {
+          "item": "cardamom pods",
+          "qty": 3.0,
+          "unit": "each",
+          "staple": true,
+          "note": ""
+        },
+        {
+          "item": "cinnamon stick",
+          "qty": 2.0,
+          "unit": "each",
+          "staple": true,
+          "note": ""
+        },
+        {
+          "item": "bay leaves",
+          "qty": 3.0,
+          "unit": "each",
+          "staple": true,
+          "note": ""
+        },
+        {
+          "item": "cumin seeds",
+          "qty": 1.0,
+          "unit": "tsp",
+          "staple": true,
+          "note": ""
+        },
+        {
+          "item": "turmeric",
+          "qty": 0.25,
+          "unit": "tsp",
+          "staple": true,
+          "note": ""
+        },
+        {
+          "item": "paprika",
+          "qty": 2.0,
+          "unit": "tsp",
+          "staple": true,
+          "note": "mild"
+        },
+        {
+          "item": "green pepper",
+          "qty": 2.0,
+          "unit": "each",
+          "staple": false,
+          "note": "deseeded, cut into chunks"
+        },
+        {
+          "item": "basmati rice",
+          "qty": 300.0,
+          "unit": "g",
+          "staple": false,
+          "note": ""
+        }
+      ],
+      "image": "https://assets.nhs.uk/campaigns-cms-prod/images/Bengali_Chicken_Curry.width-1200.jpg"
+    },
+    {
+      "id": "m_c2b84401",
+      "name": "Chicken fajitas",
+      "notes": "Chicken strips with peppers and onion, fajita spice, two tortillas and soured cream.",
+      "link": "https://www.nhs.uk/healthier-families/recipes/tasty-chicken-wraps/",
+      "tags": [
+        "quick",
+        "mexican"
+      ],
+      "macros": {
+        "calories": 540.0,
+        "protein": 40.0,
+        "carbs": 51.0,
+        "fat": 18.0,
+        "source": "manual",
+        "confidence": "low",
+        "note": "Calculated estimate | My estimate - no NHS fajita recipe exists. Assumes 150g chicken, two flour tortillas and a spoon of soured cream each. The link is the nearest NHS chicken wrap, which is a cold lunch rather than hot fajitas.",
+        "estimatedAt": "2026-07-20T12:56:21"
+      },
+      "links": [
+        {
+          "label": "Open recipe",
+          "url": "https://www.nhs.uk/healthier-families/recipes/tasty-chicken-wraps/"
+        }
+      ],
+      "serves": 4,
+      "ingredients": [
+        {
+          "item": "chicken breast",
+          "qty": 600.0,
+          "unit": "g",
+          "staple": false,
+          "note": "cut into strips"
+        },
+        {
+          "item": "pepper",
+          "qty": 2.0,
+          "unit": "each",
+          "staple": false,
+          "note": "sliced"
+        },
+        {
+          "item": "onion",
+          "qty": 1.0,
+          "unit": "each",
+          "staple": false,
+          "note": "sliced"
+        },
+        {
+          "item": "flour tortillas",
+          "qty": 8.0,
+          "unit": "each",
+          "staple": false,
+          "note": ""
+        },
+        {
+          "item": "fajita seasoning",
+          "qty": 4.0,
+          "unit": "tsp",
+          "staple": true,
+          "note": ""
+        },
+        {
+          "item": "vegetable oil",
+          "qty": 1.0,
+          "unit": "tbsp",
+          "staple": true,
+          "note": ""
+        },
+        {
+          "item": "soured cream",
+          "qty": 4.0,
+          "unit": "tbsp",
+          "staple": false,
+          "note": ""
+        }
+      ],
+      "image": "https://assets.nhs.uk/campaigns-cms-prod/images/Tasty_chicken_wraps.width-1200.png"
+    },
+    {
+      "id": "m_5f8c6281",
+      "name": "Chicken jalfrezi",
+      "notes": "Chicken, peppers, onion and tomato in a spiced sauce. Serve with rice or chapatis.",
+      "link": "https://www.nhs.uk/healthier-families/recipes/chicken-jalfrezi/",
+      "tags": [
+        "curry",
+        "spicy"
+      ],
+      "macros": {
+        "calories": 334.0,
+        "protein": 41.0,
+        "carbs": 7.7,
+        "fat": 15.5,
+        "source": "manual",
+        "confidence": "medium",
+        "note": "Published figure | NHS figures, per 1/4 recipe, curry only (rice extra). Their page lists '79g fat', which is a typo - fat here is derived from the calorie total.",
+        "estimatedAt": "2026-07-20T12:56:21"
+      },
+      "links": [
+        {
+          "label": "Open recipe",
+          "url": "https://www.nhs.uk/healthier-families/recipes/chicken-jalfrezi/"
+        }
+      ],
+      "serves": 4,
+      "ingredients": [
+        {
+          "item": "rapeseed oil",
+          "qty": 30.0,
+          "unit": "ml",
+          "staple": true,
+          "note": ""
+        },
+        {
+          "item": "chicken breast",
+          "qty": 700.0,
+          "unit": "g",
+          "staple": false,
+          "note": "boneless, cubed"
+        },
+        {
+          "item": "onion",
+          "qty": 3.0,
+          "unit": "each",
+          "staple": false,
+          "note": "medium, chopped"
+        },
+        {
+          "item": "pepper",
+          "qty": 2.0,
+          "unit": "each",
+          "staple": false,
+          "note": "any colour, chopped"
+        },
+        {
+          "item": "green chilli",
+          "qty": 4.0,
+          "unit": "each",
+          "staple": false,
+          "note": "sliced"
+        },
+        {
+          "item": "garlic",
+          "qty": 4.0,
+          "unit": "clove",
+          "staple": false,
+          "note": "finely chopped"
+        },
+        {
+          "item": "ginger",
+          "qty": 20.0,
+          "unit": "g",
+          "staple": false,
+          "note": "fresh, peeled"
+        },
+        {
+          "item": "chopped tomatoes",
+          "qty": 1.0,
+          "unit": "tin",
+          "staple": false,
+          "note": "400g tin"
+        },
+        {
+          "item": "turmeric",
+          "qty": 1.0,
+          "unit": "tsp",
+          "staple": true,
+          "note": ""
+        },
+        {
+          "item": "cumin seeds",
+          "qty": 1.0,
+          "unit": "tsp",
+          "staple": true,
+          "note": "heaped"
+        },
+        {
+          "item": "chilli powder",
+          "qty": 1.0,
+          "unit": "tsp",
+          "staple": true,
+          "note": ""
+        },
+        {
+          "item": "garam masala",
+          "qty": 1.0,
+          "unit": "tsp",
+          "staple": true,
+          "note": ""
+        },
+        {
+          "item": "ground coriander",
+          "qty": 1.5,
+          "unit": "tsp",
+          "staple": true,
+          "note": ""
+        },
+        {
+          "item": "fresh coriander",
+          "qty": 1.0,
+          "unit": "handful",
+          "staple": false,
+          "note": "to serve, optional"
+        }
+      ],
+      "image": "https://assets.nhs.uk/campaigns-cms-prod/images/Chicken_jalfrezi.width-1200.jpg"
+    },
+    {
+      "id": "m_47eb61e2",
+      "name": "Chicken parmigiana",
+      "notes": "Breaded chicken breast baked under tomato sauce and mozzarella.",
+      "link": "https://www.bbcgoodfood.com/recipes/chicken-parmigiana-2",
+      "tags": [
+        "oven"
+      ],
+      "macros": {
+        "calories": 432.0,
+        "protein": 49.7,
+        "carbs": 24.4,
+        "fat": 14.9,
+        "source": "manual",
+        "confidence": "medium",
+        "note": "Calculated estimate | My own calculation from the ingredients - no NHS recipe exists for this one, so there is no published figure to check it against. Assumes oven-baked, not fried.",
+        "estimatedAt": "2026-07-21T00:24:53"
+      },
+      "links": [
+        {
+          "label": "Open recipe",
+          "url": "https://www.bbcgoodfood.com/recipes/chicken-parmigiana-2"
+        }
+      ],
+      "serves": 4,
+      "ingredients": [
+        {
+          "item": "chicken breast",
+          "qty": 600.0,
+          "unit": "g",
+          "staple": false,
+          "note": "4 breasts, flattened"
+        },
+        {
+          "item": "breadcrumbs",
+          "qty": 60.0,
+          "unit": "g",
+          "staple": false,
+          "note": ""
+        },
+        {
+          "item": "eggs",
+          "qty": 1.0,
+          "unit": "each",
+          "staple": false,
+          "note": "beaten"
+        },
+        {
+          "item": "plain flour",
+          "qty": 30.0,
+          "unit": "g",
+          "staple": true,
+          "note": ""
+        },
+        {
+          "item": "passata",
+          "qty": 400.0,
+          "unit": "g",
+          "staple": false,
+          "note": ""
+        },
+        {
+          "item": "onion",
+          "qty": 1.0,
+          "unit": "each",
+          "staple": false,
+          "note": ""
+        },
+        {
+          "item": "garlic",
+          "qty": 2.0,
+          "unit": "clove",
+          "staple": false,
+          "note": ""
+        },
+        {
+          "item": "mozzarella",
+          "qty": 1.0,
+          "unit": "each",
+          "staple": false,
+          "note": ""
+        },
+        {
+          "item": "parmesan",
+          "qty": 20.0,
+          "unit": "g",
+          "staple": false,
+          "note": ""
+        },
+        {
+          "item": "olive oil",
+          "qty": 1.0,
+          "unit": "tbsp",
+          "staple": true,
+          "note": ""
+        },
+        {
+          "item": "dried mixed herbs",
+          "qty": 1.0,
+          "unit": "tsp",
+          "staple": true,
+          "note": ""
+        }
+      ],
+      "image": "https://images.immediate.co.uk/production/volatile/sites/30/2020/12/Chicken-parmigiana-c13fae7.jpg?quality=90&webp=true&resize=700,636"
+    },
+    {
+      "id": "m_d1b1751a",
+      "name": "Chicken stir-fry and noodles",
+      "notes": "Chicken strips and crunchy vegetables in a light soy and orange sauce, with egg noodles.",
+      "link": "https://www.nhs.uk/healthier-families/recipes/turkey-stir-fry/",
+      "tags": [
+        "quick"
+      ],
+      "macros": {
+        "calories": 276.0,
+        "protein": 26.3,
+        "carbs": 30.3,
+        "fat": 5.5,
+        "source": "manual",
+        "confidence": "medium",
+        "note": "Calculated estimate | Calculated from the ingredients. The NHS link is the identical recipe made with turkey (301kcal) - chicken breast is slightly leaner, which is the whole of the difference.  Picture: Photo is the NHS turkey stir-fry - same dish made with turkey.",
+        "estimatedAt": "2026-07-21T00:07:43"
+      },
+      "links": [
+        {
+          "label": "Open recipe",
+          "url": "https://www.nhs.uk/healthier-families/recipes/turkey-stir-fry/"
+        }
+      ],
+      "serves": 4,
+      "ingredients": [
+        {
+          "item": "chicken breast",
+          "qty": 350.0,
+          "unit": "g",
+          "staple": false,
+          "note": "cut into strips"
+        },
+        {
+          "item": "egg noodles",
+          "qty": 125.0,
+          "unit": "g",
+          "staple": false,
+          "note": ""
+        },
+        {
+          "item": "vegetable oil",
+          "qty": 1.0,
+          "unit": "tbsp",
+          "staple": true,
+          "note": ""
+        },
+        {
+          "item": "red pepper",
+          "qty": 1.0,
+          "unit": "each",
+          "staple": false,
+          "note": ""
+        },
+        {
+          "item": "carrot",
+          "qty": 1.0,
+          "unit": "each",
+          "staple": false,
+          "note": ""
+        },
+        {
+          "item": "celery",
+          "qty": 2.0,
+          "unit": "each",
+          "staple": false,
+          "note": ""
+        },
+        {
+          "item": "mushrooms",
+          "qty": 80.0,
+          "unit": "g",
+          "staple": false,
+          "note": ""
+        },
+        {
+          "item": "spring onion",
+          "qty": 5.0,
+          "unit": "each",
+          "staple": false,
+          "note": ""
+        },
+        {
+          "item": "soy sauce",
+          "qty": 1.0,
+          "unit": "tbsp",
+          "staple": true,
+          "note": "reduced-salt"
+        },
+        {
+          "item": "cornflour",
+          "qty": 1.0,
+          "unit": "tbsp",
+          "staple": true,
+          "note": ""
+        },
+        {
+          "item": "orange",
+          "qty": 1.0,
+          "unit": "each",
+          "staple": false,
+          "note": "juiced"
+        }
+      ],
+      "image": "https://assets.nhs.uk/campaigns-cms-prod/images/Turkey-stir-fry.width-1200.jpg"
+    },
+    {
+      "id": "m_1a3f3852",
+      "name": "Chickpea curry and rice",
+      "notes": "Chickpeas simmered in a spiced tomato and coconut sauce with spinach, served with basmati.",
+      "link": "https://www.nhs.uk/healthier-families/recipes/kidney-bean-rajma-curry/",
+      "tags": [
+        "veggie",
+        "curry"
+      ],
+      "macros": {
+        "calories": 561.0,
+        "protein": 17.5,
+        "carbs": 85.2,
+        "fat": 16.2,
+        "source": "manual",
+        "confidence": "medium",
+        "note": "Calculated estimate | Calculated from the ingredients. The NHS link is the same style of curry with kidney beans instead of chickpeas (446kcal); the coconut milk and the larger rice portion here account for most of the difference.  Picture: Photo is the NHS kidney bean curry, not chickpea.",
+        "estimatedAt": "2026-07-21T00:07:43"
+      },
+      "links": [
+        {
+          "label": "Open recipe",
+          "url": "https://www.nhs.uk/healthier-families/recipes/kidney-bean-rajma-curry/"
+        }
+      ],
+      "serves": 4,
+      "ingredients": [
+        {
+          "item": "chickpeas",
+          "qty": 2.0,
+          "unit": "tin",
+          "staple": false,
+          "note": "drained and rinsed"
+        },
+        {
+          "item": "chopped tomatoes",
+          "qty": 1.0,
+          "unit": "tin",
+          "staple": false,
+          "note": ""
+        },
+        {
+          "item": "onion",
+          "qty": 1.0,
+          "unit": "each",
+          "staple": false,
+          "note": "large"
+        },
+        {
+          "item": "garlic",
+          "qty": 3.0,
+          "unit": "clove",
+          "staple": false,
+          "note": ""
+        },
+        {
+          "item": "ginger",
+          "qty": 20.0,
+          "unit": "g",
+          "staple": false,
+          "note": ""
+        },
+        {
+          "item": "vegetable oil",
+          "qty": 2.0,
+          "unit": "tbsp",
+          "staple": true,
+          "note": ""
+        },
+        {
+          "item": "curry paste",
+          "qty": 3.0,
+          "unit": "tbsp",
+          "staple": false,
+          "note": ""
+        },
+        {
+          "item": "coconut milk",
+          "qty": 200.0,
+          "unit": "ml",
+          "staple": false,
+          "note": "light"
+        },
+        {
+          "item": "basmati rice",
+          "qty": 300.0,
+          "unit": "g",
+          "staple": false,
+          "note": ""
+        },
+        {
+          "item": "spinach",
+          "qty": 2.0,
+          "unit": "handful",
+          "staple": false,
+          "note": ""
+        },
+        {
+          "item": "fresh coriander",
+          "qty": 1.0,
+          "unit": "handful",
+          "staple": false,
+          "note": ""
+        }
+      ],
+      "image": "https://assets.nhs.uk/campaigns-cms-prod/images/Simple_Rajma_Curry_Kidney_Curry.width-1200.jpg"
+    },
+    {
+      "id": "m_39190114",
+      "name": "Falafel wraps and salad",
+      "notes": "Baked chickpea falafel in wraps with lettuce, tomato, cucumber and yoghurt.",
+      "link": "https://www.nhs.uk/healthier-families/recipes/falafels/",
+      "tags": [
+        "veggie",
+        "quick"
+      ],
+      "macros": {
+        "calories": 378.0,
+        "protein": 14.5,
+        "carbs": 53.9,
+        "fat": 10.6,
+        "source": "manual",
+        "confidence": "high",
+        "note": "Calculated estimate | Calculated from the NHS ingredients but with wraps instead of their pitta. Good corroboration: the NHS publishes 371kcal for the pitta version and my method gives 378 for the wrap version - a 2% gap, which is what you would expect from the swap.",
+        "estimatedAt": "2026-07-21T00:07:43"
+      },
+      "links": [
+        {
+          "label": "Open recipe",
+          "url": "https://www.nhs.uk/healthier-families/recipes/falafels/"
+        }
+      ],
+      "serves": 4,
+      "ingredients": [
+        {
+          "item": "chickpeas",
+          "qty": 1.0,
+          "unit": "tin",
+          "staple": false,
+          "note": "drained"
+        },
+        {
+          "item": "onion",
+          "qty": 1.0,
+          "unit": "each",
+          "staple": false,
+          "note": "small"
+        },
+        {
+          "item": "garlic",
+          "qty": 1.0,
+          "unit": "clove",
+          "staple": false,
+          "note": ""
+        },
+        {
+          "item": "bread",
+          "qty": 1.0,
+          "unit": "slice",
+          "staple": false,
+          "note": "made into breadcrumbs"
+        },
+        {
+          "item": "ground cumin",
+          "qty": 1.0,
+          "unit": "tsp",
+          "staple": true,
+          "note": ""
+        },
+        {
+          "item": "ground coriander",
+          "qty": 1.0,
+          "unit": "tsp",
+          "staple": true,
+          "note": ""
+        },
+        {
+          "item": "fresh parsley",
+          "qty": 2.0,
+          "unit": "tbsp",
+          "staple": false,
+          "note": ""
+        },
+        {
+          "item": "olive oil",
+          "qty": 1.0,
+          "unit": "tbsp",
+          "staple": true,
+          "note": ""
+        },
+        {
+          "item": "flour tortillas",
+          "qty": 4.0,
+          "unit": "each",
+          "staple": false,
+          "note": ""
+        },
+        {
+          "item": "lettuce",
+          "qty": 60.0,
+          "unit": "g",
+          "staple": false,
+          "note": ""
+        },
+        {
+          "item": "tomato",
+          "qty": 2.0,
+          "unit": "each",
+          "staple": false,
+          "note": ""
+        },
+        {
+          "item": "cucumber",
+          "qty": 100.0,
+          "unit": "g",
+          "staple": false,
+          "note": ""
+        },
+        {
+          "item": "yoghurt",
+          "qty": 4.0,
+          "unit": "tbsp",
+          "staple": false,
+          "note": "zero-fat Greek-style"
+        }
+      ],
+      "image": "https://assets.nhs.uk/campaigns-cms-prod/images/Falafels.width-1200.jpg"
+    },
+    {
+      "id": "m_7b10e834",
+      "name": "Fish pie",
+      "notes": "White fish in parsley sauce with peas, under mashed potato and a little cheddar.",
+      "link": "https://www.nhs.uk/healthier-families/recipes/fabulous-fish-pie/",
+      "tags": [
+        "comfort",
+        "freezer"
+      ],
+      "macros": {
+        "calories": 319.0,
+        "protein": 26.0,
+        "carbs": 43.0,
+        "fat": 6.0,
+        "source": "manual",
+        "confidence": "high",
+        "note": "Published figure | NHS published figures, per 1/4 recipe.",
+        "estimatedAt": "2026-07-20T12:56:21"
+      },
+      "links": [
+        {
+          "label": "Open recipe",
+          "url": "https://www.nhs.uk/healthier-families/recipes/fabulous-fish-pie/"
+        }
+      ],
+      "serves": 4,
+      "ingredients": [
+        {
+          "item": "potatoes",
+          "qty": 700.0,
+          "unit": "g",
+          "staple": false,
+          "note": "peeled and chopped"
+        },
+        {
+          "item": "milk",
+          "qty": 425.0,
+          "unit": "ml",
+          "staple": false,
+          "note": "1% fat"
+        },
+        {
+          "item": "lower-fat spread",
+          "qty": 25.0,
+          "unit": "g",
+          "staple": true,
+          "note": ""
+        },
+        {
+          "item": "plain flour",
+          "qty": 25.0,
+          "unit": "g",
+          "staple": true,
+          "note": ""
+        },
+        {
+          "item": "fresh parsley",
+          "qty": 2.0,
+          "unit": "tbsp",
+          "staple": false,
+          "note": "chopped"
+        },
+        {
+          "item": "frozen peas",
+          "qty": 100.0,
+          "unit": "g",
+          "staple": false,
+          "note": ""
+        },
+        {
+          "item": "white fish fillets",
+          "qty": 300.0,
+          "unit": "g",
+          "staple": false,
+          "note": "coley, pollock or similar"
+        },
+        {
+          "item": "cheddar",
+          "qty": 25.0,
+          "unit": "g",
+          "staple": false,
+          "note": "reduced-fat, grated"
+        }
+      ],
+      "image": "https://assets.nhs.uk/campaigns-cms-prod/images/Fabulous_fish_pie_D4BYRTl.width-1200.png"
+    },
+    {
+      "id": "m_9de7852545",
+      "name": "Grilled chicken breast with white rice and broccolini",
+      "notes": "one chicken breast per person, 75g uncooked rice per person, half a pack of tenderstem broccoli per person. \nAdd spices and cook in butter to create a simple sauce to moisten the meal.",
+      "links": [
+        {
+          "label": "Open recipe",
+          "url": "https://gimmedelicious.com/20-minute-meal-prep-chicken-rice-and-broccoli/"
+        }
+      ],
+      "tags": [
+        "Lean and clean eating!"
+      ],
+      "macros": {
+        "calories": 520.0,
+        "protein": 47.0,
+        "carbs": 52.0,
+        "fat": 11.0,
+        "source": "manual",
+        "confidence": "low",
+        "note": "Source not recorded | This meal predates the sourcing convention and its figures have no recorded origin, so treat them with more caution than the rest. The ingredient list does support roughly this calorie count.",
+        "estimatedAt": "2026-07-20T23:35:24"
+      },
+      "ingredients": [
+        {
+          "item": "chicken breast",
+          "qty": 600.0,
+          "unit": "g",
+          "staple": false,
+          "note": "chargrilled, pan-fried, bbq, or roasted"
+        },
+        {
+          "item": "white rice",
+          "qty": 300.0,
+          "unit": "g",
+          "staple": false,
+          "note": "dry, uncooked"
+        },
+        {
+          "item": "tenderstem broccoli",
+          "qty": 320.0,
+          "unit": "g",
+          "staple": false,
+          "note": "Half a pack each"
+        },
+        {
+          "item": "butter",
+          "qty": 60.0,
+          "unit": "g",
+          "staple": true,
+          "note": "for cooking the chicken and broccoli"
+        }
+      ],
+      "serves": 4,
+      "image": "",
+      "link": "https://gimmedelicious.com/20-minute-meal-prep-chicken-rice-and-broccoli/"
+    },
+    {
+      "id": "m_7f23e746",
+      "name": "Jacket potato, tuna and mayonnaise",
+      "notes": "Baked potatoes filled with tuna mayonnaise, with a green side salad.",
+      "link": "https://www.nhs.uk/healthier-families/recipes/tuna-and-bean-jacket-potatoes/",
+      "tags": [
+        "easy",
+        "light"
+      ],
+      "macros": {
+        "calories": 302.0,
+        "protein": 22.8,
+        "carbs": 40.6,
+        "fat": 5.2,
+        "source": "manual",
+        "confidence": "medium",
+        "note": "Calculated estimate | Worked out from the ingredients, per serving. The NHS link is their tuna-and-BEAN jacket - the method is the same but this version is tuna mayonnaise, so the figures are mine, not theirs.  Picture: Photo is the NHS tuna-and-bean jacket, not tuna mayonnaise.",
+        "estimatedAt": "2026-07-21T00:07:43"
+      },
+      "links": [
+        {
+          "label": "Open recipe",
+          "url": "https://www.nhs.uk/healthier-families/recipes/tuna-and-bean-jacket-potatoes/"
+        }
+      ],
+      "serves": 4,
+      "ingredients": [
+        {
+          "item": "potatoes",
+          "qty": 880.0,
+          "unit": "g",
+          "staple": false,
+          "note": "4 baking potatoes"
+        },
+        {
+          "item": "tuna",
+          "qty": 2.0,
+          "unit": "tin",
+          "staple": false,
+          "note": "in water, drained"
+        },
+        {
+          "item": "mayonnaise",
+          "qty": 4.0,
+          "unit": "tbsp",
+          "staple": false,
+          "note": "reduced-fat"
+        },
+        {
+          "item": "lettuce",
+          "qty": 80.0,
+          "unit": "g",
+          "staple": false,
+          "note": ""
+        },
+        {
+          "item": "tomato",
+          "qty": 2.0,
+          "unit": "each",
+          "staple": false,
+          "note": ""
+        },
+        {
+          "item": "cucumber",
+          "qty": 100.0,
+          "unit": "g",
+          "staple": false,
+          "note": ""
+        }
+      ],
+      "image": "https://assets.nhs.uk/campaigns-cms-prod/images/Tuna_and_bean_jackets.width-1200.png"
+    },
+    {
+      "id": "m_cb379faa",
+      "name": "Pasta bake and salad",
+      "notes": "Macaroni baked with courgette, tomato and green beans under a cheese crust, with a side salad.",
+      "link": "https://www.nhs.uk/healthier-families/recipes/pasta-ratatouille-bake/",
+      "tags": [
+        "oven",
+        "veggie"
+      ],
+      "macros": {
+        "calories": 307.0,
+        "protein": 12.6,
+        "carbs": 51.4,
+        "fat": 6.6,
+        "source": "manual",
+        "confidence": "high",
+        "note": "Published figure | NHS published figures for the bake (293kcal), plus my calculation for the side salad (about 14kcal). Two sources added together, which is why it is not a round NHS number.",
+        "estimatedAt": "2026-07-21T00:07:43"
+      },
+      "links": [
+        {
+          "label": "Open recipe",
+          "url": "https://www.nhs.uk/healthier-families/recipes/pasta-ratatouille-bake/"
+        }
+      ],
+      "serves": 4,
+      "ingredients": [
+        {
+          "item": "pasta",
+          "qty": 200.0,
+          "unit": "g",
+          "staple": false,
+          "note": "macaroni"
+        },
+        {
+          "item": "olive oil",
+          "qty": 1.0,
+          "unit": "tbsp",
+          "staple": true,
+          "note": ""
+        },
+        {
+          "item": "onion",
+          "qty": 2.0,
+          "unit": "each",
+          "staple": false,
+          "note": ""
+        },
+        {
+          "item": "garlic",
+          "qty": 1.0,
+          "unit": "clove",
+          "staple": false,
+          "note": ""
+        },
+        {
+          "item": "dried mixed herbs",
+          "qty": 2.0,
+          "unit": "tsp",
+          "staple": true,
+          "note": ""
+        },
+        {
+          "item": "tomato",
+          "qty": 4.0,
+          "unit": "each",
+          "staple": false,
+          "note": ""
+        },
+        {
+          "item": "courgette",
+          "qty": 4.0,
+          "unit": "each",
+          "staple": false,
+          "note": ""
+        },
+        {
+          "item": "green beans",
+          "qty": 200.0,
+          "unit": "g",
+          "staple": false,
+          "note": ""
+        },
+        {
+          "item": "stock",
+          "qty": 125.0,
+          "unit": "ml",
+          "staple": true,
+          "note": "reduced-salt"
+        },
+        {
+          "item": "cheddar",
+          "qty": 25.0,
+          "unit": "g",
+          "staple": false,
+          "note": "grated"
+        },
+        {
+          "item": "lettuce",
+          "qty": 80.0,
+          "unit": "g",
+          "staple": false,
+          "note": ""
+        },
+        {
+          "item": "cucumber",
+          "qty": 100.0,
+          "unit": "g",
+          "staple": false,
+          "note": ""
+        }
+      ],
+      "image": "https://assets.nhs.uk/campaigns-cms-prod/images/Pasta_ratatouille_bake.width-1200.png"
+    },
+    {
+      "id": "m_afa53cb1",
+      "name": "Pasta chopped salad",
+      "notes": "Cold pasta with chopped tomato, cucumber, spring onion and cheese, on crisp lettuce.",
+      "link": "https://www.nhs.uk/healthier-families/recipes/pasta-salad-on-lettuce/",
+      "tags": [
+        "light",
+        "summer"
+      ],
+      "macros": {
+        "calories": 269.0,
+        "protein": 13.5,
+        "carbs": 38.9,
+        "fat": 6.2,
+        "source": "manual",
+        "confidence": "medium",
+        "note": "Calculated estimate | Deliberately NOT the NHS published figure. Their page states 16g carbohydrate per serving, but 50g of dried pasta per serving contributes 35g of carbohydrate on its own, so their number cannot be right. These are my figures from their ingredient list.",
+        "estimatedAt": "2026-07-21T00:07:43"
+      },
+      "links": [
+        {
+          "label": "Open recipe",
+          "url": "https://www.nhs.uk/healthier-families/recipes/pasta-salad-on-lettuce/"
+        }
+      ],
+      "serves": 4,
+      "ingredients": [
+        {
+          "item": "pasta",
+          "qty": 200.0,
+          "unit": "g",
+          "staple": false,
+          "note": "shapes"
+        },
+        {
+          "item": "yoghurt",
+          "qty": 3.0,
+          "unit": "tbsp",
+          "staple": false,
+          "note": "low-fat natural"
+        },
+        {
+          "item": "mayonnaise",
+          "qty": 2.0,
+          "unit": "tbsp",
+          "staple": false,
+          "note": "reduced-fat"
+        },
+        {
+          "item": "tomato",
+          "qty": 2.0,
+          "unit": "each",
+          "staple": false,
+          "note": ""
+        },
+        {
+          "item": "cucumber",
+          "qty": 75.0,
+          "unit": "g",
+          "staple": false,
+          "note": ""
+        },
+        {
+          "item": "sultanas",
+          "qty": 1.0,
+          "unit": "tbsp",
+          "staple": false,
+          "note": ""
+        },
+        {
+          "item": "lettuce",
+          "qty": 60.0,
+          "unit": "g",
+          "staple": false,
+          "note": "iceberg or cos"
+        },
+        {
+          "item": "cheddar",
+          "qty": 75.0,
+          "unit": "g",
+          "staple": false,
+          "note": "cubed"
+        },
+        {
+          "item": "spring onion",
+          "qty": 3.0,
+          "unit": "each",
+          "staple": false,
+          "note": ""
+        }
+      ],
+      "image": "https://assets.nhs.uk/campaigns-cms-prod/images/Pasta_salad_on_lettuce.width-1200.png"
+    },
+    {
+      "id": "m_84c5a327",
+      "name": "Pasta with tomato sauce and chicken",
+      "notes": "NHS tomato sauce and spaghetti, with a grilled chicken breast added per person.",
+      "link": "https://www.nhs.uk/healthier-families/recipes/perfect-pasta-and-tomato-sauce/",
+      "tags": [
+        "pasta",
+        "quick"
+      ],
+      "macros": {
+        "calories": 508.0,
+        "protein": 43.0,
+        "carbs": 72.0,
+        "fat": 6.0,
+        "source": "manual",
+        "confidence": "medium",
+        "note": "Calculated estimate | NHS published figures for the pasta and sauce (343 kcal), plus 150g raw chicken breast per person (about 165 kcal, 31g protein) added by me.",
+        "estimatedAt": "2026-07-20T12:56:21"
+      },
+      "links": [
+        {
+          "label": "Open recipe",
+          "url": "https://www.nhs.uk/healthier-families/recipes/perfect-pasta-and-tomato-sauce/"
+        }
+      ],
+      "serves": 4,
+      "ingredients": [
+        {
+          "item": "olive oil",
+          "qty": 1.0,
+          "unit": "tsp",
+          "staple": true,
+          "note": ""
+        },
+        {
+          "item": "onion",
+          "qty": 1.0,
+          "unit": "each",
+          "staple": false,
+          "note": "small, finely chopped"
+        },
+        {
+          "item": "garlic",
+          "qty": 1.0,
+          "unit": "clove",
+          "staple": false,
+          "note": "crushed"
+        },
+        {
+          "item": "chopped tomatoes",
+          "qty": 1.0,
+          "unit": "tin",
+          "staple": false,
+          "note": "400g tin"
+        },
+        {
+          "item": "tomato puree",
+          "qty": 2.0,
+          "unit": "tbsp",
+          "staple": true,
+          "note": ""
+        },
+        {
+          "item": "dried mixed herbs",
+          "qty": 2.0,
+          "unit": "tsp",
+          "staple": true,
+          "note": ""
+        },
+        {
+          "item": "spaghetti",
+          "qty": 350.0,
+          "unit": "g",
+          "staple": false,
+          "note": "dried"
+        },
+        {
+          "item": "fresh basil",
+          "qty": 0.2,
+          "unit": "bunch",
+          "staple": false,
+          "note": "chopped, to garnish"
+        },
+        {
+          "item": "chicken breast",
+          "qty": 600.0,
+          "unit": "g",
+          "staple": false,
+          "note": "one per person, grilled"
+        }
+      ],
+      "image": "https://assets.nhs.uk/campaigns-cms-prod/images/Perfect-pasta-and-tomato-sauce.width-1200.jpg"
+    },
+    {
+      "id": "m_ed36af08",
+      "name": "Pesto pasta with cheddar",
+      "notes": "Pasta stirred through green pesto with grated cheddar. About as fast as dinner gets.",
+      "link": "https://www.nhs.uk/healthier-families/recipes/pesto-tagliatelle-peppers-and-squash/",
+      "tags": [
+        "quick",
+        "veggie"
+      ],
+      "macros": {
+        "calories": 520.0,
+        "protein": 17.1,
+        "carbs": 63.6,
+        "fat": 21.5,
+        "source": "manual",
+        "confidence": "medium",
+        "note": "Calculated estimate | Calculated from the ingredients using standard (not reduced-fat) pesto. The NHS link is a vegetable-loaded version at 393kcal - the gap is mostly the pesto and the cheddar, so switching to reduced-fat pesto would bring this down a long way.  Picture: Photo is the NHS version loaded with roast squash and peppers.",
+        "estimatedAt": "2026-07-21T00:07:43"
+      },
+      "links": [
+        {
+          "label": "Open recipe",
+          "url": "https://www.nhs.uk/healthier-families/recipes/pesto-tagliatelle-peppers-and-squash/"
+        }
+      ],
+      "serves": 4,
+      "ingredients": [
+        {
+          "item": "pasta",
+          "qty": 350.0,
+          "unit": "g",
+          "staple": false,
+          "note": ""
+        },
+        {
+          "item": "pesto",
+          "qty": 120.0,
+          "unit": "g",
+          "staple": false,
+          "note": "green"
+        },
+        {
+          "item": "cheddar",
+          "qty": 80.0,
+          "unit": "g",
+          "staple": false,
+          "note": "grated"
+        }
+      ],
+      "image": "https://assets.nhs.uk/campaigns-cms-prod/images/Pesto_tagliatelle_peppers__squash.width-1200.png"
+    },
+    {
+      "id": "m_00bc005e",
+      "name": "Pork steak, carrot and swede, new potatoes",
+      "notes": "Pork loin steak with carrot and swede mash and boiled new potatoes.",
+      "link": "https://www.nhs.uk/healthier-families/recipes/pork-with-apples-and-celery/",
+      "tags": [
+        "sunday"
+      ],
+      "macros": {
+        "calories": 535.0,
+        "protein": 44.0,
+        "carbs": 50.0,
+        "fat": 17.0,
+        "source": "manual",
+        "confidence": "low",
+        "note": "Calculated estimate | My estimate - the NHS pork recipe uses different sides. Assumes a 150g pork loin steak, 200g new potatoes and 150g carrot and swede mash each.",
+        "estimatedAt": "2026-07-20T12:56:21"
+      },
+      "links": [
+        {
+          "label": "Open recipe",
+          "url": "https://www.nhs.uk/healthier-families/recipes/pork-with-apples-and-celery/"
+        }
+      ],
+      "serves": 4,
+      "ingredients": [
+        {
+          "item": "pork loin steak",
+          "qty": 4.0,
+          "unit": "each",
+          "staple": false,
+          "note": "about 150g each"
+        },
+        {
+          "item": "new potatoes",
+          "qty": 800.0,
+          "unit": "g",
+          "staple": false,
+          "note": ""
+        },
+        {
+          "item": "carrot",
+          "qty": 3.0,
+          "unit": "each",
+          "staple": false,
+          "note": "for mashing with swede"
+        },
+        {
+          "item": "swede",
+          "qty": 0.5,
+          "unit": "each",
+          "staple": false,
+          "note": ""
+        },
+        {
+          "item": "butter",
+          "qty": 20.0,
+          "unit": "g",
+          "staple": true,
+          "note": "for the mash"
+        },
+        {
+          "item": "vegetable oil",
+          "qty": 1.0,
+          "unit": "tsp",
+          "staple": true,
+          "note": ""
+        },
+        {
+          "item": "gravy granules",
+          "qty": 4.0,
+          "unit": "tsp",
+          "staple": true,
+          "note": "reduced-salt"
+        }
+      ],
+      "image": "https://assets.nhs.uk/campaigns-cms-prod/images/Pork_with_apples__celery.width-1200.png"
+    },
+    {
+      "id": "m_6be0098b",
+      "name": "Puff pastry pizzas",
+      "notes": "Easy rough chopped puff pastry pizza. \nAdd sweetcorn, olives peppers, a side salad etc",
+      "link": "https://www.bbcgoodfood.com/recipes/puff-pastry-pizzas",
+      "tags": [
+        "oven",
+        "comfort"
+      ],
+      "macros": {
+        "calories": 357.0,
+        "protein": 10.0,
+        "carbs": 38.0,
+        "fat": 18.0,
+        "source": "manual",
+        "confidence": "medium",
+        "note": "",
+        "estimatedAt": "2026-07-21T00:29:47"
+      },
+      "links": [
+        {
+          "label": "Open recipe",
+          "url": "https://www.bbcgoodfood.com/recipes/puff-pastry-pizzas"
+        }
+      ],
+      "serves": 4,
+      "ingredients": [
+        {
+          "item": "puff pastry",
+          "qty": 320.0,
+          "unit": "g",
+          "staple": false,
+          "note": "ready-rolled"
+        },
+        {
+          "item": "tomato puree",
+          "qty": 6.0,
+          "unit": "tbsp",
+          "staple": false,
+          "note": ""
+        },
+        {
+          "item": "tomato ketchup",
+          "qty": 1.0,
+          "unit": "tbsp",
+          "staple": false,
+          "note": ""
+        },
+        {
+          "item": "dried oregano",
+          "qty": 1.0,
+          "unit": "tsp",
+          "staple": false,
+          "note": ""
+        },
+        {
+          "item": "cheddar",
+          "qty": 75.0,
+          "unit": "g",
+          "staple": false,
+          "note": "grated"
+        }
+      ],
+      "image": "https://images.immediate.co.uk/production/volatile/sites/30/2020/08/puff-pastry-pizzas-06d1019.jpg?quality=90&webp=true&resize=440,400"
+    },
+    {
+      "id": "m_79d4894c",
+      "name": "Roast dinner",
+      "notes": "Whole roast chicken, roast potatoes, carrots, leeks, cabbage, peas and gravy.",
+      "link": "https://www.nhs.uk/healthier-families/recipes/roast-dinner/",
+      "tags": [
+        "sunday",
+        "weekend"
+      ],
+      "macros": {
+        "calories": 525.0,
+        "protein": 52.0,
+        "carbs": 48.0,
+        "fat": 15.5,
+        "source": "manual",
+        "confidence": "high",
+        "note": "Published figure | NHS published figures, per serving, recipe serves 6 with 150g chicken each, no skin.",
+        "estimatedAt": "2026-07-20T12:56:21"
+      },
+      "links": [
+        {
+          "label": "Open recipe",
+          "url": "https://www.nhs.uk/healthier-families/recipes/roast-dinner/"
+        }
+      ],
+      "serves": 6,
+      "ingredients": [
+        {
+          "item": "whole chicken",
+          "qty": 1.0,
+          "unit": "each",
+          "staple": false,
+          "note": "2kg"
+        },
+        {
+          "item": "potatoes",
+          "qty": 1200.0,
+          "unit": "g",
+          "staple": false,
+          "note": "peeled and quartered"
+        },
+        {
+          "item": "vegetable oil",
+          "qty": 1.0,
+          "unit": "tsp",
+          "staple": true,
+          "note": ""
+        },
+        {
+          "item": "carrot",
+          "qty": 4.0,
+          "unit": "each",
+          "staple": false,
+          "note": "sliced"
+        },
+        {
+          "item": "leek",
+          "qty": 2.0,
+          "unit": "each",
+          "staple": false,
+          "note": "sliced"
+        },
+        {
+          "item": "savoy cabbage",
+          "qty": 0.5,
+          "unit": "each",
+          "staple": false,
+          "note": "sliced"
+        },
+        {
+          "item": "frozen peas",
+          "qty": 150.0,
+          "unit": "g",
+          "staple": false,
+          "note": ""
+        },
+        {
+          "item": "gravy granules",
+          "qty": 4.0,
+          "unit": "tsp",
+          "staple": true,
+          "note": "reduced-salt"
+        }
+      ],
+      "image": "https://assets.nhs.uk/campaigns-cms-prod/images/Roast-dinner.width-1200.jpg"
+    },
+    {
+      "id": "m_020455e3",
+      "name": "Roast potatoes with beef and onion mix",
+      "notes": "Cubed potatoes roasted crisp, with a savoury beef and onion mince mix spooned over.",
+      "link": "https://www.nhs.uk/healthier-families/recipes/baked-potatoes-with-mince/",
+      "tags": [
+        "family"
+      ],
+      "macros": {
+        "calories": 429.0,
+        "protein": 31.6,
+        "carbs": 42.8,
+        "fat": 13.8,
+        "source": "manual",
+        "confidence": "medium",
+        "note": "Calculated estimate | Calculated from the ingredients. The NHS link is the same mince mix on a baked potato; roasting cubed potatoes in oil is what pushes the fat and calories above their 306kcal.  Picture: Photo is the NHS baked potato with mince, not roasted cubed potatoes.",
+        "estimatedAt": "2026-07-21T00:07:43"
+      },
+      "links": [
+        {
+          "label": "Open recipe",
+          "url": "https://www.nhs.uk/healthier-families/recipes/baked-potatoes-with-mince/"
+        }
+      ],
+      "serves": 4,
+      "ingredients": [
+        {
+          "item": "potatoes",
+          "qty": 900.0,
+          "unit": "g",
+          "staple": false,
+          "note": "cubed"
+        },
+        {
+          "item": "vegetable oil",
+          "qty": 2.0,
+          "unit": "tbsp",
+          "staple": true,
+          "note": ""
+        },
+        {
+          "item": "beef mince",
+          "qty": 500.0,
+          "unit": "g",
+          "staple": false,
+          "note": "extra-lean"
+        },
+        {
+          "item": "onion",
+          "qty": 2.0,
+          "unit": "each",
+          "staple": false,
+          "note": ""
+        },
+        {
+          "item": "garlic",
+          "qty": 1.0,
+          "unit": "clove",
+          "staple": false,
+          "note": ""
+        },
+        {
+          "item": "tomato puree",
+          "qty": 1.0,
+          "unit": "tbsp",
+          "staple": false,
+          "note": ""
+        },
+        {
+          "item": "stock",
+          "qty": 300.0,
+          "unit": "ml",
+          "staple": true,
+          "note": "reduced-salt"
+        }
+      ],
+      "image": "https://assets.nhs.uk/campaigns-cms-prod/images/Baked_potatoes_with_mince.width-1200.png"
+    },
+    {
+      "id": "m_00f464c2",
+      "name": "Salmon",
+      "notes": "Pan-fried salmon fillets with spring onion mash and broccoli.",
+      "link": "https://www.nhs.uk/healthier-families/recipes/salmon-with-spring-onion-mash/",
+      "tags": [
+        "fish",
+        "quick"
+      ],
+      "macros": {
+        "calories": 445.0,
+        "protein": 33.0,
+        "carbs": 46.0,
+        "fat": 16.0,
+        "source": "manual",
+        "confidence": "high",
+        "note": "Published figure | NHS published figures for salmon with spring onion mash, per 1/4 recipe.",
+        "estimatedAt": "2026-07-20T12:56:21"
+      },
+      "links": [
+        {
+          "label": "Open recipe",
+          "url": "https://www.nhs.uk/healthier-families/recipes/salmon-with-spring-onion-mash/"
+        }
+      ],
+      "serves": 4,
+      "ingredients": [
+        {
+          "item": "potatoes",
+          "qty": 1000.0,
+          "unit": "g",
+          "staple": false,
+          "note": "peeled and cut into chunks"
+        },
+        {
+          "item": "spring onion",
+          "qty": 6.0,
+          "unit": "each",
+          "staple": false,
+          "note": "finely sliced"
+        },
+        {
+          "item": "vegetable oil",
+          "qty": 1.0,
+          "unit": "tsp",
+          "staple": true,
+          "note": ""
+        },
+        {
+          "item": "salmon fillet",
+          "qty": 4.0,
+          "unit": "each",
+          "staple": false,
+          "note": ""
+        },
+        {
+          "item": "milk",
+          "qty": 60.0,
+          "unit": "ml",
+          "staple": false,
+          "note": "1% fat"
+        },
+        {
+          "item": "fresh parsley",
+          "qty": 2.0,
+          "unit": "tbsp",
+          "staple": false,
+          "note": "chopped"
+        },
+        {
+          "item": "broccoli",
+          "qty": 250.0,
+          "unit": "g",
+          "staple": false,
+          "note": "broken into florets"
+        }
+      ],
+      "image": "https://assets.nhs.uk/campaigns-cms-prod/images/Salmon_with_spring_onion_mash.width-1200.png"
+    },
+    {
+      "id": "m_9853e906",
+      "name": "Spaghetti bolognese",
+      "notes": "Vegged-up beef ragu with mushrooms, carrot, courgette and pepper, over spaghetti.",
+      "link": "https://www.nhs.uk/healthier-families/recipes/easy-spaghetti-bolognese/",
+      "tags": [
+        "family",
+        "pasta"
+      ],
+      "macros": {
+        "calories": 431.0,
+        "protein": 30.0,
+        "carbs": 70.0,
+        "fat": 6.5,
+        "source": "manual",
+        "confidence": "high",
+        "note": "Published figure | NHS published figures, per 1/4 recipe, including the spaghetti.",
+        "estimatedAt": "2026-07-21T00:07:43"
+      },
+      "links": [
+        {
+          "label": "Open recipe",
+          "url": "https://www.nhs.uk/healthier-families/recipes/easy-spaghetti-bolognese/"
+        }
+      ],
+      "serves": 4,
+      "ingredients": [
+        {
+          "item": "beef mince",
+          "qty": 300.0,
+          "unit": "g",
+          "staple": false,
+          "note": "extra-lean"
+        },
+        {
+          "item": "chopped tomatoes",
+          "qty": 1.0,
+          "unit": "tin",
+          "staple": false,
+          "note": ""
+        },
+        {
+          "item": "spaghetti",
+          "qty": 300.0,
+          "unit": "g",
+          "staple": false,
+          "note": ""
+        },
+        {
+          "item": "onion",
+          "qty": 1.0,
+          "unit": "each",
+          "staple": false,
+          "note": "large"
+        },
+        {
+          "item": "garlic",
+          "qty": 2.0,
+          "unit": "clove",
+          "staple": false,
+          "note": ""
+        },
+        {
+          "item": "tomato puree",
+          "qty": 2.0,
+          "unit": "tbsp",
+          "staple": false,
+          "note": ""
+        },
+        {
+          "item": "dried mixed herbs",
+          "qty": 2.0,
+          "unit": "tsp",
+          "staple": true,
+          "note": ""
+        },
+        {
+          "item": "red pepper",
+          "qty": 1.0,
+          "unit": "each",
+          "staple": false,
+          "note": ""
+        },
+        {
+          "item": "mushrooms",
+          "qty": 150.0,
+          "unit": "g",
+          "staple": false,
+          "note": ""
+        },
+        {
+          "item": "carrot",
+          "qty": 1.0,
+          "unit": "each",
+          "staple": false,
+          "note": ""
+        },
+        {
+          "item": "courgette",
+          "qty": 1.0,
+          "unit": "each",
+          "staple": false,
+          "note": ""
+        },
+        {
+          "item": "stock",
+          "qty": 150.0,
+          "unit": "ml",
+          "staple": true,
+          "note": "reduced-salt"
+        }
+      ],
+      "image": "https://assets.nhs.uk/campaigns-cms-prod/images/Spaghetti_bolognese.width-1200.png"
+    },
+    {
+      "id": "m_ae06c91d",
+      "name": "Spaghetti bolognese (turkey)",
+      "notes": "Vegged-up bolognese with mushroom, carrot, courgette and pepper. Use turkey mince.",
+      "link": "https://www.nhs.uk/healthier-families/recipes/easy-spaghetti-bolognese/",
+      "tags": [
+        "pasta",
+        "batch"
+      ],
+      "macros": {
+        "calories": 431.0,
+        "protein": 30.0,
+        "carbs": 70.0,
+        "fat": 6.5,
+        "source": "manual",
+        "confidence": "medium",
+        "note": "Published figure | NHS published figures, per 1/4 recipe. Their version uses extra-lean beef; turkey mince is very close, marginally leaner.",
+        "estimatedAt": "2026-07-20T12:56:21"
+      },
+      "links": [
+        {
+          "label": "Open recipe",
+          "url": "https://www.nhs.uk/healthier-families/recipes/easy-spaghetti-bolognese/"
+        }
+      ],
+      "serves": 4,
+      "ingredients": [
+        {
+          "item": "turkey mince",
+          "qty": 300.0,
+          "unit": "g",
+          "staple": false,
+          "note": "or extra-lean beef mince"
+        },
+        {
+          "item": "chopped tomatoes",
+          "qty": 1.0,
+          "unit": "tin",
+          "staple": false,
+          "note": "400g tin"
+        },
+        {
+          "item": "spaghetti",
+          "qty": 300.0,
+          "unit": "g",
+          "staple": false,
+          "note": "dried"
+        },
+        {
+          "item": "onion",
+          "qty": 1.0,
+          "unit": "each",
+          "staple": false,
+          "note": "large, finely chopped"
+        },
+        {
+          "item": "garlic",
+          "qty": 2.0,
+          "unit": "clove",
+          "staple": false,
+          "note": "crushed"
+        },
+        {
+          "item": "tomato puree",
+          "qty": 2.0,
+          "unit": "tbsp",
+          "staple": true,
+          "note": ""
+        },
+        {
+          "item": "dried mixed herbs",
+          "qty": 2.0,
+          "unit": "tsp",
+          "staple": true,
+          "note": ""
+        },
+        {
+          "item": "red pepper",
+          "qty": 1.0,
+          "unit": "each",
+          "staple": false,
+          "note": "deseeded and chopped"
+        },
+        {
+          "item": "mushrooms",
+          "qty": 200.0,
+          "unit": "g",
+          "staple": false,
+          "note": "sliced"
+        },
+        {
+          "item": "carrot",
+          "qty": 1.0,
+          "unit": "each",
+          "staple": false,
+          "note": "finely chopped"
+        },
+        {
+          "item": "courgette",
+          "qty": 1.0,
+          "unit": "each",
+          "staple": false,
+          "note": "chopped"
+        },
+        {
+          "item": "stock",
+          "qty": 150.0,
+          "unit": "ml",
+          "staple": true,
+          "note": "reduced-salt vegetable or chicken"
+        }
+      ],
+      "image": "https://assets.nhs.uk/campaigns-cms-prod/images/Spaghetti_bolognese.width-1200.png"
+    },
+    {
+      "id": "m_96ed829b",
+      "name": "Speedy pizza",
+      "notes": "Wholemeal pitta bases with tomato puree, veg and a little cheese. Grilled in 5 minutes.",
+      "link": "https://www.nhs.uk/healthier-families/recipes/pizza-pitta-faces/",
+      "tags": [
+        "quick",
+        "kids"
+      ],
+      "macros": {
+        "calories": 260.0,
+        "protein": 11.2,
+        "carbs": 42.8,
+        "fat": 3.5,
+        "source": "manual",
+        "confidence": "high",
+        "note": "Published figure | NHS published figures, per 1/4 recipe (one pitta each).",
+        "estimatedAt": "2026-07-20T12:56:21"
+      },
+      "links": [
+        {
+          "label": "Open recipe",
+          "url": "https://www.nhs.uk/healthier-families/recipes/pizza-pitta-faces/"
+        }
+      ],
+      "serves": 4,
+      "ingredients": [
+        {
+          "item": "wholemeal pitta bread",
+          "qty": 4.0,
+          "unit": "each",
+          "staple": false,
+          "note": ""
+        },
+        {
+          "item": "tomato puree",
+          "qty": 4.0,
+          "unit": "tsp",
+          "staple": true,
+          "note": ""
+        },
+        {
+          "item": "dried mixed herbs",
+          "qty": 1.0,
+          "unit": "tsp",
+          "staple": true,
+          "note": ""
+        },
+        {
+          "item": "cucumber",
+          "qty": 40.0,
+          "unit": "g",
+          "staple": false,
+          "note": "thin slices"
+        },
+        {
+          "item": "cherry tomatoes",
+          "qty": 6.0,
+          "unit": "each",
+          "staple": false,
+          "note": "halved"
+        },
+        {
+          "item": "pepper",
+          "qty": 1.0,
+          "unit": "each",
+          "staple": false,
+          "note": "yellow or red, sliced"
+        },
+        {
+          "item": "cheddar",
+          "qty": 40.0,
+          "unit": "g",
+          "staple": false,
+          "note": "reduced-fat, grated"
+        }
+      ],
+      "image": "https://assets.nhs.uk/campaigns-cms-prod/images/Pizza_pitta_faces.width-1200.png"
+    },
+    {
+      "id": "m_172274d5",
+      "name": "Spinach and cheese stuffed chicken",
+      "notes": "Chicken breast stuffed with cream cheese, spinach and garlic, wrapped in prosciutto.",
+      "link": "https://www.secondnature.io/guides/recipes/chicken/spinach-stuffed-chicken",
+      "tags": [
+        "weekend"
+      ],
+      "macros": {
+        "calories": 465.0,
+        "protein": 52.0,
+        "carbs": 7.0,
+        "fat": 25.0,
+        "source": "manual",
+        "confidence": "low",
+        "note": "Calculated estimate | My calculation from the Second Nature ingredient list - that site publishes no nutrition figures. Recipe serves 2. Green vegetables included, no potatoes or rice.",
+        "estimatedAt": "2026-07-20T12:56:21"
+      },
+      "links": [
+        {
+          "label": "Open recipe",
+          "url": "https://www.secondnature.io/guides/recipes/chicken/spinach-stuffed-chicken"
+        }
+      ],
+      "serves": 2,
+      "ingredients": [
+        {
+          "item": "butter",
+          "qty": 14.0,
+          "unit": "g",
+          "staple": true,
+          "note": ""
+        },
+        {
+          "item": "garlic",
+          "qty": 2.0,
+          "unit": "clove",
+          "staple": false,
+          "note": "finely diced"
+        },
+        {
+          "item": "cream cheese",
+          "qty": 90.0,
+          "unit": "g",
+          "staple": false,
+          "note": "plain"
+        },
+        {
+          "item": "spinach",
+          "qty": 1.0,
+          "unit": "handful",
+          "staple": false,
+          "note": "finely sliced"
+        },
+        {
+          "item": "lime",
+          "qty": 0.5,
+          "unit": "each",
+          "staple": false,
+          "note": "juiced"
+        },
+        {
+          "item": "red chilli",
+          "qty": 1.0,
+          "unit": "each",
+          "staple": false,
+          "note": "small, finely diced, optional"
+        },
+        {
+          "item": "chicken breast",
+          "qty": 350.0,
+          "unit": "g",
+          "staple": false,
+          "note": ""
+        },
+        {
+          "item": "prosciutto",
+          "qty": 6.0,
+          "unit": "slice",
+          "staple": false,
+          "note": "or cured ham"
+        },
+        {
+          "item": "green vegetables",
+          "qty": 200.0,
+          "unit": "g",
+          "staple": false,
+          "note": "of your choice"
+        }
+      ],
+      "image": "https://guides.secondnature.io/wp-content/uploads/2019/02/Spinach-stuffed-chicken--710x375.gif"
+    },
+    {
+      "id": "m_060835659f",
+      "name": "Steak pie and chips",
+      "notes": "One ASDA Rich Steak & Gravy pie plus 150g of frozen straight-cut chips per person. Pie: oven 200C fan / gas 6, 30-35 mins. Chips: oven 220C / fan 200C / gas 7, 20-22 mins. Both from frozen.",
+      "link": "https://www.asda.com/groceries/product/frozen-pies/asda-rich-steak-gravy-pies-568g-4-x-142g-/9373495",
+      "links": [
+        {
+          "label": "The pie",
+          "url": "https://www.asda.com/groceries/product/frozen-pies/asda-rich-steak-gravy-pies-568g-4-x-142g-/9373495"
+        },
+        {
+          "label": "The chips",
+          "url": "https://www.asda.com/groceries/product/frozen-chips-fries/asda-straight-cut-chips-1-5kg/6312380"
+        }
+      ],
+      "tags": [
+        "freezer",
+        "quick",
+        "shop-bought"
+      ],
+      "macros": {
+        "calories": 478.0,
+        "protein": 14.7,
+        "carbs": 58.9,
+        "fat": 18.9,
+        "source": "manual",
+        "confidence": "high",
+        "note": "Published figures | Added up from both ASDA pack labels: one pie (313 kcal) plus 150g frozen chips, which the pack says cooks down to about 100g (165 kcal). Both oven-baked.",
+        "estimatedAt": "2026-07-20T13:50:12"
+      },
+      "serves": 1,
+      "ingredients": [
+        {
+          "item": "steak pie",
+          "qty": 1.0,
+          "unit": "each",
+          "staple": false,
+          "note": "ASDA Rich Steak & Gravy"
+        },
+        {
+          "item": "frozen chips",
+          "qty": 150.0,
+          "unit": "g",
+          "staple": false,
+          "note": "straight cut, weighed frozen"
+        }
+      ],
+      "image": "https://asdagroceries.scene7.com/is/image/asdagroceries/5063717043918"
+    },
+    {
+      "id": "m_aa937529",
+      "name": "Stuffed peppers",
+      "notes": "Peppers stuffed with turkey mince, rice, tomato and peas.",
+      "link": "https://www.nhs.uk/healthier-families/recipes/spicy-turkey-stuffed-peppers/",
+      "tags": [
+        "turkey",
+        "batch"
+      ],
+      "macros": {
+        "calories": 302.0,
+        "protein": 24.0,
+        "carbs": 48.0,
+        "fat": 3.0,
+        "source": "manual",
+        "confidence": "high",
+        "note": "Published figure | NHS published figures, per 1/4 recipe.",
+        "estimatedAt": "2026-07-20T12:56:21"
+      },
+      "links": [
+        {
+          "label": "Open recipe",
+          "url": "https://www.nhs.uk/healthier-families/recipes/spicy-turkey-stuffed-peppers/"
+        }
+      ],
+      "serves": 4,
+      "ingredients": [
+        {
+          "item": "pepper",
+          "qty": 4.0,
+          "unit": "each",
+          "staple": false,
+          "note": "any colour, halved and deseeded"
+        },
+        {
+          "item": "long grain rice",
+          "qty": 150.0,
+          "unit": "g",
+          "staple": false,
+          "note": "easy-cook white"
+        },
+        {
+          "item": "vegetable oil",
+          "qty": 1.0,
+          "unit": "tsp",
+          "staple": true,
+          "note": ""
+        },
+        {
+          "item": "onion",
+          "qty": 1.0,
+          "unit": "each",
+          "staple": false,
+          "note": "small, finely chopped"
+        },
+        {
+          "item": "garlic",
+          "qty": 1.0,
+          "unit": "clove",
+          "staple": false,
+          "note": "crushed"
+        },
+        {
+          "item": "turkey breast",
+          "qty": 300.0,
+          "unit": "g",
+          "staple": false,
+          "note": "skinless, cut into chunks"
+        },
+        {
+          "item": "tomato",
+          "qty": 2.0,
+          "unit": "each",
+          "staple": false,
+          "note": "chopped"
+        },
+        {
+          "item": "frozen peas",
+          "qty": 75.0,
+          "unit": "g",
+          "staple": false,
+          "note": "thawed"
+        },
+        {
+          "item": "paprika",
+          "qty": 1.0,
+          "unit": "tsp",
+          "staple": true,
+          "note": "mild"
+        },
+        {
+          "item": "dried mixed herbs",
+          "qty": 1.0,
+          "unit": "tsp",
+          "staple": true,
+          "note": ""
+        }
+      ],
+      "image": "https://assets.nhs.uk/campaigns-cms-prod/images/Peppers_with_spicy_turkey_stuffing.width-1200.png"
+    },
+    {
+      "id": "m_a7b9c53e",
+      "name": "Tagliatelle carbonara",
+      "notes": "Bacon, spring onion and a soft-cheese and egg sauce stirred through tagliatelle. No cream.",
+      "link": "https://www.nhs.uk/healthier-families/recipes/pasta-carbonara/",
+      "tags": [
+        "quick",
+        "pasta"
+      ],
+      "macros": {
+        "calories": 409.0,
+        "protein": 26.5,
+        "carbs": 61.0,
+        "fat": 9.0,
+        "source": "manual",
+        "confidence": "high",
+        "note": "Published figure | NHS published figures, per 1/4 recipe. Their page uses penne and says any pasta shape is fine, so tagliatelle does not change the numbers.",
+        "estimatedAt": "2026-07-21T00:07:43"
+      },
+      "links": [
+        {
+          "label": "Open recipe",
+          "url": "https://www.nhs.uk/healthier-families/recipes/pasta-carbonara/"
+        }
+      ],
+      "serves": 4,
+      "ingredients": [
+        {
+          "item": "tagliatelle",
+          "qty": 300.0,
+          "unit": "g",
+          "staple": false,
+          "note": ""
+        },
+        {
+          "item": "back bacon",
+          "qty": 4.0,
+          "unit": "slice",
+          "staple": false,
+          "note": "lean, cut into pieces"
+        },
+        {
+          "item": "spring onion",
+          "qty": 5.0,
+          "unit": "each",
+          "staple": false,
+          "note": ""
+        },
+        {
+          "item": "cream cheese",
+          "qty": 150.0,
+          "unit": "g",
+          "staple": false,
+          "note": "lower-fat, with garlic and herbs"
+        },
+        {
+          "item": "eggs",
+          "qty": 1.0,
+          "unit": "each",
+          "staple": false,
+          "note": ""
+        },
+        {
+          "item": "milk",
+          "qty": 150.0,
+          "unit": "ml",
+          "staple": false,
+          "note": "semi-skimmed"
+        },
+        {
+          "item": "parmesan",
+          "qty": 40.0,
+          "unit": "g",
+          "staple": false,
+          "note": "or reduced-fat hard cheese"
+        },
+        {
+          "item": "vegetable oil",
+          "qty": 1.0,
+          "unit": "tsp",
+          "staple": true,
+          "note": ""
+        },
+        {
+          "item": "fresh parsley",
+          "qty": 2.0,
+          "unit": "tbsp",
+          "staple": false,
+          "note": ""
+        }
+      ],
+      "image": "https://assets.nhs.uk/campaigns-cms-prod/images/Pasta_carbonara.width-1200.png"
+    },
+    {
+      "id": "m_f7050bbd",
+      "name": "Teriyaki chicken and jasmine rice",
+      "notes": "Teriyaki chicken with stir-fried vegetables and jasmine rice.",
+      "link": "https://www.nhs.uk/healthier-families/recipes/sweet-and-sour-chicken/",
+      "tags": [
+        "quick"
+      ],
+      "macros": {
+        "calories": 570.0,
+        "protein": 40.0,
+        "carbs": 78.0,
+        "fat": 9.0,
+        "source": "manual",
+        "confidence": "low",
+        "note": "Calculated estimate | My estimate - no NHS teriyaki recipe exists. Assumes 150g chicken, 75g dry rice and 2 tbsp teriyaki sauce each. The link is the nearest NHS chicken stir-fry.",
+        "estimatedAt": "2026-07-20T12:56:21"
+      },
+      "links": [
+        {
+          "label": "Open recipe",
+          "url": "https://www.nhs.uk/healthier-families/recipes/sweet-and-sour-chicken/"
+        }
+      ],
+      "serves": 4,
+      "ingredients": [
+        {
+          "item": "chicken breast",
+          "qty": 600.0,
+          "unit": "g",
+          "staple": false,
+          "note": "cut into strips"
+        },
+        {
+          "item": "jasmine rice",
+          "qty": 300.0,
+          "unit": "g",
+          "staple": false,
+          "note": ""
+        },
+        {
+          "item": "teriyaki sauce",
+          "qty": 8.0,
+          "unit": "tbsp",
+          "staple": true,
+          "note": ""
+        },
+        {
+          "item": "vegetable oil",
+          "qty": 1.0,
+          "unit": "tbsp",
+          "staple": true,
+          "note": ""
+        },
+        {
+          "item": "broccoli",
+          "qty": 200.0,
+          "unit": "g",
+          "staple": false,
+          "note": "florets"
+        },
+        {
+          "item": "pepper",
+          "qty": 1.0,
+          "unit": "each",
+          "staple": false,
+          "note": "sliced"
+        }
+      ],
+      "image": "https://assets.nhs.uk/campaigns-cms-prod/images/Sweet_and_sour_chicken.width-1200.png"
+    },
+    {
+      "id": "m_9dbfe62d",
+      "name": "Tomato risotto",
+      "notes": "Creamy risotto made with tinned tomatoes and passata, finished with parmesan.",
+      "link": "https://www.nhs.uk/healthier-families/recipes/mushroom-risotto/",
+      "tags": [
+        "veggie",
+        "comfort"
+      ],
+      "macros": {
+        "calories": 356.0,
+        "protein": 10.2,
+        "carbs": 67.0,
+        "fat": 4.6,
+        "source": "manual",
+        "confidence": "medium",
+        "note": "Calculated estimate | Calculated from the ingredients. The NHS link is the same method and rice quantity with mushrooms instead of tomato - their published 317kcal is the sanity check, and tomato and parmesan account for the difference.  Picture: Photo is the NHS mushroom risotto - same method, different vegetable.",
+        "estimatedAt": "2026-07-21T00:07:43"
+      },
+      "links": [
+        {
+          "label": "Open recipe",
+          "url": "https://www.nhs.uk/healthier-families/recipes/mushroom-risotto/"
+        }
+      ],
+      "serves": 4,
+      "ingredients": [
+        {
+          "item": "risotto rice",
+          "qty": 300.0,
+          "unit": "g",
+          "staple": false,
+          "note": "arborio or carnaroli"
+        },
+        {
+          "item": "chopped tomatoes",
+          "qty": 1.0,
+          "unit": "tin",
+          "staple": false,
+          "note": ""
+        },
+        {
+          "item": "passata",
+          "qty": 200.0,
+          "unit": "g",
+          "staple": false,
+          "note": ""
+        },
+        {
+          "item": "onion",
+          "qty": 1.0,
+          "unit": "each",
+          "staple": false,
+          "note": ""
+        },
+        {
+          "item": "garlic",
+          "qty": 1.0,
+          "unit": "clove",
+          "staple": false,
+          "note": ""
+        },
+        {
+          "item": "vegetable oil",
+          "qty": 1.0,
+          "unit": "tsp",
+          "staple": true,
+          "note": ""
+        },
+        {
+          "item": "stock",
+          "qty": 900.0,
+          "unit": "ml",
+          "staple": true,
+          "note": "reduced-salt"
+        },
+        {
+          "item": "parmesan",
+          "qty": 30.0,
+          "unit": "g",
+          "staple": false,
+          "note": ""
+        },
+        {
+          "item": "fresh basil",
+          "qty": 1.0,
+          "unit": "bunch",
+          "staple": false,
+          "note": ""
+        }
+      ],
+      "image": "https://assets.nhs.uk/campaigns-cms-prod/images/Mushroom_risotto.width-1200.png"
+    },
+    {
+      "id": "m_416b8d6e",
+      "name": "Turkey chilli",
+      "notes": "Chilli with kidney beans, peppers and mushrooms, served with rice. Use turkey mince.",
+      "link": "https://www.nhs.uk/healthier-families/recipes/chilli-con-carne/",
+      "tags": [
+        "batch",
+        "freezer",
+        "spicy"
+      ],
+      "macros": {
+        "calories": 488.0,
+        "protein": 30.0,
+        "carbs": 82.0,
+        "fat": 5.0,
+        "source": "manual",
+        "confidence": "medium",
+        "note": "Published figure | NHS published figures, per serving, including rice. Their version uses extra-lean beef and the page notes turkey works and is lower in fat, so this is a slight over-estimate of the fat.",
+        "estimatedAt": "2026-07-20T12:56:21"
+      },
+      "links": [
+        {
+          "label": "Open recipe",
+          "url": "https://www.nhs.uk/healthier-families/recipes/chilli-con-carne/"
+        }
+      ],
+      "serves": 4,
+      "ingredients": [
+        {
+          "item": "turkey mince",
+          "qty": 300.0,
+          "unit": "g",
+          "staple": false,
+          "note": "or extra-lean beef mince"
+        },
+        {
+          "item": "onion",
+          "qty": 1.0,
+          "unit": "each",
+          "staple": false,
+          "note": "large, finely chopped"
+        },
+        {
+          "item": "garlic",
+          "qty": 2.0,
+          "unit": "clove",
+          "staple": false,
+          "note": "finely chopped"
+        },
+        {
+          "item": "chopped tomatoes",
+          "qty": 1.0,
+          "unit": "tin",
+          "staple": false,
+          "note": "400g tin"
+        },
+        {
+          "item": "tomato puree",
+          "qty": 2.0,
+          "unit": "tbsp",
+          "staple": true,
+          "note": ""
+        },
+        {
+          "item": "chilli powder",
+          "qty": 2.0,
+          "unit": "tsp",
+          "staple": true,
+          "note": ""
+        },
+        {
+          "item": "ground cumin",
+          "qty": 1.0,
+          "unit": "tsp",
+          "staple": true,
+          "note": ""
+        },
+        {
+          "item": "red pepper",
+          "qty": 1.0,
+          "unit": "each",
+          "staple": false,
+          "note": "deseeded and chopped"
+        },
+        {
+          "item": "mushrooms",
+          "qty": 150.0,
+          "unit": "g",
+          "staple": false,
+          "note": "sliced"
+        },
+        {
+          "item": "kidney beans",
+          "qty": 1.0,
+          "unit": "tin",
+          "staple": false,
+          "note": "410g tin, drained"
+        },
+        {
+          "item": "stock",
+          "qty": 150.0,
+          "unit": "ml",
+          "staple": true,
+          "note": "reduced-salt vegetable or chicken"
+        },
+        {
+          "item": "long grain rice",
+          "qty": 300.0,
+          "unit": "g",
+          "staple": false,
+          "note": "easy-cook white or brown"
+        }
+      ],
+      "image": "https://assets.nhs.uk/campaigns-cms-prod/images/Chilli-con-carne.width-1200.jpg"
+    },
+    {
+      "id": "m_a09dd990",
+      "name": "Turkey meatball bake",
+      "notes": "Meatballs in tomato sauce with mushrooms and peppers, served with pasta. Use turkey mince.",
+      "link": "https://www.nhs.uk/healthier-families/recipes/meatballs-and-sauce/",
+      "tags": [
+        "batch",
+        "pasta"
+      ],
+      "macros": {
+        "calories": 320.0,
+        "protein": 19.0,
+        "carbs": 46.0,
+        "fat": 8.0,
+        "source": "manual",
+        "confidence": "medium",
+        "note": "Published figure | NHS published figures, per 1/4 recipe. Recipe takes any mince and suggests turkey.",
+        "estimatedAt": "2026-07-20T12:56:21"
+      },
+      "links": [
+        {
+          "label": "Open recipe",
+          "url": "https://www.nhs.uk/healthier-families/recipes/meatballs-and-sauce/"
+        }
+      ],
+      "serves": 4,
+      "ingredients": [
+        {
+          "item": "onion",
+          "qty": 1.0,
+          "unit": "each",
+          "staple": false,
+          "note": "medium, finely chopped"
+        },
+        {
+          "item": "garlic",
+          "qty": 2.0,
+          "unit": "clove",
+          "staple": false,
+          "note": "finely chopped"
+        },
+        {
+          "item": "turkey mince",
+          "qty": 200.0,
+          "unit": "g",
+          "staple": false,
+          "note": ""
+        },
+        {
+          "item": "olive oil",
+          "qty": 1.0,
+          "unit": "tbsp",
+          "staple": true,
+          "note": ""
+        },
+        {
+          "item": "chopped tomatoes",
+          "qty": 1.0,
+          "unit": "tin",
+          "staple": false,
+          "note": "400g tin"
+        },
+        {
+          "item": "pasta",
+          "qty": 200.0,
+          "unit": "g",
+          "staple": false,
+          "note": "dried, any shape"
+        },
+        {
+          "item": "mushrooms",
+          "qty": 200.0,
+          "unit": "g",
+          "staple": false,
+          "note": "sliced"
+        },
+        {
+          "item": "pepper",
+          "qty": 1.0,
+          "unit": "each",
+          "staple": false,
+          "note": "any colour, chopped"
+        },
+        {
+          "item": "dried mixed herbs",
+          "qty": 2.0,
+          "unit": "tsp",
+          "staple": true,
+          "note": ""
+        },
+        {
+          "item": "tomato puree",
+          "qty": 2.0,
+          "unit": "tbsp",
+          "staple": true,
+          "note": ""
+        }
+      ],
+      "image": "https://assets.nhs.uk/campaigns-cms-prod/images/Meatballs_and_sauce.width-1200.png"
+    }
+  ],
+  "weeks": {},
+  "extras": [],
+  "extraNames": {}
+}

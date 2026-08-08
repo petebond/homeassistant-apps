@@ -431,6 +431,56 @@
         or <a href="/preview" target="_blank" rel="noopener">at the Hub's size</a>.
       </p>
     </div>
+
+    <!-- Backup and restore. Last card on the tab on purpose: it is the one
+         thing here that can throw something away, so it sits below the
+         settings rather than above them. Unlike the two cards above it this
+         is not Home-Assistant-only - a planner running on a PC has data worth
+         keeping too - so it is never hidden. -->
+    <div class="card backup-card" id="backup-card">
+      <h2>Backup &amp; restore</h2>
+      <p class="muted small">
+        Everything the household has put in - meals, the plan, photos and
+        settings - in one file you can keep anywhere. Restoring puts it all
+        back, which is what makes it safe to reinstall the app.
+      </p>
+
+      <p class="muted small" id="backup-summary"></p>
+
+      <div class="form-actions">
+        <button class="btn" id="backup-download" type="button">Download a backup</button>
+      </div>
+
+      <p class="theme-label">Restore</p>
+      <p class="muted small">
+        Replaces everything currently in the planner with the contents of a
+        backup file. A copy of what is here now is saved first, so this can be
+        undone.
+      </p>
+      <!-- Hidden input plus a real button: the native file control is
+           unstyleable and reads as "No file chosen" until it doesn't, which is
+           the wrong emphasis for the one destructive control in the app. -->
+      <input type="file" id="backup-file" accept=".zip,application/zip" hidden>
+      <div class="form-actions">
+        <button class="btn ghost" id="backup-restore" type="button">Choose a backup file&hellip;</button>
+      </div>
+
+      <div class="backup-progress" id="backup-progress" hidden>
+        <div class="backup-bar"><span id="backup-bar-fill"></span></div>
+        <p class="muted small" id="backup-progress-note"></p>
+      </div>
+
+      <p class="muted small" id="backup-note" hidden></p>
+      <p class="form-error" id="backup-error" hidden></p>
+
+      <!-- The undo snapshots a previous restore left behind. Hidden until
+           there is one, because until then the heading is a question nobody
+           asked. -->
+      <div id="backup-undo-wrap" hidden>
+        <p class="theme-label">Before the last restore</p>
+        <div id="backup-undo-list" class="backup-undo-list"></div>
+      </div>
+    </div>
   </section>
 
 </main>

@@ -1,5 +1,47 @@
 # Changelog
 
+## 1.12.0
+
+**New: Backup & restore, at the bottom of the Household tab.** One button
+downloads everything the household has put in — the meals, the plan, the photos
+taken in the kitchen, the standing shopping list, the kitchen-display settings —
+as a single zip. A second puts one back. The point is that reinstalling the app
+stops being something to be nervous about: download, uninstall, install again
+from the repository, restore.
+
+- **The https certificate travels with it.** `certs/` is in the zip on purpose.
+  The private CA is created once and never regenerated, because regenerating it
+  silently breaks the trust already installed on every phone in the house — a
+  reinstall without the old `certs/` would do exactly that. Carrying it through
+  means the phones never notice. It also means the zip holds a private key, so
+  keep it somewhere you'd keep a password. After a restore that included it,
+  restart the app: the certificate was loaded into memory at startup and stays
+  there until it starts again. Everything else is live immediately.
+- **Restore replaces, and says what it is about to replace.** Choosing a file
+  asks the app what is in it before anything is written, so the confirmation
+  reads "142 meals, 96 photos, made on 3 August" rather than "are you sure".
+- **It can be undone.** A copy of the current data is zipped up first and kept
+  alongside it; the last two are offered on the same screen. That copy is
+  itself a valid backup, so undoing a mistake goes back through the same door.
+- **Anything the zip doesn't carry is left alone rather than deleted**, so an
+  older backup made before a settings file existed doesn't wipe that setting.
+- **A file that isn't right is refused before anything is touched**: not a zip,
+  no manifest, made by another app, made by a newer version, meal data that
+  won't parse, or any path trying to write outside the data folder.
+- The daily `data.json` snapshots are deliberately not included — they're a
+  local undo for a bad edit, not something worth carrying to a new install.
+- New: `backup.py`, `GET /api/backup`, `GET /api/backup/info`,
+  `POST /api/restore`, `POST /api/restore/check`, and `tests/test_backup.py`.
+
+**Fixed: a clean clone of this repository could not be built.** `seed/data.json`
+was matched by the `data.json` line in `.gitignore` and so never reached GitHub,
+while the Dockerfile copies `seed/` into the image unconditionally — meaning the
+build worked on the machine it was written on and failed everywhere else. The
+seed is now tracked explicitly.
+
+**Also:** `config.yaml` is copied into the image, so the version stamped into a
+backup is the real one rather than `unknown`.
+
 ## 1.11.1
 
 **Changed: the Configuration panel says less.** Every option had grown into a

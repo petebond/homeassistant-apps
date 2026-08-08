@@ -75,6 +75,38 @@ by your normal backup schedule.
 On the very first start only, if `/data` is empty, the bundled `seed/` folder
 is copied in. Updates never overwrite live data.
 
+### Taking a copy out, and putting one back
+
+The bottom of the **Household** tab has **Backup & restore**. One button
+downloads all of the above as a single zip; the other puts one back. This is
+what makes reinstalling the app safe: download a backup, uninstall, install
+again from the repository, restore.
+
+The zip holds `data.json`, `images/`, `certs/`, and the kitchen-display and
+Cast settings. The daily `data.json.backup-*` snapshots are left out — they are
+a local undo for a bad edit, not something worth carrying to a new install.
+
+Two things worth knowing:
+
+- **`certs/` is in there, which means the zip contains a private key.** Keep it
+  somewhere you would keep a password. It is included on purpose: the CA is
+  created once and never regenerated, because regenerating it breaks the trust
+  already installed on every phone in the house. A reinstall without it would
+  do exactly that.
+- **Restart the app after restoring a backup that included `certs/`.** The
+  certificate is read into memory when the server starts and stays there.
+  Everything else — meals, plan, photos, settings — is live immediately.
+
+Restoring replaces what is there. Before it does, it zips up the current
+contents and keeps it; the last two are offered on the same screen for
+download, and each is a valid backup in its own right, so an accidental restore
+goes back the way it came. A file that isn't a planner backup is refused before
+anything is written.
+
+This sits alongside Home Assistant's own backups rather than replacing them.
+`/data` is in those too — but restoring one is an all-or-nothing operation on
+the whole machine, which is a large hammer for "put my meals back".
+
 ## Reading the week away from home
 
 The app can be installed to a phone's home screen, and will then show the last
@@ -249,7 +281,7 @@ From then on:
 | --- | --- |
 | `static/` — HTML, CSS, JS | Just refresh the browser. Files are read per request. |
 | `static/sw.js` | Refresh twice, or DevTools → Application → Service Workers → Update. Bump `CACHE_VERSION` inside it or the old shell stays cached. |
-| `server.py`, `cast.py`, `display.py`, `icon.py`, `tls.py` | Restart the app (a few seconds). |
+| `server.py`, `backup.py`, `cast.py`, `display.py`, `icon.py`, `tls.py` | Restart the app (a few seconds). |
 | The shapes in `icon.py` | `python3 icon.py --brand .` to redraw `icon.png` and `logo.png`, then Rebuild — Home Assistant reads those from the folder. |
 | `config.yaml`, `Dockerfile`, `run.sh` | Rebuild. These are read at build time. |
 | `translations/en.yaml` — the wording in the Configuration panel | Rebuild, or Reload from the App store. |
@@ -276,3 +308,16 @@ When a change is ready to bake in:
 
 The last step matters: left on, the app keeps running from the folder and the
 version number stops meaning anything.
+
+### Tests
+
+Plain scripts, no dependencies. Run them from this folder, on the Pi or
+anywhere with Python 3:
+
+```
+python3 tests/test_backup.py
+python3 tests/test_extras.py
+python3 tests/test_cast_churn.py
+```
+
+Each works in a temporary directory of its own and never touches `/data`.

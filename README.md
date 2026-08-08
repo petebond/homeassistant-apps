@@ -48,6 +48,10 @@ HACS; everything else works without it.
 **Read it away from home** — the week installs on a phone as an app and can be
 read offline, for the supermarket car park where the signal has gone.
 
+**Take a copy with you** — everything the household has put in downloads as a
+single file and restores from the same screen, so reinstalling or moving to a
+new machine doesn't cost you your meals.
+
 New installs start with an example household and a library of 37 meals, all of
 which you can edit or delete.
 

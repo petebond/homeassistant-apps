@@ -33,6 +33,8 @@
     cachedAt: null,       // when the copy being shown was last downloaded
     booted: false,        // first load finished, so setView may refresh again
     cast: null,           // kitchen display status, fetched with the Household tab
+    backup: null,         // what there is to back up, fetched with the Household tab
+    backupBusy: false,    // a backup or restore is in flight; leave its buttons be
     display: null,        // how the kitchen display looks; shared by the house
     focusUntil: 0,        // keep today's card on screen until this moment
     hiddenAt: 0           // when the page was last put away; see backFromAway
@@ -860,7 +862,7 @@
     /* Asked for on arrival, not on every render: render() runs on a timer and
        on every save, and none of those is a reason to go and ask Home Assistant
        about the television again. */
-    if (name === "people") { loadCast(); loadDisplay(); }
+    if (name === "people") { loadCast(); loadDisplay(); loadBackupInfo(); }
 
     /* After the scroll to the top, so the sticky week bar is sitting in normal
        flow: animating a transform on an ancestor of a stuck element is what
@@ -2937,6 +2939,235 @@
     });
   }
 
+  // --------------------------------------------------------- backup
+  //
+  /* One file in, one file out. The point of this screen is that reinstalling
+     the app stops being a thing to be nervous about: download, uninstall,
+     install from the repository, restore.
+
+     Nothing here goes through api(): the download is a zip rather than JSON,
+     and the upload wants a progress bar, which fetch() can't give for a request
+     body. Both use the browser's own machinery instead. */
+
+  function fileSize(bytes) {
+    if (!bytes) return "";
+    if (bytes < 1024) return bytes + " bytes";
+    if (bytes < 1024 * 1024) return Math.round(bytes / 1024) + " KB";
+    return (bytes / (1024 * 1024)).toFixed(1) + " MB";
+  }
+
+  function backupSay(message, isError) {
+    var note = $("backup-note");
+    var error = $("backup-error");
+    note.hidden = true;
+    error.hidden = true;
+    if (!message) return;
+    var target = isError ? error : note;
+    target.textContent = message;
+    target.hidden = false;
+  }
+
+  function backupBusy(on, label, fraction) {
+    /* Recorded on state, not just on the buttons: render() runs on a timer and
+       on every save, and a long upload would otherwise have its own buttons
+       re-enabled underneath it by a refresh that knew nothing about it. */
+    state.backupBusy = on;
+    var wrap = $("backup-progress");
+    wrap.hidden = !on;
+    $("backup-download").disabled = on;
+    $("backup-restore").disabled = on || state.offline;
+    if (!on) return;
+    $("backup-progress-note").textContent = label || "";
+    /* An indeterminate bar when there is no fraction to show - reading a zip is
+       quick and unmeasurable, and a bar stuck at 0% looks like a hang. */
+    $("backup-bar-fill").style.width =
+      fraction === undefined || fraction === null ? "100%" : Math.round(fraction * 100) + "%";
+    $("backup-progress").classList.toggle("is-waiting",
+      fraction === undefined || fraction === null);
+  }
+
+  function loadBackupInfo() {
+    return api("GET", "/api/backup/info").then(function (info) {
+      state.backup = info;
+      renderBackup();
+      return info;
+    }).catch(function () {
+      /* Offline, or a version from before this existed. The card stays, because
+         the buttons are what explain it; they just say why they can't run. */
+      state.backup = null;
+      renderBackup();
+    });
+  }
+
+  function renderBackup() {
+    var info = state.backup;
+    var summary = $("backup-summary");
+    if (state.offline) {
+      summary.textContent = "Backups are made by the app itself, so this " +
+        "needs you to be on the home network.";
+    } else if (!info) {
+      summary.textContent = "";
+    } else {
+      var parts = [];
+      var c = info.contents || {};
+      parts.push(c.meals + (c.meals === 1 ? " meal" : " meals"));
+      parts.push(c.people + (c.people === 1 ? " person" : " people"));
+      if (c.images) parts.push(c.images + (c.images === 1 ? " photo" : " photos"));
+      summary.textContent = "Version " + (info.version || "?") + " — " +
+                            parts.join(", ") + ".";
+    }
+    $("backup-download").disabled = state.offline || state.backupBusy;
+    $("backup-restore").disabled = state.offline || state.backupBusy;
+
+    var wrap = $("backup-undo-wrap");
+    var list = $("backup-undo-list");
+    var undo = (info && info.undo) || [];
+    wrap.hidden = undo.length === 0;
+    clear(list);
+    undo.forEach(function (snap) {
+      var row = el("div", "backup-undo-row");
+      row.appendChild(el("span", "name",
+        "Saved " + prettyStamp(snap.at) + " (" + fileSize(snap.bytes) + ")"));
+      var get = el("button", "icon-btn", "Download");
+      get.onclick = function () {
+        window.location.href = "/api/backup?undo=" + encodeURIComponent(snap.name);
+      };
+      row.appendChild(get);
+      list.appendChild(row);
+    });
+  }
+
+  function prettyStamp(iso) {
+    /* The server sends a local ISO stamp. Date can parse it; if some browser
+       can't, showing the raw string beats showing "Invalid Date". */
+    var when = new Date(iso);
+    if (isNaN(when.getTime())) return iso;
+    return when.toLocaleString(undefined,
+      { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+  }
+
+  function downloadBackup() {
+    backupSay("");
+    backupBusy(true, "Gathering everything up…");
+    /* Fetched rather than navigated to, so a failure comes back as a message on
+       this card instead of a browser error page - and so the button can go back
+       to normal when it lands. */
+    fetch("/api/backup").then(function (res) {
+      if (!res.ok) {
+        return res.json().catch(function () { return {}; }).then(function (body) {
+          throw new Error(body.error || "The app couldn't build the backup.");
+        });
+      }
+      return res.blob();
+    }).then(function (blob) {
+      var name = (state.backup && state.backup.suggestedName) ||
+                 "meal-planner-backup.zip";
+      var url = URL.createObjectURL(blob);
+      var link = el("a");
+      link.href = url;
+      link.download = name;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      /* Revoked on a delay rather than immediately: Safari has not always
+         finished with the blob by the time click() returns. */
+      setTimeout(function () { URL.revokeObjectURL(url); }, 60000);
+      backupBusy(false);
+      backupSay("Saved " + name + " (" + fileSize(blob.size) + "). Keep it " +
+                "somewhere that isn't the Pi.");
+    }).catch(function (err) {
+      backupBusy(false);
+      backupSay(err.message || "The backup didn't download.", true);
+    });
+  }
+
+  /* Restore is two round trips on purpose. The first asks the app what is in
+     the file without writing anything, so the confirmation can name what is
+     about to replace the current data - agreeing to "142 meals from 3 August"
+     is a different act from agreeing to "are you sure". */
+  function restoreBackup(file) {
+    if (!file) return;
+    backupSay("");
+    backupBusy(true, "Reading " + file.name + "…");
+
+    upload("/api/restore/check", file).then(function (found) {
+      backupBusy(false);
+      var a = found.actual || {};
+      var lines = [
+        "Restore from " + file.name + "?",
+        "",
+        "It holds " + a.meals + " meals, " + a.people + " people" +
+          (a.images ? ", " + a.images + " photos" : "") +
+          (a.certs ? " and the https certificate" : "") + ".",
+        "Made " + prettyStamp(found.createdAt) +
+          " by version " + (found.version || "?") + ".",
+        "",
+        "Everything in the planner now will be replaced. A copy of it is saved " +
+        "first, and you can download that copy from this screen afterwards."
+      ];
+      if (!confirm(lines.join("\n"))) return null;
+      backupBusy(true, "Putting it back…", 0);
+      return upload("/api/restore", file, function (fraction) {
+        backupBusy(true, "Putting it back…", fraction);
+      });
+    }).then(function (result) {
+      backupBusy(false);
+      if (!result) return;                       // cancelled at the confirm
+      var message = "Restored " + (result.contents.meals || 0) + " meals";
+      if (result.contents.images) {
+        message += " and " + result.contents.images + " photos";
+      }
+      message += ".";
+      if (result.restartNeeded) {
+        /* certs/ was loaded into an SSL context when the process started, so
+           https keeps using the old certificate until the app restarts. Worth
+           saying plainly: the symptom otherwise is phones quietly failing the
+           handshake with no clue why. */
+        message += " The https certificate came back too — restart the app " +
+                   "in Home Assistant so it starts using it.";
+      }
+      backupSay(message);
+      toast("Restored");
+      return refresh().then(loadBackupInfo).then(function () {
+        loadDisplay();
+        loadCast();
+      });
+    }).catch(function (err) {
+      backupBusy(false);
+      backupSay(err.message || "The restore didn't finish.", true);
+    });
+  }
+
+  /* XMLHttpRequest rather than fetch, for one reason: upload progress. A
+     household's photos make a zip of tens of megabytes and house wifi is not
+     always quick, so a bar that moves is the difference between waiting and
+     wondering. The body is the file itself - no multipart wrapper, because the
+     server has no form parser and does not need one for a single file. */
+  function upload(path, file, onProgress) {
+    return new Promise(function (resolve, reject) {
+      var req = new XMLHttpRequest();
+      req.open("POST", path, true);
+      req.setRequestHeader("Content-Type", "application/zip");
+      if (onProgress && req.upload) {
+        req.upload.onprogress = function (e) {
+          if (e.lengthComputable) onProgress(e.loaded / e.total);
+        };
+      }
+      req.onload = function () {
+        var body = {};
+        try { body = JSON.parse(req.responseText); } catch (e) {}
+        if (req.status >= 200 && req.status < 300) resolve(body);
+        else reject(new Error(body.error || "The app refused that file."));
+      };
+      req.onerror = function () {
+        reject(new Error("The app couldn't be reached. Are you on the " +
+                         "home network?"));
+      };
+      req.onabort = function () { reject(new Error("Cancelled.")); };
+      req.send(file);
+    });
+  }
+
   // ------------------------------------------------------------ render
 
   function render() {
@@ -2944,7 +3175,7 @@
     else if (state.view === "plan") renderPlan();
     else if (state.view === "shopping") renderShopping();
     else if (state.view === "meals") renderMeals();
-    else if (state.view === "people") renderPeople();
+    else if (state.view === "people") { renderPeople(); renderBackup(); }
   }
 
   // ------------------------------------------------------------- wiring
@@ -3132,6 +3363,17 @@
             + (state.cast.devices.length === 1 ? "" : "s") + " found"
           : "No Cast devices found");
       });
+    };
+
+    $("backup-download").onclick = downloadBackup;
+
+    /* The visible button drives the hidden file input, and the input is reset
+       after each pick so choosing the same file twice still fires a change. */
+    $("backup-restore").onclick = function () { $("backup-file").click(); };
+    $("backup-file").onchange = function () {
+      var file = $("backup-file").files[0];
+      $("backup-file").value = "";
+      restoreBackup(file);
     };
 
     $("person-form").onsubmit = function (e) {

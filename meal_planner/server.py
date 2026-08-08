@@ -23,6 +23,7 @@ from datetime import date, datetime, timedelta
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import unquote, urlparse
 
+import backup
 import cast
 import display
 import icon
@@ -1466,6 +1467,33 @@ class Handler(BaseHTTPRequestHandler):
         except (ValueError, UnicodeDecodeError):
             return None
 
+    def _raw_body(self, limit):
+        """The request body as bytes, for the one endpoint that isn't JSON.
+
+        Read in chunks rather than one rfile.read(length): a backup carrying a
+        few hundred photos arrives over house wifi and a single read of the
+        whole thing is a long time to sit inside one call with nothing to say
+        about it. Same rule as _body() about unread bodies - anything left on
+        the socket would be parsed as the next request, so refusing to read one
+        has to close the connection."""
+        try:
+            length = int(self.headers.get("Content-Length") or 0)
+        except ValueError:
+            self.close_connection = True
+            return None
+        if length <= 0 or length > limit:
+            self.close_connection = True
+            return None
+        chunks, seen = [], 0
+        while seen < length:
+            chunk = self.rfile.read(min(262144, length - seen))
+            if not chunk:
+                self.close_connection = True
+                return None
+            chunks.append(chunk)
+            seen += len(chunk)
+        return b"".join(chunks)
+
     # -- static files -----------------------------------------------------
 
     TYPES = {
@@ -1677,7 +1705,37 @@ class Handler(BaseHTTPRequestHandler):
             self._serve_static(path)
 
     def do_POST(self):
-        self._api_write("POST", urlparse(self.path).path)
+        path = urlparse(self.path).path
+        # Taken here rather than in _api_write because that reads the body as
+        # JSON before it looks at the path, and this one is a zip.
+        if path in ("/api/restore", "/api/restore/check"):
+            self._restore(path.endswith("/check"))
+            return
+        self._api_write("POST", path)
+
+    def _restore(self, check_only):
+        """Put a backup zip back. `check_only` reports what is in the file
+        without writing anything, which is what the confirmation step asks."""
+        raw = self._raw_body(backup.MAX_UPLOAD)
+        if not raw:
+            return self._error(400, "No file arrived, or it was too big to accept.")
+        try:
+            if check_only:
+                found = backup.inspect(raw)
+                found.pop("_names", None)
+                return self._json(found)
+            with _lock:
+                # Under the same lock every other write takes, so a phone saving
+                # a meal at the moment the folders are swapped waits its turn
+                # rather than writing into the folder being replaced.
+                result = backup.restore(raw)
+        except backup.BackupError as exc:
+            return self._error(400, str(exc))
+        except OSError as exc:
+            return self._error(500, "The restore couldn't finish: %s" % exc)
+        # The certificate is the only part that was read into memory at startup,
+        # so it is the only part that needs the app restarting.
+        return self._json(result)
 
     def do_PUT(self):
         self._api_write("PUT", urlparse(self.path).path)
@@ -1736,6 +1794,56 @@ class Handler(BaseHTTPRequestHandler):
             return
         if path == "/api/display":
             self._json(display.load())
+            return
+
+        # ---- backup ----
+        #
+        # What the Household tab shows before anyone presses anything: how much
+        # there is to back up, and which undo snapshots a previous restore left
+        # behind. Cheap - it counts files, it doesn't build the zip.
+        if path == "/api/backup/info":
+            self._json({"contents": backup._counts(),
+                        "version": backup.app_version(),
+                        "undo": backup.undo_files(),
+                        "suggestedName": backup.suggested_name()})
+            return
+
+        # The download itself. Built in one go so it goes out with a
+        # Content-Length and the phone can show real progress; a household's
+        # photos come to tens of megabytes, which is worth a progress bar.
+        if path == "/api/backup":
+            name = backup.suggested_name()
+            query = urlparse(self.path).query or ""
+            if "undo=" in query:
+                # Re-downloading an undo snapshot, so it can be kept somewhere
+                # safer than the app it is protecting.
+                wanted = unquote(query.split("undo=", 1)[1].split("&")[0])
+                if (not wanted.startswith(backup.UNDO_PREFIX)
+                        or not wanted.endswith(".zip")
+                        or "/" in wanted or "\\" in wanted):
+                    return self._error(400, "Not a snapshot this app made.")
+                source = os.path.join(DATA_DIR, wanted)
+                if not os.path.isfile(source):
+                    return self._error(404, "That snapshot has been cleared away.")
+                with open(source, "rb") as fh:
+                    body = fh.read()
+                name = wanted
+            else:
+                try:
+                    body = backup.make_zip()
+                except OSError as exc:
+                    return self._error(500, "Couldn't read the data to back it "
+                                            "up: %s" % exc)
+            self.send_response(200)
+            self.send_header("Content-Type", "application/zip")
+            self.send_header("Content-Length", str(len(body)))
+            self.send_header("Content-Disposition",
+                             'attachment; filename="%s"' % name)
+            # Contains the private CA key. Never let anything keep a copy.
+            self.send_header("Cache-Control", "no-store, private")
+            self.end_headers()
+            if self.command != "HEAD":
+                self.wfile.write(body)
             return
         if path == "/api/cast":
             # Served out of cast.py's cache, so it can't block on a display that

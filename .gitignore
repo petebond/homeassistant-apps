@@ -8,9 +8,17 @@ __pycache__/
 # Anything that looks like live data or keys - none of this belongs in git.
 data.json
 data.json.backup-*
+restore-undo-*.zip
 certs/
 *.pem
 *.key
+
+# ...except the bundled first-run seed, which is source rather than data: the
+# Dockerfile does `COPY seed/ ./seed/`, and with nothing tracked under seed/ the
+# folder never reaches GitHub and the build fails on a clean clone - which is
+# every install but the one it was written on. The negation has to come after
+# the rule above; git takes the last pattern that matches.
+!**/seed/data.json
 
 # OS noise
 .DS_Store

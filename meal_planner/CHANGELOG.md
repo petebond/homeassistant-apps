@@ -1,5 +1,72 @@
 # Changelog
 
+## 1.13.0
+
+**New: everyone who ate it can say what they thought of it.** On The Week, tap
+your name at the foot of a meal and five stars drop out underneath it — one
+nearest your name, five furthest away, so the rating is how far you reach
+rather than which of five identical stars you managed to hit with a thumb. Tap
+the star already showing to take it back. Each person rates for themselves, so
+a meal eaten by four people carries four opinions rather than one household
+verdict nobody agreed on.
+
+Only the people the plan says ate the meal can rate it, and only from today
+backwards — nobody can say what Thursday was like on Tuesday. The guest slot
+doesn't rate: it stands for however many visitors turned up, so a single star
+count against it would be nobody's opinion in particular.
+
+**Changed: The Week no longer says "Everyone".** A meal the whole house was
+down for used to collapse into one chip, which read well and saved a line. But
+the chip is now the thing you tap to rate, and one chip can't stand for four
+people's opinions, so every eater gets their own name back.
+
+**New: the meal library can be sorted by what the house thought.** Next to the
+search box, which is unchanged: highest rated, lowest rated, most divisive, not
+yet rated, and — per person — what each of them likes most and least. Each card
+shows the average, how many ratings it is from, and a small coloured pill per
+person with their own average, because "4.2" is a number and "Ellie 5, Sam 2"
+is the reason you are or aren't cooking it again.
+
+"Most divisive" compares people, not nights: someone who rates the same meal 3
+one week and 5 the next is having an off week, whereas two people who rate it 1
+and 5 disagree about the meal. So each person is reduced to their own average
+first and the spread is measured across those. A meal nobody has rated is never
+"lowest rated" — an unknown goes to the bottom of every order rather than
+winning the worst one by default.
+
+**Ratings are attached to the meal as it was eaten, not to the recipe.** They
+are stored against the night, which is why deleting a week takes its ratings
+with it, and why the same recipe cooked in March and again in August counts as
+two opinions. Taking somebody off a meal removes their rating of it, and so
+does removing them from the household — a rating from somebody the plan says
+wasn't there is a number with nothing behind it, and it would go on pulling the
+library's averages around under a name no longer on screen.
+
+Existing weeks need nothing doing to them: a meal planned before this version
+simply has no ratings yet.
+
+**Changed: adding a meal is a + by the heading.** The library used to open on a
+full-width "Add meals" bar with two tabs behind it, which spent the top of the
+screen and a card's worth of height on a page whose job is mostly to be
+browsed. It is now a round + next to *Meal library*, turning a quarter into a ×
+while the form is up. Saving an edit puts the form away; adding a new meal
+leaves it up and empty, ready for the next one.
+
+**Removed: the Bulk Add tab.** One of two tabs, behind a panel, for a paste of
+pipe-separated lines — a thing you do once when you set the app up and never
+again, taking up half the width of the control that adds meals every other day
+of the year. The `/api/meals/import` endpoint it posted to is still there for
+anyone seeding a library from a script.
+
+**Changed: the add-meal form stops explaining itself.** Links and Photo were
+boxed sections with a legend and a line of prose each; both are now plain
+fields like Meal name and Tags, and the photo's URL box, Upload button and
+thumbnail sit on one row rather than three. Gone with them: "A recipe, or one
+page per shop-bought item", "(shows on the meal card, and the search looks in
+it)", and a sentence explaining that a picture from your phone is stored with
+the meal planner. The placeholders already said it. Ingredients and Nutrition
+keep their boxes, being genuinely sub-forms.
+
 ## 1.12.1
 
 **Fixed: initialisms typed in lower case came out mangled.** "bbq sauce" was

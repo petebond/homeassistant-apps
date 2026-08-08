@@ -410,6 +410,10 @@ html[data-theme="dark"] .swatch[data-swatch="olive"]    { background: #a6c479; }
 html[data-theme="dark"] .swatch[data-swatch="cocoa"]    { background: #cb9c82; }
 html[data-theme="dark"] .swatch[data-swatch="charcoal"] { background: #a3adb6; }
 
+/* Kept for a browser holding an old copy of app.js in its cache: the week view
+   no longer collapses a whole-house meal into one "Everyone" chip, because a
+   chip is now the thing you tap to rate and one chip can't stand for four
+   opinions. */
 .chip.everyone { background: var(--accent); color: var(--accent-ink); }
 
 /* 1100px was set when the app was mostly read on a phone, and on a desktop
@@ -653,6 +657,112 @@ main { max-width: 1500px; margin: 0 auto; padding: 1.1rem 1rem; }
   white-space: nowrap;
 }
 .chip.none { background: var(--line); color: var(--muted); }
+
+/* ---------- rating a meal from the week view ---------- */
+
+/* A name chip that can be tapped to rate. It has to stay a name chip first -
+   the row is still there to say who is eating - so the only differences are a
+   star on the end and enough of an outline to suggest it is pressable. */
+.chip-rate {
+  display: inline-flex;
+  align-items: center;
+  gap: .3rem;
+  border: 0;
+  font: inherit;
+  font-size: .78rem;
+  line-height: 1.35;
+  cursor: pointer;
+  /* Chips sit at the foot of a card and are small. 32px of height is the
+     smallest a thumb reliably hits; padding gets it there without making the
+     chip look like a button. */
+  min-height: 32px;
+  padding: .2rem .5rem;
+}
+.chip-rate .chip-stars {
+  /* The unrated star is dimmed rather than hidden, so the row doesn't reflow
+     as ratings come in and the tap target is the same size either way. */
+  opacity: .55;
+  font-size: .82rem;
+}
+.chip-rate.rated .chip-stars { opacity: 1; font-weight: 600; }
+.chip-rate:hover, .chip-rate.picking { filter: brightness(1.12); }
+.chip-rate:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+/* The picker itself. It lives on <body> rather than in the card: the card is a
+   3D flip with clipped faces, so a popover inside it would be cut off at the
+   edge or rotate away with the face it sits on. Placed by app.js, which is
+   also why it starts invisible - it has to be measured before it can be put
+   anywhere sensible. */
+.star-pop {
+  position: fixed;
+  visibility: hidden;
+  z-index: 60;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  padding: .45rem;
+  display: flex;
+  flex-direction: column;
+  gap: .2rem;
+  min-width: 8.5rem;
+}
+.star-who {
+  font-size: .72rem;
+  color: var(--muted);
+  text-align: center;
+  padding-bottom: .1rem;
+}
+.star-col { display: flex; flex-direction: column; gap: .15rem; }
+
+/* One star nearest the name, five furthest away, so the gesture is "how far
+   did you reach". Opening upwards reverses the column so that stays true. */
+.star-pop.upward .star-col { flex-direction: column-reverse; }
+.star-pop.upward .star-who { order: 2; padding: .15rem 0 0; }
+.star-pop.upward .star-clear {
+  order: -1;
+  margin: 0 0 .15rem;
+  border-top: 0;
+  border-bottom: 1px solid var(--line);
+  border-radius: 8px 8px 0 0;
+  padding: .15rem 0 .4rem;
+}
+
+.star-btn {
+  display: flex;
+  align-items: center;
+  gap: .45rem;
+  width: 100%;
+  min-height: 38px;
+  padding: .1rem .55rem;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+.star-btn:hover { background: var(--accent-wash); }
+.star-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.star-glyph { font-size: 1.15rem; line-height: 1; color: var(--today-mark); }
+.star-btn.on { background: var(--accent-wash); border-color: var(--line); }
+.star-n { font-size: .8rem; color: var(--muted); }
+
+.star-clear {
+  margin-top: .15rem;
+  border: 0;
+  border-top: 1px solid var(--line);
+  border-radius: 0 0 8px 8px;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  font-size: .78rem;
+  padding: .4rem 0 .15rem;
+  min-height: 32px;
+  cursor: pointer;
+}
+.star-clear:hover { color: var(--danger); }
 
 .tag {
   display: inline-block;
@@ -958,46 +1068,45 @@ select:focus, input:focus, textarea:focus { outline: 2px solid var(--green); out
 .card summary { cursor: pointer; }
 .card summary + * { margin-top: .7rem; }
 
-/* ---------- collapsible Add-meals panel ---------- */
-.add-panel { padding: 0; overflow: hidden; }
-.add-panel-toggle {
-  appearance: none;
-  width: 100%;
-  border: 0;
-  background: none;
-  font: inherit;
-  color: var(--ink);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: .8rem;
-  padding: .95rem 1rem;
-  cursor: pointer;
-  text-align: left;
-}
-.add-panel-toggle:hover { background: var(--accent-wash); }
-.add-panel-title { font-size: 1.05rem; font-weight: 600; }
-.add-panel-chevron { color: var(--muted); font-size: .8rem; transition: transform .2s; }
-.add-panel.open .add-panel-chevron { transform: rotate(180deg); }
+/* ---------- adding a meal ---------- */
 
-.add-panel-body { padding: 0 1rem 1rem; border-top: 1px solid var(--line); }
-.add-tabs { display: flex; gap: .4rem; margin: .9rem 0 1.1rem; }
-.add-tab {
+/* The heading and the one button that opens the form. */
+.view-head { display: flex; align-items: center; gap: .8rem; }
+.view-head h1 { margin-bottom: 0; }
+
+/* A + rather than a bar reading "Add meals": the bar spent the width of the
+   screen and the height of a card saying what a circle says, on a page whose
+   job is mostly to be browsed. 44px because that is the smallest a thumb hits
+   reliably, and the shape has nowhere to hide a bigger tap target. */
+.add-fab {
   appearance: none;
-  border: 1px solid var(--line);
-  background: var(--card);
-  color: var(--muted);
-  font: inherit;
-  font-size: .9rem;
-  font-weight: 600;
-  padding: .45rem 1.05rem;
-  border-radius: 999px;
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--accent-ink);
   cursor: pointer;
-  transition: background .15s, color .15s, border-color .15s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow);
+  transition: background .15s, transform .2s;
 }
-.add-tab:hover { border-color: var(--accent); color: var(--accent-dark); }
-.add-tab.active { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.add-fab:hover { background: var(--accent-dark); }
+.add-fab:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.add-fab-plus { font-size: 1.7rem; line-height: 1; font-weight: 300; margin-top: -2px; }
+/* Open, the same + is the × that closes it - one control, turned a quarter. */
+.add-fab.on { transform: rotate(45deg); background: var(--muted); }
+
 .add-form-title { margin: 0 0 .8rem; font-size: 1rem; color: var(--accent-dark); }
+
+/* A group of controls that wants a heading like a label's, but has no single
+   control for a <label> to point at (Links) or wraps its input in a row
+   (Photo). */
+.field { margin-bottom: .7rem; }
+.field-label { display: block; font-size: .88rem; margin-bottom: .3rem; }
 
 .form label { display: block; font-size: .88rem; margin-bottom: .7rem; }
 .form label input, .form label textarea { margin-top: .25rem; }
@@ -1005,12 +1114,27 @@ select:focus, input:focus, textarea:focus { outline: 2px solid var(--green); out
 .form .row > label { flex: 1; min-width: 12rem; }
 .form-actions { display: flex; gap: .5rem; }
 .form-error { color: var(--danger); font-size: .85rem; margin: .5rem 0 0; }
+/* Nothing uses this since Bulk Add went; kept because it is one line and the
+   next form that needs to say "that worked" will want it. */
 .form-note { color: var(--green); font-size: .85rem; margin: .5rem 0 0; }
 
 .list-head { display: flex; align-items: center; gap: .8rem; flex-wrap: wrap; margin: 1.4rem 0 .7rem; }
 .list-head h2 { margin: 0; }
 .list-head input { width: auto; flex: 1; min-width: 10rem; max-width: 18rem; }
 .count { color: var(--muted); font-weight: 400; font-size: .9rem; }
+
+/* Search and order sit together and share the row's spare width. On a phone
+   they stack, which is why the search box drops its max-width here: two
+   controls each half a screen wide are two controls nobody can read. */
+.list-tools {
+  display: flex;
+  gap: .5rem;
+  flex: 1;
+  min-width: 14rem;
+  flex-wrap: wrap;
+}
+.list-tools input { flex: 2 1 10rem; max-width: none; }
+.list-tools select { flex: 1 1 9rem; width: auto; min-width: 9rem; }
 
 /* 320, not 250: a library card carries a photo, tags, a macro strip and three
    buttons, and at 250 the buttons wrapped onto their own line. The wider
@@ -1056,13 +1180,18 @@ select:focus, input:focus, textarea:focus { outline: 2px solid var(--green); out
   margin: 0;
 }
 
-.image-row { display: flex; gap: .8rem; align-items: flex-start; flex-wrap: wrap; }
-.image-row label { flex: 1; min-width: 14rem; }
-.image-upload-line { margin-top: .2rem; align-items: center; }
+/* URL, Upload and the thumbnail on one line. It was a boxed section with a
+   legend, a labelled field, a second row for the button and a sentence
+   explaining that a picture from your phone is stored with the planner - four
+   lines to say what a box saying "https://... or upload one" says. */
+.image-row { display: flex; gap: .5rem; align-items: center; flex-wrap: wrap; }
+/* width:auto so the shared 100% doesn't fight the flex basis. */
+.image-row input[type="url"] { flex: 1 1 12rem; width: auto; min-width: 0; margin: 0; }
+.image-row .btn { flex: none; }
 
 #image-preview {
-  width: 7.5rem;
-  height: 5.5rem;
+  width: 4.6rem;
+  height: 3.4rem;
   object-fit: cover;
   border-radius: 8px;
   border: 1px solid var(--line);
@@ -1131,6 +1260,38 @@ select:focus, input:focus, textarea:focus { outline: 2px solid var(--green); out
 .macro-strip .kcal { color: var(--green); font-weight: 700; }
 
 .macro-none { font-size: .78rem; color: var(--muted); opacity: .8; font-style: italic; margin-top: .35rem; }
+
+/* ---------- what the house made of it, on a library card ---------- */
+
+.rating-block { margin-top: .35rem; }
+.rating-mean { display: flex; align-items: center; gap: .35rem; font-size: .8rem; }
+.stars { letter-spacing: .02em; }
+.star { color: var(--line); }
+.star.on { color: var(--today-mark); }
+/* The star the average lands part way through. */
+.star.half { opacity: .45; }
+.rating-figure { font-weight: 700; color: var(--ink); }
+.rating-count { color: var(--muted); font-size: .76rem; }
+/* Worth flagging on the card and not only in the sort: a 3.0 that is two
+   people at 1 and 5 is a different meal from a 3.0 everyone agreed on. */
+.rating-split { color: var(--warm); font-size: .76rem; font-weight: 600; }
+
+.rating-people { display: flex; flex-wrap: wrap; gap: .25rem; margin-top: .3rem; }
+.rating-pill {
+  display: inline-flex;
+  align-items: baseline;
+  gap: .25rem;
+  font-size: .72rem;
+  padding: .08rem .4rem;
+  border-radius: 999px;
+  color: #fff;
+  white-space: nowrap;
+  opacity: .9;
+}
+.rating-pill-n { font-weight: 700; }
+/* The person the list is currently sorted by. Their pill is the reason this
+   meal is where it is, so it stops being one of a row of equals. */
+.rating-pill.lead { opacity: 1; outline: 2px solid var(--ink); outline-offset: 1px; }
 
 .day-total {
   font-size: .76rem;
@@ -1652,6 +1813,7 @@ select:focus, input:focus, textarea:focus { outline: 2px solid var(--green); out
 html[data-offline="1"] #view-plan .plan-grid,
 html[data-offline="1"] #view-plan .toolbar,
 html[data-offline="1"] .add-panel,
+html[data-offline="1"] .add-fab,
 html[data-offline="1"] #person-form,
 html[data-offline="1"] .extras-add,
 html[data-offline="1"] .extras-tick,
@@ -1664,10 +1826,14 @@ html[data-offline="1"] .meal-list .icon-btn {
   filter: grayscale(.4);
 }
 
-/* The tabs, week navigation and search all still work - reading is the point. */
+/* The tabs, week navigation, search and ordering all still work - reading is
+   the point, and sorting by what the house thought of a meal is reading. The
+   ratings themselves are a write, so the chips that give them are dead offline
+   like everything else that changes the file. */
 html[data-offline="1"] .tabs,
 html[data-offline="1"] .nav-btn,
-html[data-offline="1"] #meal-search {
+html[data-offline="1"] #meal-search,
+html[data-offline="1"] #meal-sort {
   opacity: 1;
   pointer-events: auto;
   filter: none;

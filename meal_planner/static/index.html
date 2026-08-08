@@ -215,26 +215,21 @@
 
   <!-- ================= MEALS ================= -->
   <section class="view" id="view-meals" hidden>
-    <h1>Meal library</h1>
+    <!-- The + is the whole invitation to add a meal. It used to be a full-width
+         "Add meals" bar with two tabs inside it, which took the top of the
+         screen to say something a circle says. -->
+    <div class="view-head">
+      <h1>Meal library</h1>
+      <button type="button" class="add-fab" id="add-panel-toggle"
+              aria-expanded="false" aria-controls="add-panel"
+              aria-label="Add a meal" title="Add a meal">
+        <span class="add-fab-plus" aria-hidden="true">+</span>
+      </button>
+    </div>
     <p class="muted">Meals added here become selectable when planning the week.</p>
 
-    <div class="card add-panel" id="add-panel">
-      <button type="button" class="add-panel-toggle" id="add-panel-toggle"
-              aria-expanded="false" aria-controls="add-panel-body">
-        <span class="add-panel-title">Add meals</span>
-        <span class="add-panel-chevron" aria-hidden="true">&#9662;</span>
-      </button>
-
-      <div class="add-panel-body" id="add-panel-body" hidden>
-        <div class="add-tabs" role="tablist">
-          <button type="button" class="add-tab active" id="add-tab-add"
-                  data-addtab="add" role="tab" aria-selected="true">Add a meal</button>
-          <button type="button" class="add-tab" id="add-tab-bulk"
-                  data-addtab="bulk" role="tab" aria-selected="false">Bulk Add</button>
-        </div>
-
-        <div class="add-tab-panel" id="add-panel-form" role="tabpanel">
-    <form class="form" id="meal-form">
+    <div class="card add-panel" id="add-panel" hidden>
+      <form class="form" id="meal-form">
       <h2 id="meal-form-title" class="add-form-title" hidden>Edit meal</h2>
       <label>Meal name
         <input type="text" id="meal-name" maxlength="120" placeholder="e.g. Chicken fajitas" required>
@@ -243,30 +238,29 @@
         <input type="text" id="meal-tags" maxlength="200" placeholder="quick, veggie, freezer">
       </label>
 
-      <fieldset class="links-box">
-        <legend>Links <span class="muted">for whoever's cooking</span></legend>
-        <p class="muted small">A recipe, or one page per shop-bought item.</p>
+      <!-- Links and Photo are plain fields like the two above, not boxed
+           sections: the row of inputs says what it wants without a legend and
+           a sentence over the top of it. The boxes are kept for Ingredients
+           and Nutrition, which are genuinely sub-forms. -->
+      <div class="field">
+        <span class="field-label">Links</span>
         <div id="link-rows"></div>
         <button class="btn ghost small" type="button" id="add-link">+ Add another link</button>
-      </fieldset>
-      <label>Description <span class="muted">(shows on the meal card, and the search looks in it)</span>
+      </div>
+
+      <label>Description
         <textarea id="meal-notes" rows="2" maxlength="2000" placeholder="e.g. 2 chicken thighs, peppers, onion, 2 tortillas, sour cream"></textarea>
       </label>
 
-      <fieldset class="links-box image-box">
-        <legend>Photo</legend>
+      <div class="field">
+        <label class="field-label" for="meal-image">Photo</label>
         <div class="image-row">
-          <label>Image URL <span class="muted">(or upload below)</span>
-            <input type="url" id="meal-image" maxlength="500" placeholder="https://...">
-          </label>
+          <input type="url" id="meal-image" maxlength="500" placeholder="https://... or upload one">
+          <button class="btn ghost small" type="button" id="upload-image-btn">Upload</button>
+          <input type="file" id="image-file" accept="image/*" hidden>
           <img id="image-preview" alt="Meal photo preview" hidden>
         </div>
-        <div class="form-actions image-upload-line">
-          <button class="btn ghost small" type="button" id="upload-image-btn">Upload a picture</button>
-          <input type="file" id="image-file" accept="image/*" hidden>
-          <span class="muted small">A photo or image from this device &mdash; stored with the meal planner.</span>
-        </div>
-      </fieldset>
+      </div>
 
       <fieldset class="links-box ingredients-box">
         <legend>Ingredients <span class="muted">for the shopping list</span></legend>
@@ -295,24 +289,17 @@
         <button class="btn ghost" type="button" id="meal-cancel">Cancel</button>
       </div>
       <p class="form-error" id="meal-error" hidden></p>
-    </form>
-        </div>
-
-        <div class="add-tab-panel" id="add-panel-bulk" role="tabpanel" hidden>
-          <p class="muted small">One meal per line. Optionally add tags and notes separated by a vertical bar:<br>
-            <code>Chicken fajitas | quick, mexican | Use the big pan</code></p>
-          <textarea id="import-text" rows="6" placeholder="Spaghetti bolognese&#10;Roast chicken | sunday&#10;Fish pie | freezer | Serves 5"></textarea>
-          <div class="form-actions">
-            <button class="btn" type="button" id="import-btn">Import</button>
-          </div>
-          <p class="form-note" id="import-result" hidden></p>
-        </div>
-      </div>
+      </form>
     </div>
 
     <div class="list-head">
       <h2>Saved meals <span class="count" id="meal-count"></span></h2>
-      <input type="search" id="meal-search" placeholder="Search meals..." aria-label="Search meals">
+      <div class="list-tools">
+        <input type="search" id="meal-search" placeholder="Search meals..." aria-label="Search meals">
+        <!-- Filled in by app.js: the fixed orders, then two entries per person
+             in the household, which is only known at run time. -->
+        <select id="meal-sort" aria-label="Order meals by"></select>
+      </div>
     </div>
     <div id="meal-list" class="meal-list"></div>
   </section>

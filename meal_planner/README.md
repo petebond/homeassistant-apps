@@ -29,6 +29,25 @@ time.
 It can be renamed ("Visitors") but not removed, it is never listed as *not
 eating*, and it isn't offered as the cook.
 
+### Rating a meal
+
+After a meal, tap your own name at the foot of it on **The Week**. Five stars
+drop out underneath — one nearest your name, five furthest away — and tapping
+the star already showing takes your rating back off. Everyone who ate it rates
+separately, so a meal carries as many opinions as it had people.
+
+Only the people the plan says ate it can rate it, only from today backwards,
+and not the guest slot — it stands for however many visitors turned up, so one
+star count against it would be nobody's opinion in particular.
+
+The **meal library** can then be ordered by highest rated, lowest rated, most
+divisive, not yet rated, or by what one person likes most or least. Each card
+shows the house average and a pill per person with theirs.
+
+Ratings belong to the night, not to the recipe: deleting a week takes its
+ratings with it, and taking somebody off a meal — or out of the household —
+removes their rating of it.
+
 ### The shopping list
 
 Worked out from the week's plan, scaled by how many are eating each meal and

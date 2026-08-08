@@ -23,6 +23,7 @@
     view: "week",
     editingMealId: null,
     mealFilter: "",
+    mealSort: "library",  // how the library is ordered; see MEAL_SORTS
     shopWeek: null,
     planFocus: null,      // day just added to from the library; see applyPlanFocus
     shopList: null,       // last list fetched, kept so it can be shared
@@ -1027,6 +1028,8 @@
   // --------------------------------------------------------- week view
 
   function renderWeek() {
+    // The picker is anchored to a chip this is about to throw away.
+    closeStars();
     var key = state.viewWeek;
     $("w-title").textContent = weekLabel(key);
     $("w-range").textContent = weekRange(key);
@@ -1057,7 +1060,8 @@
         card.appendChild(el("div", "meal-title empty", "Nothing planned"));
       } else {
         realOnes.forEach(function (sitting, n) {
-          card.appendChild(renderSitting(sitting, n > 0));
+          card.appendChild(renderSitting(sitting, n > 0,
+                                         { key: key, day: day, on: dateKey }));
         });
 
         // One cook for the evening, however many meals there are.
@@ -1186,35 +1190,190 @@
     });
   }
 
-  /* The row of coloured name chips at the foot of a meal card. */
-  function eatersRow(eating, guests) {
+  /* The row of coloured name chips at the foot of a meal card.
+
+     Everybody eating gets their own chip, always. There used to be an
+     "Everyone" shorthand for a whole-house meal, and it read well - but a chip
+     is now the thing you tap to say what you thought of the dinner, and one
+     chip standing for four people has nothing to tap for three of them.
+
+     `rate`, when given, is {key, day, sitting, on} and turns each household
+     chip into a button that opens the star picker. Guests don't rate: the slot
+     stands for a variable number of visitors, so a single star count against
+     it would be nobody's opinion in particular. */
+  function eatersRow(eating, guests, rate) {
     var eaters = el("div", "eaters");
     var guest = guestPerson();
     var named = eating.filter(function (p) { return !p.guest; });
-    var all = household();
 
     if (named.length === 0 && !guests) {
       eaters.appendChild(el("span", "chip none", "No one marked"));
       return eaters;
     }
-    /* "Everyone" stays the shorthand for the whole house, and guests are added
-       to it rather than collapsed into it - four of us and two visitors is not
-       the same sentence as six of us. */
-    if (named.length === all.length && all.length > 0) {
-      eaters.appendChild(el("span", "chip everyone", "Everyone"));
-    } else {
-      named.forEach(function (p) {
-        var chip = el("span", "chip", p.name);
-        chip.style.background = p.color || "#3d8361";
-        eaters.appendChild(chip);
-      });
-    }
+    named.forEach(function (p) {
+      eaters.appendChild(rate ? rateableChip(p, rate) : plainChip(p, p.name));
+    });
     if (guests) {
-      var extra = el("span", "chip", "+ " + guestLabel(guests));
-      extra.style.background = (guest && guest.color) || "#3d8361";
-      eaters.appendChild(extra);
+      eaters.appendChild(plainChip(guest, "+ " + guestLabel(guests)));
     }
     return eaters;
+  }
+
+  function plainChip(person, label) {
+    var chip = el("span", "chip", label);
+    chip.style.background = (person && person.color) || "#3d8361";
+    return chip;
+  }
+
+  /* A name chip that is also this person's rating of this meal: their stars if
+     they have given any, and a tap target for giving or changing them. */
+  function rateableChip(person, rate) {
+    var stars = ratingOf(rate.sitting, person.id);
+    var chip = el("button", "chip chip-rate" + (stars ? " rated" : ""));
+    chip.type = "button";
+    chip.style.background = person.color || "#3d8361";
+    chip.appendChild(el("span", "chip-name", person.name));
+    chip.appendChild(el("span", "chip-stars", stars ? "★" + stars : "☆"));
+    chip.title = stars
+      ? person.name + " gave this " + stars + (stars === 1 ? " star" : " stars")
+      : "Tap to rate for " + person.name;
+    chip.setAttribute("aria-label", chip.title);
+    chip.onclick = function (e) {
+      e.stopPropagation();
+      openStars(chip, person, rate);
+    };
+    return chip;
+  }
+
+  function ratingOf(sitting, personId) {
+    var r = sitting && sitting.ratings;
+    return (r && r[personId]) || 0;
+  }
+
+  // ----------------------------------------------------- the star picker
+
+  /* Five stars stacked under the name that was tapped, one nearest and five
+     furthest: the further your thumb travels, the better the meal was. That is
+     the whole gesture, and it is the reason this is a column rather than the
+     usual row of stars - a row asks you to hit the right star among five on a
+     phone, where a column asks you how far to reach.
+
+     It hangs off <body> at a fixed position rather than inside the card. The
+     card is a 3D flip with clipped faces, and a popover inside it would be cut
+     off at the edge or, worse, rotate away with the face it sits on. */
+  var starsOpen = null;
+
+  function closeStars() {
+    if (!starsOpen) return;
+    if (starsOpen.node.parentNode) starsOpen.node.parentNode.removeChild(starsOpen.node);
+    if (starsOpen.chip) starsOpen.chip.classList.remove("picking");
+    starsOpen = null;
+    document.removeEventListener("keydown", starsKey, true);
+  }
+
+  function starsKey(e) {
+    if (e.key === "Escape") { closeStars(); e.stopPropagation(); }
+  }
+
+  /* Anything that isn't a choice closes it: a tap elsewhere, a scroll, a
+     rotation. The popover is placed from a measurement of where the chip was,
+     so a page that moves underneath it would leave it pointing at nothing -
+     better gone than misplaced. */
+  function wireStars() {
+    document.addEventListener("click", function () { closeStars(); });
+    window.addEventListener("resize", closeStars);
+    window.addEventListener("scroll", closeStars, true);
+  }
+
+  function openStars(chip, person, rate) {
+    var reopening = starsOpen && starsOpen.chip === chip;
+    closeStars();
+    if (reopening) return;
+
+    var current = ratingOf(rate.sitting, person.id);
+    var pop = el("div", "star-pop");
+    pop.appendChild(el("div", "star-who", person.name));
+
+    var col = el("div", "star-col");
+    for (var n = 1; n <= 5; n++) {
+      col.appendChild(starButton(n, current, person, rate));
+    }
+    pop.appendChild(col);
+
+    /* Only offered once there is something to take back. A "clear" on an
+       unrated meal is a button that does nothing, sitting under a thumb that
+       is about to press something else. */
+    if (current) {
+      var clear = el("button", "star-clear", "Clear");
+      clear.type = "button";
+      clear.onclick = function () { sendRating(person, rate, null); };
+      pop.appendChild(clear);
+    }
+
+    pop.addEventListener("click", function (e) { e.stopPropagation(); });
+    document.body.appendChild(pop);
+    chip.classList.add("picking");
+    starsOpen = { node: pop, chip: chip, key: rate.key, day: rate.day,
+                  sid: rate.sitting.id, pid: person.id };
+    placeStars(pop, chip);
+    document.addEventListener("keydown", starsKey, true);
+  }
+
+  function starButton(n, current, person, rate) {
+    var b = el("button", "star-btn" + (n <= current ? " on" : ""));
+    b.type = "button";
+    b.appendChild(el("span", "star-glyph", n <= current ? "★" : "☆"));
+    b.appendChild(el("span", "star-n", String(n)));
+    b.setAttribute("aria-label", n + (n === 1 ? " star" : " stars") +
+                   " for " + person.name);
+    b.onclick = function () {
+      // Pressing the star already showing means "actually, no" - the same tap
+      // that set it takes it off, so nobody has to find a Clear button.
+      sendRating(person, rate, n === current ? null : n);
+    };
+    return b;
+  }
+
+  /* Below the chip by preference, above it when the card is near the bottom of
+     the screen - but one star is always the one nearest the name, whichever way
+     it opens, or the gesture would mean the opposite thing on the last day of
+     the week. */
+  function placeStars(pop, chip) {
+    var at = chip.getBoundingClientRect();
+    var size = pop.getBoundingClientRect();
+    var gap = 6;
+    var below = window.innerHeight - at.bottom;
+    var up = below < size.height + gap && at.top > size.height + gap;
+
+    pop.classList.toggle("upward", up);
+    pop.style.top = (up ? at.top - size.height - gap : at.bottom + gap) + "px";
+
+    var left = at.left + at.width / 2 - size.width / 2;
+    left = Math.max(8, Math.min(left, window.innerWidth - size.width - 8));
+    pop.style.left = left + "px";
+    pop.style.visibility = "visible";
+  }
+
+  function sendRating(person, rate, stars) {
+    var sitting = rate.sitting;
+    closeStars();
+    api("PUT", "/api/week/" + rate.key + "/" + rate.day +
+               "/sittings/" + sitting.id + "/rating",
+        { personId: person.id, stars: stars })
+      .then(function (updated) {
+        // Patch the copy the week view is drawn from, then redraw just this
+        // week: a full reload would rebuild every card and lose the reader's
+        // place on a page they were part way down.
+        var list = sittingsFor(rate.key, rate.day);
+        for (var i = 0; i < list.length; i++) {
+          if (list[i].id === sitting.id) { list[i] = updated; break; }
+        }
+        // No "Saved" flag: the chip comes back wearing the stars, which says
+        // it more plainly and in the place you were already looking.
+        if (state.view === "week") renderWeek();
+        if (state.view === "meals") renderMeals();
+      })
+      .catch(fail);
   }
 
   /* The ingredient list that lives on the back of a meal card. Shared by the
@@ -1293,10 +1452,14 @@
     return flip;
   }
 
-  /* One meal within a day, on the read-only week view. The picture flips over
-     on a tap to show the ingredient quantities for the number eating, and a
-     tap on that list flips it back. */
-  function renderSitting(sitting, isExtra) {
+  /* One meal within a day on the week view. The picture flips over on a tap to
+     show the ingredient quantities for the number eating, and a tap on that
+     list flips it back.
+
+     `on` is the date the sitting falls on, and is what decides whether the name
+     chips can be rated: today and earlier, yes; later in the week, no. Nobody
+     can say what Thursday was like on Tuesday. */
+  function renderSitting(sitting, isExtra, ctx) {
     var block = el("div", "sitting" + (isExtra ? " extra" : ""));
     var meal = sitting.mealId ? mealById(sitting.mealId) : null;
     var eating = sitting.eaters.map(personById).filter(Boolean);
@@ -1347,7 +1510,10 @@
     }
 
     if (sitting.note) front.appendChild(el("div", "day-note", sitting.note));
-    front.appendChild(eatersRow(eating, guestsOn(sitting)));
+    var rate = (ctx && ctx.on <= state.today && !state.offline)
+      ? { key: ctx.key, day: ctx.day, sitting: sitting, on: ctx.on }
+      : null;
+    front.appendChild(eatersRow(eating, guestsOn(sitting), rate));
 
     // With no ingredients (or nobody eating) there's nothing to flip to, so the
     // card stays a plain front, just as it always was.
@@ -2339,10 +2505,236 @@
 
   // ------------------------------------------------------------- meals
 
+  /* What the house has made of each meal, gathered from every week still on
+     file. Worked out here rather than stored on the meal, because a rating
+     belongs to the night it was eaten: the same recipe rated twice is two
+     opinions, and a week deleted takes its opinions with it.
+
+     Everything is keyed by meal id and rebuilt on each render. It is a few
+     hundred numbers in the largest household this app is for; caching it would
+     only be somewhere else for the figures to go stale. */
+  function ratingStats() {
+    var by = {};
+    function slot(id) {
+      if (!by[id]) by[id] = { all: [], people: {} };
+      return by[id];
+    }
+    Object.keys(state.weeks || {}).forEach(function (key) {
+      var week = state.weeks[key] || {};
+      DAYS.forEach(function (day) {
+        var cell = week[day] || {};
+        (cell.sittings || []).forEach(function (s) {
+          if (!s.mealId || !s.ratings) return;
+          Object.keys(s.ratings).forEach(function (pid) {
+            var stars = s.ratings[pid];
+            if (!stars || !personById(pid)) return;
+            var entry = slot(s.mealId);
+            entry.all.push(stars);
+            (entry.people[pid] = entry.people[pid] || []).push(stars);
+          });
+        });
+      });
+    });
+
+    Object.keys(by).forEach(function (id) {
+      var entry = by[id];
+      entry.count = entry.all.length;
+      entry.mean = mean(entry.all);
+      /* "Divisive" is the spread between people, not between nights. Someone
+         who rates the same meal 3 then 5 is having an off week; two people who
+         rate it 1 and 5 disagree about the meal, which is the thing worth
+         surfacing. So each person is reduced to their own average first, and
+         the spread is taken across those. */
+      var perPerson = Object.keys(entry.people).map(function (pid) {
+        return mean(entry.people[pid]);
+      });
+      entry.spread = perPerson.length > 1
+        ? Math.max.apply(null, perPerson) - Math.min.apply(null, perPerson)
+        : 0;
+      entry.raters = perPerson.length;
+    });
+    return by;
+  }
+
+  function mean(list) {
+    if (!list.length) return 0;
+    var total = 0;
+    for (var i = 0; i < list.length; i++) total += list[i];
+    return total / list.length;
+  }
+
+  function personMean(stats, mealId, pid) {
+    var entry = stats[mealId];
+    var list = entry && entry.people[pid];
+    return list && list.length ? mean(list) : null;
+  }
+
+  /* The sorts, each a comparison over the stats above.
+
+     `rank` returns the number a meal is sorted by, or null when it has no
+     answer to the question - a meal nobody has rated is not the worst meal in
+     the house, it is an unknown, and unknowns go to the bottom in every
+     direction rather than winning "lowest rated" by default. */
+  var MEAL_SORTS = {
+    library: null,
+    best: {
+      label: "Highest rated",
+      rank: function (m, st) { return st[m.id] ? st[m.id].mean : null; },
+      dir: -1
+    },
+    worst: {
+      label: "Lowest rated",
+      rank: function (m, st) { return st[m.id] ? st[m.id].mean : null; },
+      dir: 1
+    },
+    divisive: {
+      label: "Most divisive",
+      rank: function (m, st) {
+        var e = st[m.id];
+        return e && e.raters > 1 ? e.spread : null;
+      },
+      dir: -1
+    },
+    unrated: {
+      label: "Not yet rated",
+      rank: function (m, st) { return st[m.id] ? null : 0; },
+      dir: 1,
+      only: true      // a filter, not an order: rated meals drop out entirely
+    }
+  };
+
+  function personSort(value) {
+    // "best:p_abc123" / "worst:p_abc123"
+    var bits = String(value || "").split(":");
+    if (bits.length !== 2 || !personById(bits[1])) return null;
+    var pid = bits[1], dir = bits[0] === "worst" ? 1 : -1;
+    return {
+      rank: function (m, st) { return personMean(st, m.id, pid); },
+      dir: dir,
+      pid: pid
+    };
+  }
+
+  function sortMeals(meals, stats) {
+    var how = personSort(state.mealSort) ||
+      (MEAL_SORTS.hasOwnProperty(state.mealSort) ? MEAL_SORTS[state.mealSort] : null);
+    if (!how) return meals;
+
+    var ranked = meals.map(function (m, i) {
+      return { meal: m, at: i, rank: how.rank(m, stats) };
+    });
+    if (how.only) ranked = ranked.filter(function (r) { return r.rank !== null; });
+
+    ranked.sort(function (a, b) {
+      // Nothing to rank on goes last whichever way round the sort is.
+      if (a.rank === null && b.rank === null) return a.at - b.at;
+      if (a.rank === null) return 1;
+      if (b.rank === null) return -1;
+      if (a.rank !== b.rank) return (a.rank - b.rank) * how.dir;
+      return a.at - b.at;     // a tie keeps the library's own order
+    });
+    return ranked.map(function (r) { return r.meal; });
+  }
+
+  /* Filled stars up to the average, with the one it lands in the middle of
+     faded rather than drawn as a half-star glyph: ⯨ and its neighbours are
+     missing from enough system fonts to come out as a box, and a row of boxes
+     on a meal card is worse than a rounder number. The figure is printed next
+     to it for anyone who wants the rest. */
+  function starRow(value) {
+    var row = el("span", "stars");
+    for (var n = 1; n <= 5; n++) {
+      var full = value >= n - 0.25;
+      var part = !full && value >= n - 0.75;
+      row.appendChild(el("span",
+        "star" + (full ? " on" : (part ? " on half" : "")),
+        full || part ? "★" : "☆"));
+    }
+    return row;
+  }
+
+  /* The rating block on a meal card: the house's average, then who thought
+     what. The per-person line is the point of the whole feature - "4.2" is a
+     number, "Ellie 5, Sam 2" is why you are or aren't cooking it again. */
+  function ratingBlock(meal, stats, highlight) {
+    var entry = stats[meal.id];
+    if (!entry || !entry.count) {
+      return el("div", "macro-none", "Not rated yet");
+    }
+    var wrap = el("div", "rating-block");
+    var top = el("div", "rating-mean");
+    top.appendChild(starRow(entry.mean));
+    top.appendChild(el("span", "rating-figure", round(entry.mean).toFixed(1)));
+    top.appendChild(el("span", "rating-count",
+      "· " + entry.count + (entry.count === 1 ? " rating" : " ratings")));
+    if (entry.raters > 1 && entry.spread >= 2) {
+      top.appendChild(el("span", "rating-split", "· split"));
+    }
+    wrap.appendChild(top);
+
+    var who = el("div", "rating-people");
+    household().forEach(function (p) {
+      var avg = personMean(stats, meal.id, p.id);
+      if (avg === null) return;
+      var pill = el("span", "rating-pill" + (highlight === p.id ? " lead" : ""));
+      pill.style.background = p.color || "#3d8361";
+      pill.appendChild(el("span", null, p.name));
+      pill.appendChild(el("span", "rating-pill-n", "★" + round(avg).toFixed(1)));
+      pill.title = p.name + " averages " + round(avg).toFixed(1) +
+        " over " + stats[meal.id].people[p.id].length + " of these";
+      who.appendChild(pill);
+    });
+    if (who.childNodes.length) wrap.appendChild(who);
+    return wrap;
+  }
+
+  /* The sort control next to the search box. Rebuilt with the household on it,
+     so a person added or renamed is on the list without a reload. */
+  function renderMealSort() {
+    var box = $("meal-sort");
+    if (!box) return;
+    clear(box);
+    box.appendChild(option("library", "Library order"));
+    Object.keys(MEAL_SORTS).forEach(function (id) {
+      if (MEAL_SORTS[id]) box.appendChild(option(id, MEAL_SORTS[id].label));
+    });
+    var people = household();
+    if (people.length) {
+      /* Per person, in the same select rather than behind a second dropdown:
+         with a household of four this is six more lines on a list you are
+         already looking at, and the alternative is a control that means
+         nothing until the first one is set a particular way. */
+      var group = el("optgroup");
+      group.label = "By person";
+      people.forEach(function (p) {
+        group.appendChild(option("best:" + p.id, p.name + " likes most"));
+        group.appendChild(option("worst:" + p.id, p.name + " likes least"));
+      });
+      box.appendChild(group);
+    }
+    // A person removed takes their sort with them; fall back to the library.
+    if (!personSort(state.mealSort) && !MEAL_SORTS.hasOwnProperty(state.mealSort)) {
+      state.mealSort = "library";
+    }
+    box.value = state.mealSort;
+    if (!box.value) { state.mealSort = "library"; box.value = "library"; }
+  }
+
+  function option(value, label) {
+    var o = el("option", null, label);
+    o.value = value;
+    return o;
+  }
+
   function renderMeals() {
     $("meal-count").textContent = state.meals.length ? "(" + state.meals.length + ")" : "";
     var list = $("meal-list");
     clear(list);
+    renderMealSort();
+
+    var stats = ratingStats();
+    var chosen = personSort(state.mealSort);
+    var highlight = chosen ? chosen.pid : null;
 
     var filter = state.mealFilter.toLowerCase();
     var shown = state.meals.filter(function (m) {
@@ -2350,11 +2742,13 @@
       return (m.name + " " + (m.tags || []).join(" ") + " " + (m.notes || ""))
         .toLowerCase().indexOf(filter) !== -1;
     });
+    shown = sortMeals(shown, stats);
 
     if (shown.length === 0) {
       list.appendChild(el("div", "empty-state",
-        state.meals.length ? "No meals match that search."
-                           : "No meals saved yet. Add one above."));
+        !state.meals.length ? "No meals saved yet. Add one above."
+          : state.mealSort === "unrated" ? "Everything that matches has been rated."
+          : "No meals match that search."));
       return;
     }
 
@@ -2395,6 +2789,7 @@
       } else {
         front.appendChild(el("div", "macro-none", "No nutrition info yet"));
       }
+      front.appendChild(ratingBlock(m, stats, highlight));
       if (m.notes) front.appendChild(el("p", null, m.notes));
       if (hasLink(m)) front.appendChild(recipeLink(m));
       var actions = el("div", "actions");
@@ -2498,33 +2893,28 @@
     });
   }
 
-  /* The Add-a-meal panel is collapsed by default so the page opens on the
-     search box and meal library - most visits are for inspiration, not adding.
-     These open it, and switch between the "Add a meal" and "Bulk Add" tabs. */
+  /* The add-a-meal form is put away by default so the page opens on the search
+     box and the library - most visits are for inspiration, not for adding. The
+     + button by the heading is what brings it out, and turns into a × while it
+     is open, which is the same button saying the same thing both ways round. */
   function openAddPanel() {
-    $("add-panel-body").hidden = false;
+    $("add-panel").hidden = false;
     $("add-panel").classList.add("open");
+    $("add-panel-toggle").classList.add("on");
     $("add-panel-toggle").setAttribute("aria-expanded", "true");
+    $("add-panel-toggle").title = "Close";
   }
   function closeAddPanel() {
-    $("add-panel-body").hidden = true;
+    $("add-panel").hidden = true;
     $("add-panel").classList.remove("open");
+    $("add-panel-toggle").classList.remove("on");
     $("add-panel-toggle").setAttribute("aria-expanded", "false");
-  }
-  function selectAddTab(which) {
-    var isAdd = which !== "bulk";
-    $("add-tab-add").classList.toggle("active", isAdd);
-    $("add-tab-bulk").classList.toggle("active", !isAdd);
-    $("add-tab-add").setAttribute("aria-selected", isAdd ? "true" : "false");
-    $("add-tab-bulk").setAttribute("aria-selected", !isAdd ? "true" : "false");
-    $("add-panel-form").hidden = !isAdd;
-    $("add-panel-bulk").hidden = isAdd;
+    $("add-panel-toggle").title = "Add a meal";
   }
 
   function startEditMeal(meal) {
     state.editingMealId = meal.id;
     openAddPanel();
-    selectAddTab("add");
     $("meal-form-title").hidden = false;   // shows the "Edit meal" cue
     $("meal-submit").textContent = "Save changes";
     $("meal-cancel").hidden = false;
@@ -3259,6 +3649,11 @@
         : api("POST", "/api/meals", payload);
       req.then(function () {
         resetMealForm();
+        /* An edit is finished, so the form gets out of the way of the meal it
+           just changed. A new meal often isn't the only one being typed - it
+           is what the old Bulk Add tab was really for - so the empty form
+           stays up, ready for the next one. */
+        if (editing) closeAddPanel();
         return refresh();
       }).then(function () {
         toast(editing ? "Meal updated" : "Meal added");
@@ -3269,13 +3664,14 @@
       });
     };
 
-    $("meal-cancel").onclick = resetMealForm;
+    /* Cancel empties the form and puts it away. Since the panel is now opened
+       deliberately with the +, "I've finished with this" is one thing, not
+       two. */
+    $("meal-cancel").onclick = function () { resetMealForm(); closeAddPanel(); };
 
     $("add-panel-toggle").onclick = function () {
-      if ($("add-panel-body").hidden) { openAddPanel(); } else { closeAddPanel(); }
+      if ($("add-panel").hidden) { openAddPanel(); } else { closeAddPanel(); }
     };
-    $("add-tab-add").onclick = function () { selectAddTab("add"); };
-    $("add-tab-bulk").onclick = function () { selectAddTab("bulk"); };
 
     $("add-link").onclick = function () { addLinkRow(null); };
 
@@ -3309,19 +3705,9 @@
       renderMeals();
     };
 
-    $("import-btn").onclick = function () {
-      var text = $("import-text").value;
-      if (!text.trim()) return;
-      api("POST", "/api/meals/import", { text: text })
-        .then(function (res) {
-          $("import-text").value = "";
-          var box = $("import-result");
-          var msg = "Added " + res.added.length + " meal" + (res.added.length === 1 ? "" : "s") + ".";
-          if (res.skipped.length) msg += " Skipped " + res.skipped.length + " already in the library.";
-          box.textContent = msg;
-          box.hidden = false;
-          return refresh();
-        }).catch(fail);
+    $("meal-sort").onchange = function () {
+      state.mealSort = this.value;
+      renderMeals();
     };
 
     $("cast-show-all").onchange = renderCast;
@@ -3511,6 +3897,7 @@
   wire();
   wireTheme();
   wireSwipe();
+  wireStars();
   wireServiceWorker();
   trackTopbarHeight();
   /* The hash is honoured so the manifest's shortcuts and any link into a tab

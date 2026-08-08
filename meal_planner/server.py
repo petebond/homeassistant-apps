@@ -213,6 +213,16 @@ def parse_week_key(value):
         return monday_of(date.today()).isoformat()
 
 
+def date_of(week_key, day):
+    """The actual date a day of a stored week falls on. Week keys are always a
+    Monday, so the day's position in DAYS is its offset."""
+    try:
+        monday = date(*(int(x) for x in week_key.split("-")))
+    except (TypeError, ValueError):
+        monday = monday_of(date.today())
+    return monday + timedelta(days=DAYS.index(day) if day in DAYS else 0)
+
+
 def blank_day():
     """A day has ONE cook and a list of 'sittings' - separate meals eaten that
     day by different groups. Whoever is cooking cooks everything that evening."""
@@ -232,7 +242,45 @@ def new_sitting(meal_id=None, eaters=None, note="", guests=0):
         # means anything while the guest is in `eaters`; see clamp_guests.
         "guests": clean_guests(guests),
         "note": note or "",
+        # What the people who ate it thought: person id -> 1 to 5 stars.
+        # Kept on the sitting, not on the meal, because the same recipe cooked
+        # in March and again in August is two different dinners to rate - and
+        # a meal deleted from the library shouldn't take the household's
+        # opinion of the night they ate it with it.
+        "ratings": {},
     }
+
+
+MAX_STARS = 5
+
+
+def drop_ratings(sitting):
+    """Keep the ratings on a sitting to the people it still says ate it."""
+    ratings = sitting.get("ratings")
+    if not isinstance(ratings, dict):
+        return
+    eaters = set(sitting.get("eaters") or [])
+    for pid in [p for p in ratings if p not in eaters]:
+        del ratings[pid]
+
+
+def clean_ratings(value, valid=None):
+    """Ratings as they are allowed to be stored: whole stars from 1 to 5,
+    against people who exist. Anything else is dropped rather than clamped -
+    a rating nobody can account for is worse than no rating."""
+    if not isinstance(value, dict):
+        return {}
+    out = {}
+    for pid, stars in value.items():
+        if not isinstance(pid, str) or (valid is not None and pid not in valid):
+            continue
+        try:
+            stars = int(stars)
+        except (TypeError, ValueError):
+            continue
+        if 1 <= stars <= MAX_STARS:
+            out[pid] = stars
+    return out
 
 
 # --------------------------------------------------------------------------
@@ -331,6 +379,9 @@ def migrate_day(cell):
                 "eaters": [e for e in (sitting.get("eaters") or []) if isinstance(e, str)],
                 "guests": clean_guests(sitting.get("guests")),
                 "note": sitting.get("note") or "",
+                # Absent on every week planned before 1.13.0, which is most of
+                # them. An empty dict reads the same as "nobody has said yet".
+                "ratings": clean_ratings(sitting.get("ratings")),
             })
         return {"cookId": cook, "sittings": out}
 
@@ -1983,6 +2034,12 @@ class Handler(BaseHTTPRequestHandler):
                             day["cookId"] = None
                         for sitting in day.get("sittings", []):
                             sitting["eaters"] = [e for e in sitting["eaters"] if e != pid]
+                            # Their ratings go with them. Left behind they
+                            # would keep pulling the library's averages around
+                            # on behalf of somebody who no longer eats here,
+                            # and with no name to explain the number.
+                            if isinstance(sitting.get("ratings"), dict):
+                                sitting["ratings"].pop(pid, None)
                 return before != len(data["people"])
             return self._json({"ok": True}) if mutate(remove) else self._error(404, "No such person")
 
@@ -2191,6 +2248,11 @@ class Handler(BaseHTTPRequestHandler):
                     for other in week[day]["sittings"]:
                         if other["id"] != sid:
                             other["eaters"] = [e for e in other["eaters"] if e not in moved]
+                            drop_ratings(other)
+                    # Taken off the meal, taken off the ratings: four stars
+                    # from somebody the plan now says wasn't there is a number
+                    # with nothing behind it.
+                    drop_ratings(sitting)
 
                 # A guest slot that has been turned off keeps no number: it
                 # would come back with the old count next time it was toggled
@@ -2216,6 +2278,68 @@ class Handler(BaseHTTPRequestHandler):
                 week[day]["sittings"] = [s for s in week[day]["sittings"] if s["id"] != sid]
                 return before != len(week[day]["sittings"])
             return (self._json({"ok": True}) if mutate(remove_sitting)
+                    else self._error(404, "No such meal on that day"))
+
+        # What somebody thought of it. One person, one meal, one to five stars,
+        # and its own endpoint rather than a field on the sitting PUT: that
+        # handler moves eaters between meals as a side effect, and a rating is
+        # the one write that should never rearrange the plan it is describing.
+        m = re.match(r"^/api/week/(\d{4}-\d{2}-\d{2})/(\w+)/sittings/([\w]+)/rating$",
+                     path)
+        if m and method == "PUT":
+            key, day, sid = parse_week_key(m.group(1)), m.group(2), m.group(3)
+            if day not in DAYS:
+                return self._error(400, "Unknown day")
+            body = body or {}
+            pid = body.get("personId")
+
+            # Nobody can say what tomorrow's dinner was like. The check is here
+            # as well as in the browser because the browser's clock is the
+            # phone's, and a tablet left on the wrong date shouldn't be able to
+            # seed the library with opinions of meals that haven't happened.
+            on = date_of(key, day)
+            if on > date.today():
+                return self._error(400, "That meal hasn't been eaten yet.")
+
+            stars = body.get("stars")
+            if stars in (None, 0, ""):
+                stars = None
+            else:
+                try:
+                    stars = int(stars)
+                except (TypeError, ValueError):
+                    return self._error(400, "A rating is a number of stars.")
+                if not 1 <= stars <= MAX_STARS:
+                    return self._error(400, "Ratings run from 1 to %d stars." % MAX_STARS)
+
+            def set_rating(data):
+                week = data["weeks"].get(key)
+                if not week:
+                    return None
+                sitting = find_sitting(week, day, sid)
+                if sitting is None:
+                    return None
+                person = next((p for p in data["people"] if p["id"] == pid), None)
+                # The guest slot stands for a variable number of people, so a
+                # single star count against it would be nobody's opinion in
+                # particular. Guests eat; the household rates.
+                if person is None or person.get("guest"):
+                    return "no-person"
+                if pid not in (sitting.get("eaters") or []):
+                    return "not-eating"
+                ratings = sitting.setdefault("ratings", {})
+                if stars is None:
+                    ratings.pop(pid, None)
+                else:
+                    ratings[pid] = stars
+                return sitting
+
+            result = mutate(set_rating)
+            if result == "no-person":
+                return self._error(400, "Only people in the household can rate a meal.")
+            if result == "not-eating":
+                return self._error(400, "Only the people who ate it can rate it.")
+            return (self._json(result) if result
                     else self._error(404, "No such meal on that day"))
 
         m = re.match(r"^/api/week/(\d{4}-\d{2}-\d{2})/clear$", path)

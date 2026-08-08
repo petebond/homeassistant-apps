@@ -660,31 +660,21 @@ main { max-width: 1500px; margin: 0 auto; padding: 1.1rem 1rem; }
 
 /* ---------- rating a meal from the week view ---------- */
 
-/* A name chip that can be tapped to rate. It has to stay a name chip first -
-   the row is still there to say who is eating - so the only differences are a
-   star on the end and enough of an outline to suggest it is pressable. */
+/* A name chip that can be tapped to rate. Deliberately identical to one that
+   can't: same size, same weight, no badge, no outline. The row exists to say
+   who is eating, and a chip carrying rating hardware on every day of the week
+   turns it into a form. Only the cursor and a hover give it away. */
 .chip-rate {
-  display: inline-flex;
-  align-items: center;
-  gap: .3rem;
+  display: inline-block;
   border: 0;
+  /* font:inherit before the size, so the line height is the one the <span>
+     chips beside it are using - a button with its own leading would sit a
+     pixel or two off and give itself away. */
   font: inherit;
   font-size: .78rem;
-  line-height: 1.35;
+  padding: .13rem .5rem;
   cursor: pointer;
-  /* Chips sit at the foot of a card and are small. 32px of height is the
-     smallest a thumb reliably hits; padding gets it there without making the
-     chip look like a button. */
-  min-height: 32px;
-  padding: .2rem .5rem;
 }
-.chip-rate .chip-stars {
-  /* The unrated star is dimmed rather than hidden, so the row doesn't reflow
-     as ratings come in and the tap target is the same size either way. */
-  opacity: .55;
-  font-size: .82rem;
-}
-.chip-rate.rated .chip-stars { opacity: 1; font-weight: 600; }
 .chip-rate:hover, .chip-rate.picking { filter: brightness(1.12); }
 .chip-rate:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 
@@ -692,77 +682,91 @@ main { max-width: 1500px; margin: 0 auto; padding: 1.1rem 1rem; }
    3D flip with clipped faces, so a popover inside it would be cut off at the
    edge or rotate away with the face it sits on. Placed by app.js, which is
    also why it starts invisible - it has to be measured before it can be put
-   anywhere sensible. */
+   anywhere sensible.
+
+   Its background is set inline to the colour of the chip it came from: on a
+   card with four names on it, that says "you tapped this one" without a line
+   of text at the top saying so. Everything on it is therefore white or yellow,
+   the two things that read on all ten household colours. */
 .star-pop {
   position: fixed;
   visibility: hidden;
   z-index: 60;
-  background: var(--card);
-  border: 1px solid var(--line);
+  border: 0;
   border-radius: 12px;
-  box-shadow: var(--shadow);
-  padding: .45rem;
+  box-shadow: 0 6px 18px rgba(0,0,0,.28);
+  padding: .25rem;
   display: flex;
   flex-direction: column;
-  gap: .2rem;
-  min-width: 8.5rem;
+  min-width: 0;
 }
-.star-who {
-  font-size: .72rem;
-  color: var(--muted);
-  text-align: center;
-  padding-bottom: .1rem;
-}
-.star-col { display: flex; flex-direction: column; gap: .15rem; }
+.star-col { display: flex; flex-direction: column; }
 
 /* One star nearest the name, five furthest away, so the gesture is "how far
    did you reach". Opening upwards reverses the column so that stays true. */
 .star-pop.upward .star-col { flex-direction: column-reverse; }
-.star-pop.upward .star-who { order: 2; padding: .15rem 0 0; }
 .star-pop.upward .star-clear {
   order: -1;
-  margin: 0 0 .15rem;
+  margin: 0 0 .1rem;
   border-top: 0;
-  border-bottom: 1px solid var(--line);
-  border-radius: 8px 8px 0 0;
-  padding: .15rem 0 .4rem;
+  border-bottom: 1px solid rgba(255,255,255,.28);
+  padding: .05rem 0 .3rem;
 }
 
 .star-btn {
   display: flex;
   align-items: center;
-  gap: .45rem;
-  width: 100%;
-  min-height: 38px;
-  padding: .1rem .55rem;
-  border: 1px solid transparent;
+  gap: .3rem;
+  /* 34px: still a comfortable thumb target, but five of them stack into
+     something the size of a chip rather than a menu. */
+  min-height: 34px;
+  padding: 0 .4rem;
+  border: 0;
   border-radius: 8px;
   background: none;
-  color: var(--ink);
   font: inherit;
   cursor: pointer;
   text-align: left;
 }
-.star-btn:hover { background: var(--accent-wash); }
-.star-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
-.star-glyph { font-size: 1.15rem; line-height: 1; color: var(--today-mark); }
-.star-btn.on { background: var(--accent-wash); border-color: var(--line); }
-.star-n { font-size: .8rem; color: var(--muted); }
+.star-btn:hover, .star-btn:focus-visible { background: rgba(255,255,255,.2); }
+.star-btn:focus-visible { outline: 0; }
+
+.star-n {
+  font-size: .78rem;
+  font-weight: 700;
+  color: #fff;
+  opacity: .75;
+  width: .8rem;
+  text-align: center;
+}
+.star-btn.on .star-n { opacity: 1; }
+
+.star-svg { width: 20px; height: 20px; display: block; flex: none; }
+/* Stroked in its own fill colour with round joins, which is what rounds the
+   points off - the path itself is a plain five-pointer. */
+.star-svg path {
+  fill: currentColor;
+  stroke: currentColor;
+  stroke-width: 3.2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+.star-btn .star-svg { color: rgba(255,255,255,.35); }
+.star-btn.on .star-svg { color: #ffd452; }
 
 .star-clear {
-  margin-top: .15rem;
+  margin-top: .1rem;
   border: 0;
-  border-top: 1px solid var(--line);
-  border-radius: 0 0 8px 8px;
+  border-top: 1px solid rgba(255,255,255,.28);
   background: none;
-  color: var(--muted);
+  color: #fff;
+  opacity: .8;
   font: inherit;
-  font-size: .78rem;
-  padding: .4rem 0 .15rem;
-  min-height: 32px;
+  font-size: .72rem;
+  padding: .3rem 0 .05rem;
   cursor: pointer;
 }
-.star-clear:hover { color: var(--danger); }
+.star-clear:hover { opacity: 1; }
 
 .tag {
   display: inline-block;

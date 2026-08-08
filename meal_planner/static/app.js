@@ -1225,15 +1225,16 @@
     return chip;
   }
 
-  /* A name chip that is also this person's rating of this meal: their stars if
-     they have given any, and a tap target for giving or changing them. */
+  /* A name chip you can tap to rate. It is a name chip and nothing else to
+     look at: no star badge, and nothing to tell it apart from a chip on a day
+     too far off to rate. The row's job is to say who is eating, and a week of
+     chips wearing rating hardware turns that row into a form. What you thought
+     of the meal is in the picker, which is where you go to change it anyway. */
   function rateableChip(person, rate) {
     var stars = ratingOf(rate.sitting, person.id);
-    var chip = el("button", "chip chip-rate" + (stars ? " rated" : ""));
+    var chip = el("button", "chip chip-rate", person.name);
     chip.type = "button";
     chip.style.background = person.color || "#3d8361";
-    chip.appendChild(el("span", "chip-name", person.name));
-    chip.appendChild(el("span", "chip-stars", stars ? "★" + stars : "☆"));
     chip.title = stars
       ? person.name + " gave this " + stars + (stars === 1 ? " star" : " stars")
       : "Tap to rate for " + person.name;
@@ -1292,7 +1293,16 @@
 
     var current = ratingOf(rate.sitting, person.id);
     var pop = el("div", "star-pop");
-    pop.appendChild(el("div", "star-who", person.name));
+    /* The picker wears the colour of the chip it came out of. On a card with
+       four names on it, that is the whole answer to "did I tap the right one" -
+       and it is a better answer than a name written at the top of the list,
+       which is another line to read before you can do the thing you opened it
+       to do. */
+    pop.style.background = person.color || "#3d8361";
+    // The colour is the cue on screen; a screen reader gets the name here
+    // instead, since there is no longer a heading to read out.
+    pop.setAttribute("role", "group");
+    pop.setAttribute("aria-label", "Rate for " + person.name);
 
     var col = el("div", "star-col");
     for (var n = 1; n <= 5; n++) {
@@ -1322,8 +1332,10 @@
   function starButton(n, current, person, rate) {
     var b = el("button", "star-btn" + (n <= current ? " on" : ""));
     b.type = "button";
-    b.appendChild(el("span", "star-glyph", n <= current ? "★" : "☆"));
+    // Number first: it is the thing you are aiming at, and reading left to
+    // right it says "3 stars" rather than "star, three".
     b.appendChild(el("span", "star-n", String(n)));
+    b.appendChild(starShape());
     b.setAttribute("aria-label", n + (n === 1 ? " star" : " stars") +
                    " for " + person.name);
     b.onclick = function () {
@@ -1332,6 +1344,26 @@
       sendRating(person, rate, n === current ? null : n);
     };
     return b;
+  }
+
+  /* Drawn rather than typed. ★ is whatever the device's font makes of it -
+     thin and spiky on some, a flat black lozenge on others - and it can't be
+     given rounded points. This one is a plain five-pointer with a fat inner
+     radius, stroked in its own fill colour with round joins, which rounds the
+     points off and thickens it into something friendlier. */
+  var STAR_PATH = "M12 4 L14.65 8.36 L19.61 9.53 L16.28 13.39 L16.7 18.47 " +
+                  "L12 16.5 L7.3 18.47 L7.72 13.39 L4.39 9.53 L9.35 8.36 Z";
+
+  function starShape() {
+    var ns = "http://www.w3.org/2000/svg";
+    var svg = document.createElementNS(ns, "svg");
+    svg.setAttribute("class", "star-svg");
+    svg.setAttribute("viewBox", "0 0 24 24");
+    svg.setAttribute("aria-hidden", "true");
+    var path = document.createElementNS(ns, "path");
+    path.setAttribute("d", STAR_PATH);
+    svg.appendChild(path);
+    return svg;
   }
 
   /* Below the chip by preference, above it when the card is near the bottom of

@@ -1,5 +1,22 @@
 # Changelog
 
+## 1.13.1
+
+**Changed: the name chips on The Week are just names again.** 1.13.0 put a
+small star on every chip you could rate, and left the ones you couldn't
+without. That made the row of names a status display: four chips, each
+carrying a badge, on a card whose job is to say who is eating. The chips are
+now identical whether the meal was last night or is next Thursday — what you
+gave it lives in the picker, which is where you go to change it anyway.
+
+**Changed: the star picker is cleaner.** The person's name is off the top of
+it; instead the whole list takes the colour of the chip it came out of, which
+on a card with four names answers "did I tap the right one" without a line of
+text to read first. Numbers moved to the left of the stars, the rows are
+tighter, and the stars are drawn rather than typed — ★ is whatever the device's
+font makes of it, thin and spiky on some machines, and it can't be given
+rounded points. These are rounder, fatter and properly yellow.
+
 ## 1.13.0
 
 **New: everyone who ate it can say what they thought of it.** On The Week, tap

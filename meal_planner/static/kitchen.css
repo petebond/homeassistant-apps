@@ -148,6 +148,7 @@ html[data-zoomed] .screen {
   display: flex;
   align-items: baseline;
   justify-content: flex-end;
+  flex-wrap: wrap;
   gap: 1vw;
   min-width: 0;
   max-width: 100%;
@@ -174,6 +175,57 @@ html[data-zoomed] .screen {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* ---------- the dinner bell ---------- */
+
+/* The only thing on this screen anybody touches, so it is sized for a hand
+   rather than for the layout: a Nest Hub's touch layer is imprecise and the
+   person pressing it is usually holding a pan.
+
+   Filled with the accent rather than outlined. Everything else here is text on
+   a dark background; a button that looked like the rest of the panel would be
+   read as a label and never pressed. */
+.bell-btn {
+  margin-top: 2.4vh;
+  padding: 1.6vh 3vw;
+  border: 0;
+  border-radius: 999px;
+  background: var(--k-accent);
+  color: #10241a;
+  font: inherit;
+  font-size: 3vh;
+  font-weight: 700;
+  letter-spacing: .01em;
+  white-space: nowrap;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.bell-btn[hidden] { display: none; }
+
+/* While the request is in flight, and for a moment after. Dimmed rather than
+   greyed: the button is still the brightest thing in the panel, it just isn't
+   asking to be pressed again. */
+.bell-btn.is-ringing { opacity: .55; }
+.bell-btn.is-sorry {
+  background: transparent;
+  color: var(--k-dim);
+  box-shadow: inset 0 0 0 1px var(--k-line);
+}
+
+/* A full-width row of its own beneath the name, at the label's weight rather
+   than the name's. Two reasons it isn't on the same line: the panel is narrow
+   enough on a Hub that a long name plus "for 5 people" would ellipsis the name,
+   which is the half of the line that matters - and read from the far side of a
+   kitchen the two are different questions, answered one above the other. */
+.cook-for {
+  flex-basis: 100%;
+  margin-top: .6vh;
+  font-size: 2.4vh;
+  font-weight: 600;
+  color: var(--k-dim);
+  line-height: 1;
+  text-align: right;
 }
 
 /* Out of the flow entirely: it is a rare warning, and it is not worth a row of
@@ -520,6 +572,12 @@ html[data-zoomed] .screen {
   .cooking { margin-top: 0; padding-top: 0; border-top: 0; }
   .cooking-label { font-size: 2vh; }
   .cook-name { font-size: 3.6vh; }
+  /* In a row across the top there is width to spare and no height to spare, so
+     the count stops being its own line and joins the end of the sentence. */
+  .cook-for { flex-basis: auto; margin-top: 0; font-size: 2vh; }
+  /* Stacked, the panel is a row across the top with the week strip hidden, so
+     the bell joins that row rather than sitting under it. */
+  .bell-btn { margin-top: 0; font-size: 2.4vh; padding: 1.2vh 3vw; }
   .week { display: none; }
   .meal-name { font-size: 3.6vh; }
   .meal-photo { height: 12vh; }

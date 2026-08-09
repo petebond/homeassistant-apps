@@ -1,5 +1,74 @@
 # Changelog
 
+## 1.16.0
+
+**New: the dinner bell.** Settings → **Dinner bell**. Switch it on, tick the
+speakers, and one press plays a chime on all of them — so calling everyone to
+the table stops being a walk to the foot of the stairs.
+
+There is a **Dinner time!** button on the kitchen display for the person doing
+the plating up, and a **Ring it now** button on the phone. The display's button
+has its own switch, so a Hub in a room where a nine-year-old can reach it need
+not have one.
+
+A bell is shipped with the app, so the switch works the moment it is turned on.
+Choose a sound to replace it with anything else — mp3, wav, ogg, m4a or flac,
+including a recording of somebody shouting "dinner" — and **Listen** plays it
+on your phone rather than on the speakers, which is the question you actually
+want answered at that point. **Use the built-in bell** puts the original back.
+Your sound goes into the backup with everything else.
+
+Two things it deliberately doesn't do. It doesn't touch the volume: the chime
+plays at whatever each speaker is already set to, because reading and restoring
+six volumes is three round trips each and leaves the house loud for good if the
+app dies halfway. And it doesn't ring on its own, ever — Cast can't resume what
+it interrupts, so a podcast the bell stops stays stopped, and that is only
+acceptable when somebody meant it. Pressing it twice in a row does nothing; the
+second press is swallowed for a few seconds.
+
+Needs Home Assistant, like casting does — the speakers are its, not ours. On a
+PC the card doesn't appear.
+
+**Changed: the Household tab is now Settings**, with a cog. It had been a
+settings page in everything but name for a while — the display picker, how the
+display looks and backups all live there, and the list of people is one card
+among several. The household is still the first thing on it. Old links and
+bookmarks to `#people` still land on the right page.
+
+## 1.15.0
+
+**New: how many the cook is cooking for.** The Week's day cards now read
+"Cooking: Han, for 5 people", and the kitchen display says the same under the
+name in its info panel. It is a line worth its space because the chips above it
+can't be counted for it — one of them may read "+ 3 guests", and four names on
+a card can mean nine at the table.
+
+It counts the day, not each meal. A day with two sittings on it is one cook
+feeding the house twice, so somebody marked for both is still one person, and
+the guest slot is counted once at the largest number any single meal puts on
+it. On a day with one meal — nearly every day — the figure beside the cook is
+exactly the number the ingredients on the back of the card were scaled by.
+Those two agreeing is the whole point: a display promising five dinners over a
+recipe measured for four is worse than a display that says neither.
+
+Nothing is said when nobody is marked yet. A card reading "Cooking: not
+decided, for 0 people" answers a question nobody asked.
+
+**New: a switch for it on the kitchen display.** Appearance → what's on screen
+now has "How many they're cooking for", on by default, beside "Who's cooking".
+A Nest Hub is a small screen and a household of a fixed size already knows the
+answer.
+
+**Changed: backups say that the ratings are in them.** They always have been —
+the stars live on the sittings inside the meal plan, which goes into the zip
+whole — but the summary on the backup card listed meals, people and photos, and
+a list like that reads as a list of everything that's in there. It now names
+the ratings and the weeks planned, on the card, in the confirmation before a
+restore, and in the message afterwards. Nothing about the file itself has
+changed, and backups made by older versions are described the same way, because
+the numbers are counted out of the zip rather than read off what the app that
+wrote it claimed.
+
 ## 1.14.0
 
 **New: order the library by what *some* of the house thinks.** Tap the button

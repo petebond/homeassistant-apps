@@ -50,10 +50,22 @@
       <span id="showing" class="info-showing" hidden>Currently showing</span>
       <h1 id="day-name" class="info-day">&nbsp;</h1>
       <p id="day-date" class="info-date">&nbsp;</p>
+      <!-- The cook, and how many they are cooking for. The count is its own
+           line rather than a tail on the name: this panel is a column about
+           six inches wide on a Nest Hub, and "Han, for 5 people" on one line
+           either wraps in the middle of the name or shrinks it. -->
       <div class="cooking">
         <span class="cooking-label">Cooking</span>
         <span id="cook" class="cook-name">&nbsp;</span>
+        <span id="cook-for" class="cook-for" hidden>&nbsp;</span>
       </div>
+
+      <!-- The dinner bell. Hidden unless it is switched on, has speakers and
+           the display's own switch is on - see /api/kitchen's `bell`. Bottom
+           of the panel because it is the one thing on this screen anybody
+           reaches out and touches, and the bottom is the reachable end of a
+           Hub. -->
+      <button id="bell-btn" class="bell-btn" type="button" hidden>Dinner time!</button>
     </aside>
   </main>
 

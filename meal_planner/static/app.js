@@ -13,7 +13,12 @@
   /* The tabs, left to right. This is the order on screen, so it is also the
      order a swipe moves through - keep it in step with the buttons in
      index.html. */
-  var VIEWS = ["week", "plan", "shopping", "meals", "people"];
+  var VIEWS = ["week", "plan", "shopping", "meals", "settings"];
+
+  /* The Household tab became Settings, and its hash went with it. Anything
+     bookmarked, shared or sitting in a phone's history still says #people, and
+     landing those on the week view would look like the page had gone. */
+  var OLD_VIEWS = { people: "settings" };
 
   var state = {
     people: [], meals: [], weeks: {},
@@ -35,10 +40,13 @@
     offline: false,       // server unreachable; the page is read-only
     cachedAt: null,       // when the copy being shown was last downloaded
     booted: false,        // first load finished, so setView may refresh again
-    cast: null,           // kitchen display status, fetched with the Household tab
-    backup: null,         // what there is to back up, fetched with the Household tab
+    cast: null,           // kitchen display status, fetched with the Settings tab
+    backup: null,         // what there is to back up, fetched with the Settings tab
     backupBusy: false,    // a backup or restore is in flight; leave its buttons be
     display: null,        // how the kitchen display looks; shared by the house
+    bell: null,           // the dinner bell: switch, speakers and chime
+    bellBusy: false,      // ringing or uploading; leave its buttons be
+    bellNote: null,       // what the bell card is saying, so a redraw keeps it
     focusUntil: 0,        // keep today's card on screen until this moment
     hiddenAt: 0           // when the page was last put away; see backFromAway
   };
@@ -240,6 +248,31 @@
   }
 
   function guestLabel(n) { return n + (n === 1 ? " guest" : " guests"); }
+
+  /* How many the whole day feeds, for the line beside the cook. Mirrors
+     day_head_count() in server.py, and for the same reason headCount() mirrors
+     head_count(): the kitchen display gets this number from the server and this
+     page works it out for itself, so the two have to agree or the wall and the
+     phone say different things about the same dinner.
+
+     Distinct people, not the sum of the meals - somebody marked for both of a
+     day's two sittings is still one person to feed. The guest slot counts once,
+     at the largest number any single meal puts on it. */
+  function dayHeadCount(sittings) {
+    var guest = guestPerson();
+    var named = {}, guests = 0, n = 0;
+    (sittings || []).forEach(function (sitting) {
+      (sitting.eaters || []).forEach(function (id) {
+        if (guest && id === guest.id) return;
+        if (personById(id)) named[id] = true;
+      });
+      guests = Math.max(guests, guestsOn(sitting));
+    });
+    for (var id in named) { if (named.hasOwnProperty(id)) n++; }
+    return n + guests;
+  }
+
+  function peopleLabel(n) { return n + (n === 1 ? " person" : " people"); }
 
   function reloadWeek(key) {
     return api("GET", "/api/week/" + key).then(function (res) {
@@ -844,6 +877,12 @@
      so the arriving page can slide in from the side the finger came from. Taps
      and links leave it out and get no animation - a tab you aimed at should
      just be there. */
+  /* A view name from a URL hash, or "" if it names nothing this app has. */
+  function viewFromHash(raw) {
+    var name = OLD_VIEWS[raw] || raw;
+    return VIEWS.indexOf(name) === -1 ? "" : name;
+  }
+
   function setView(name, dir) {
     state.view = name;
     VIEWS.forEach(function (v) {
@@ -865,7 +904,9 @@
     /* Asked for on arrival, not on every render: render() runs on a timer and
        on every save, and none of those is a reason to go and ask Home Assistant
        about the television again. */
-    if (name === "people") { loadCast(); loadDisplay(); loadBackupInfo(); }
+    if (name === "settings") {
+      loadCast(); loadDisplay(); loadBell(); loadBackupInfo();
+    }
 
     /* After the scroll to the top, so the sticky week bar is sitting in normal
        flow: animating a transform on an ancestor of a stuck element is what
@@ -1066,11 +1107,21 @@
                                          { key: key, day: day, on: dateKey }));
         });
 
-        // One cook for the evening, however many meals there are.
+        // One cook for the evening, however many meals there are, and how many
+        // they are cooking for. The count is worth its place because the chips
+        // above can't be counted for it: one of them may read "+ 3 guests".
+        //
+        // Nothing is said when nobody is marked yet - a card that reads
+        // "Cooking: not decided, for 0 people" is a worse answer than the same
+        // card without the second half.
         var cook = cell.cookId ? personById(cell.cookId) : null;
+        var heads = dayHeadCount(realOnes);
         var cookLine = el("div", "cook-line day-cook");
         cookLine.appendChild(el("span", "label", "Cooking: "));
         cookLine.appendChild(el("span", null, cook ? cook.name : "not decided"));
+        if (heads) {
+          cookLine.appendChild(el("span", "head-count", ", for " + peopleLabel(heads)));
+        }
         card.appendChild(cookLine);
       }
 
@@ -1804,7 +1855,7 @@
     eatLine.appendChild(el("label", null, "Eating"));
     var toggles = el("div", "eater-toggles");
     if (household().length === 0) {
-      toggles.appendChild(el("span", "muted small", "Add people on the Household tab first."));
+      toggles.appendChild(el("span", "muted small", "Add people on the Settings tab first."));
     }
 
     /* Who's already down for a different meal today? Guests are not tracked
@@ -3067,7 +3118,7 @@
      add-on asks on our behalf - the browser can't see Cast devices, and this
      app has no business holding a Home Assistant token.
 
-     Fetched when the Household tab is opened rather than with /api/data: it is
+     Fetched when the Settings tab is opened rather than with /api/data: it is
      a page most people see once, to choose a screen, and never again. */
   function loadCast(refreshDevices) {
     return api("GET", "/api/cast" + (refreshDevices ? "?refresh=1" : ""))
@@ -3133,6 +3184,11 @@
   function renderCast() {
     var card = $("cast-card");
     var info = state.cast;
+    /* The bell's speaker list comes out of this same answer, and the two
+       requests land in whichever order the network decides. Redrawn from here
+       so a device list that arrives after the bell's settings doesn't leave
+       that card saying "Looking…" for good. */
+    renderBell();
     card.hidden = !(info && info.available);
     if (card.hidden) return;
 
@@ -3284,6 +3340,7 @@
      here and not there is a checkbox that does nothing. */
   var DISPLAY_PARTS = [
     { id: "showCook", label: "Who's cooking" },
+    { id: "showHeads", label: "How many they're cooking for" },
     { id: "showClock", label: "The clock" },
     { id: "showDate", label: "The date" },
     { id: "showPhotos", label: "Meal photos" },
@@ -3449,6 +3506,237 @@
     });
   }
 
+  // ---------------------------------------------------- dinner bell
+  //
+  /* The panel for the bell. The speakers come from the same list the Cast
+     picker uses - Home Assistant knows about all of them and this app has no
+     business holding a token of its own - but the choice is separate, because
+     the screen the week goes on and the speakers dinner is called through are
+     different things in most houses.
+
+     Unlike the Cast picker, this one never filters. A speaker with no screen is
+     precisely what most people want here, so the "also show speakers" toggle
+     that card needs would be backwards. */
+
+  function loadBell() {
+    return api("GET", "/api/bell").then(function (info) {
+      state.bell = info;
+      renderBell();
+      return info;
+    }).catch(function () {
+      /* Offline, or an add-on from before the bell existed. Either way the
+         card has nothing to say and hides itself. */
+      state.bell = null;
+      renderBell();
+    });
+  }
+
+  /* What the card is currently saying, held in state rather than written
+     straight to the page.
+
+     It has to be state because the outcome of pressing a button and the
+     redraw that follows it are two different things: writing "nothing rang"
+     into the element and then calling renderBell() - which is what every
+     handler here does - put the card's own idea of itself straight back over
+     the top, and the message vanished in the same tick it appeared. */
+  function bellSay(message, isError) {
+    state.bellNote = message ? { text: message, error: !!isError } : null;
+    paintBellNote();
+  }
+
+  function paintBellNote() {
+    /* With nothing to say of our own, fall back to whatever the server last
+       reported - a speaker that failed on the previous ring is still worth
+       mentioning when the tab is opened again. */
+    var note = state.bellNote;
+    if (!note && state.bell && state.bell.error) {
+      note = { text: state.bell.error, error: true };
+    }
+    $("bell-state").textContent = note && !note.error ? note.text : "";
+    var box = $("bell-error");
+    box.textContent = note && note.error ? note.text : "";
+    box.hidden = !(note && note.error);
+  }
+
+  function saveBell(patch) {
+    var previous = state.bell;
+    state.bell = withPatch(state.bell, patch);      // tick the box now
+    renderBell();
+    return api("POST", "/api/bell", patch).then(function (info) {
+      state.bell = info;
+      renderBell();
+    }).catch(function (err) {
+      state.bell = previous;
+      renderBell();
+      bellSay(err.message || "That didn't save.", true);
+    });
+  }
+
+  function bellTargets() {
+    return (state.bell && state.bell.devices) || [];
+  }
+
+  /* Every media player Home Assistant has, screens and speakers alike, plus
+     anything already chosen that isn't in the list any more - the same
+     courtesy the Cast picker extends, and for the same reason: un-ticking
+     something you can no longer see is not a fix anybody can find. */
+  function bellDevices() {
+    var all = ((state.cast && state.cast.devices) || []).slice();
+    bellTargets().forEach(function (id) {
+      if (!all.some(function (d) { return d.entityId === id; })) {
+        all.push({ entityId: id, name: id, missing: true });
+      }
+    });
+    return all;
+  }
+
+  /* A speaker's friendly name for a message somebody has to read. Falls back
+     to the entity id, which is at least unambiguous. */
+  function bellName(entityId) {
+    var found = bellDevices().filter(function (d) { return d.entityId === entityId; });
+    return (found[0] && found[0].name) || entityId;
+  }
+
+  function bellRow(device, chosen) {
+    var row = el("label", "display-check cast-row");
+    var box = document.createElement("input");
+    box.type = "checkbox";
+    box.checked = chosen.indexOf(device.entityId) !== -1;
+    box.disabled = state.offline || state.bellBusy;
+    box.onchange = function () {
+      var next = bellTargets().filter(function (id) { return id !== device.entityId; });
+      if (box.checked) next.push(device.entityId);
+      saveBell({ devices: next });
+    };
+    row.appendChild(box);
+
+    var text = el("span", null);
+    text.appendChild(el("span", "cast-name", device.name));
+    /* A different hint from the Cast picker's. "No screen" is a reason not to
+       tick something there and a recommendation here, so the only things worth
+       flagging are the ones that might not ring. */
+    var hint = device.missing ? "not in Home Assistant"
+             : device.state === "unavailable" ? "off" : "";
+    if (hint) text.appendChild(el("span", "cast-hint", hint));
+    if (device.entityId && device.entityId !== device.name) {
+      text.appendChild(el("span", "cast-id", device.entityId));
+    }
+    row.appendChild(text);
+    return row;
+  }
+
+  function renderBell() {
+    var card = $("bell-card");
+    var info = state.bell;
+    card.hidden = !(info && info.available);
+    if (card.hidden) return;
+
+    var on = !!info.enabled;
+    $("bell-enabled").checked = on;
+    $("bell-enabled").disabled = state.offline || state.bellBusy;
+    $("bell-body").hidden = !on;
+    $("bell-button").checked = !!info.showButton;
+    $("bell-button").disabled = state.offline || state.bellBusy;
+
+    $("bell-chime-name").textContent = info.builtIn
+      ? "The built-in bell."
+      : "Your own sound (" + info.chimeName + ").";
+    $("bell-reset").hidden = !!info.builtIn;
+    ["bell-choose", "bell-reset", "bell-preview", "bell-all", "bell-none"]
+      .forEach(function (id) { $(id).disabled = state.offline || state.bellBusy; });
+
+    var chosen = bellTargets();
+    var all = bellDevices();
+    var list = $("bell-devices");
+    clear(list);
+    if (!all.length) {
+      list.appendChild(el("p", "muted small",
+        state.cast ? "Home Assistant can't see any speakers."
+                   : "Looking…"));
+    }
+    all.forEach(function (device) { list.appendChild(bellRow(device, chosen)); });
+
+    /* Select all is only ever an addition, and Clear only a removal, so
+       neither can be pressed to no effect without saying so. */
+    $("bell-all").hidden = !all.length || chosen.length === all.length;
+    $("bell-none").hidden = !chosen.length;
+    $("bell-devices-note").textContent = chosen.length
+      ? ""
+      : "Nothing chosen, so the bell has nowhere to ring.";
+
+    $("bell-ring").disabled = state.offline || state.bellBusy || !chosen.length;
+    paintBellNote();
+  }
+
+  function bellBusy(busy, message) {
+    state.bellBusy = busy;
+    if (message) bellSay(message);
+    renderBell();
+  }
+
+  function ringBell() {
+    bellBusy(true, "Ringing…");
+    api("POST", "/api/bell/ring", {}).then(function (result) {
+      state.bellBusy = false;
+      var rang = (result.rang || []).length;
+      var failed = result.failed || [];
+      var message;
+      if (rang && !failed.length) {
+        message = "Rang on " + plural(rang, "speaker") + ".";
+      } else if (rang) {
+        message = "Rang on " + rang + " of " + (rang + failed.length)
+                + ". " + bellName(failed[0].entityId) + ": " + failed[0].error;
+      } else {
+        message = "Nothing rang. " + (failed.length
+          ? bellName(failed[0].entityId) + ": " + failed[0].error
+          : "Home Assistant didn't say why.");
+      }
+      bellSay(message, !rang);
+      renderBell();
+    }).catch(function (err) {
+      state.bellBusy = false;
+      bellSay(err.message || "The bell didn't ring.", true);
+      renderBell();
+    });
+  }
+
+  /* Uploaded as raw bytes with the name on the query string, the same shape the
+     restore upload uses: there is no form parser on the server and a single
+     file has never needed one. */
+  function uploadChime(file) {
+    if (!file) return;
+    bellBusy(true, "Sending " + file.name + "…");
+    upload("/api/bell/chime?name=" + encodeURIComponent(file.name), file,
+           null, file.type || "application/octet-stream")
+      .then(function (info) {
+        state.bell = info;
+        state.bellBusy = false;
+        bellSay("Sound saved. Press Listen to hear it.");
+        renderBell();
+      }).catch(function (err) {
+        state.bellBusy = false;
+        bellSay(err.message || "That sound couldn't be saved.", true);
+        renderBell();
+      });
+  }
+
+  /* Plays on this device, not on the speakers - the question "is this the right
+     sound" is worth being able to answer without ringing the house. The
+     timestamp in the chime's name means there is never a stale one cached. */
+  function previewChime() {
+    var info = state.bell;
+    if (!info) return;
+    var audio = $("bell-audio");
+    audio.src = info.chime;
+    var played = audio.play();
+    if (played && played.catch) {
+      played.catch(function () {
+        bellSay("This device wouldn't play the sound. It will still ring on "
+                + "the speakers.", true);
+      });
+    }
+  }
+
   // --------------------------------------------------------- backup
   //
   /* One file in, one file out. The point of this screen is that reinstalling
@@ -3509,6 +3797,36 @@
     });
   }
 
+  /* What a backup holds, in words, for the card and for the confirmation before
+     a restore. One function for both, because the two are read minutes apart by
+     somebody deciding whether the file in their downloads folder is the right
+     one, and they had better count the same things.
+
+     Ratings are named explicitly. They have always been in the zip - they live
+     on the sittings inside data.json, which is copied whole - but a summary
+     that listed meals, people and photos read like a summary of everything
+     that was in there, and the household's opinion of every dinner it has ever
+     eaten is the one thing here that cannot be typed back in.
+
+     Anything at zero is left out rather than shown as "0 ratings": a new
+     household has none of several of these, and a list of noughts is a worse
+     answer than a short sentence. */
+  function backupParts(counts) {
+    var c = counts || {};
+    var parts = [
+      plural(c.meals || 0, "meal"),
+      plural(c.people || 0, "person", "people")
+    ];
+    if (c.weeks) parts.push(plural(c.weeks, "week") + " planned");
+    if (c.ratings) parts.push(plural(c.ratings, "rating"));
+    if (c.images) parts.push(plural(c.images, "photo"));
+    return parts;
+  }
+
+  function plural(n, one, many) {
+    return n + " " + (n === 1 ? one : (many || one + "s"));
+  }
+
   function renderBackup() {
     var info = state.backup;
     var summary = $("backup-summary");
@@ -3518,13 +3836,8 @@
     } else if (!info) {
       summary.textContent = "";
     } else {
-      var parts = [];
-      var c = info.contents || {};
-      parts.push(c.meals + (c.meals === 1 ? " meal" : " meals"));
-      parts.push(c.people + (c.people === 1 ? " person" : " people"));
-      if (c.images) parts.push(c.images + (c.images === 1 ? " photo" : " photos"));
       summary.textContent = "Version " + (info.version || "?") + " — " +
-                            parts.join(", ") + ".";
+                            backupParts(info.contents).join(", ") + ".";
     }
     $("backup-download").disabled = state.offline || state.backupBusy;
     $("backup-restore").disabled = state.offline || state.backupBusy;
@@ -3606,9 +3919,8 @@
       var lines = [
         "Restore from " + file.name + "?",
         "",
-        "It holds " + a.meals + " meals, " + a.people + " people" +
-          (a.images ? ", " + a.images + " photos" : "") +
-          (a.certs ? " and the https certificate" : "") + ".",
+        "It holds " + backupParts(a).join(", ") +
+          (a.certs ? ", and the https certificate" : "") + ".",
         "Made " + prettyStamp(found.createdAt) +
           " by version " + (found.version || "?") + ".",
         "",
@@ -3623,11 +3935,7 @@
     }).then(function (result) {
       backupBusy(false);
       if (!result) return;                       // cancelled at the confirm
-      var message = "Restored " + (result.contents.meals || 0) + " meals";
-      if (result.contents.images) {
-        message += " and " + result.contents.images + " photos";
-      }
-      message += ".";
+      var message = "Restored " + backupParts(result.contents).join(", ") + ".";
       if (result.restartNeeded) {
         /* certs/ was loaded into an SSL context when the process started, so
            https keeps using the old certificate until the app restarts. Worth
@@ -3652,12 +3960,18 @@
      household's photos make a zip of tens of megabytes and house wifi is not
      always quick, so a bar that moves is the difference between waiting and
      wondering. The body is the file itself - no multipart wrapper, because the
-     server has no form parser and does not need one for a single file. */
-  function upload(path, file, onProgress) {
+     server has no form parser and does not need one for a single file.
+
+     `type` is what to declare the body as, and defaults to the zip this was
+     written for. The server doesn't read it - the restore sniffs the zip and
+     the chime sniffs the audio, because a content type off a phone's file
+     picker is a guess - but sending application/zip for an mp3 would be a lie
+     told to every proxy in between for no reason. */
+  function upload(path, file, onProgress, type) {
     return new Promise(function (resolve, reject) {
       var req = new XMLHttpRequest();
       req.open("POST", path, true);
-      req.setRequestHeader("Content-Type", "application/zip");
+      req.setRequestHeader("Content-Type", type || "application/zip");
       if (onProgress && req.upload) {
         req.upload.onprogress = function (e) {
           if (e.lengthComputable) onProgress(e.loaded / e.total);
@@ -3685,7 +3999,9 @@
     else if (state.view === "plan") renderPlan();
     else if (state.view === "shopping") renderShopping();
     else if (state.view === "meals") renderMeals();
-    else if (state.view === "people") { renderPeople(); renderBackup(); }
+    else if (state.view === "settings") {
+      renderPeople(); renderBell(); renderBackup();
+    }
   }
 
   // ------------------------------------------------------------- wiring
@@ -3879,6 +4195,41 @@
       });
     };
 
+    // ---- dinner bell ----
+    $("bell-enabled").onchange = function () {
+      saveBell({ enabled: $("bell-enabled").checked });
+    };
+    $("bell-button").onchange = function () {
+      saveBell({ showButton: $("bell-button").checked });
+    };
+    $("bell-all").onclick = function () {
+      saveBell({ devices: bellDevices().map(function (d) { return d.entityId; }) });
+    };
+    $("bell-none").onclick = function () { saveBell({ devices: [] }); };
+    $("bell-ring").onclick = ringBell;
+    $("bell-preview").onclick = previewChime;
+
+    $("bell-choose").onclick = function () { $("bell-chime-file").click(); };
+    $("bell-chime-file").onchange = function () {
+      var file = $("bell-chime-file").files[0];
+      $("bell-chime-file").value = "";      // so the same file can be re-picked
+      uploadChime(file);
+    };
+    $("bell-reset").onclick = function () {
+      if (!confirm("Go back to the built-in bell? Your own sound is deleted.")) return;
+      bellBusy(true, "Putting the built-in bell back…");
+      api("DELETE", "/api/bell/chime").then(function (info) {
+        state.bell = info;
+        state.bellBusy = false;
+        bellSay("Back to the built-in bell.");
+        renderBell();
+      }).catch(function (err) {
+        state.bellBusy = false;
+        bellSay(err.message || "That didn't work.", true);
+        renderBell();
+      });
+    };
+
     $("backup-download").onclick = downloadBackup;
 
     /* The visible button drives the hidden file input, and the input is reset
@@ -3906,10 +4257,8 @@
     };
 
     window.onhashchange = function () {
-      var name = location.hash.slice(1);
-      if (VIEWS.indexOf(name) !== -1 && name !== state.view) {
-        setView(name);
-      }
+      var name = viewFromHash(location.hash.slice(1));
+      if (name && name !== state.view) setView(name);
     };
 
     /* Keep the week view fresh when it is left up on a kitchen screen,
@@ -4026,8 +4375,7 @@
   /* The hash is honoured so the manifest's shortcuts and any link into a tab
      still land where they point; a plain launch has no hash beyond the "week"
      the manifest's start_url carries, so it opens on the week either way. */
-  var initial = location.hash.slice(1);
-  if (VIEWS.indexOf(initial) === -1) initial = "week";
+  var initial = viewFromHash(location.hash.slice(1)) || "week";
   state.view = initial;
   refresh().then(function () {
     /* Asked for here rather than before the fetch, because refresh() renders

@@ -24,6 +24,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import unquote, urlparse
 
 import backup
+import bell
 import cast
 import display
 import icon
@@ -355,6 +356,42 @@ def head_count(sitting, guest, valid=None):
         # make an eater who feeds nobody, which is only ever a mistake.
         count += max(1, clean_guests(sitting.get("guests")))
     return count
+
+
+def day_head_count(sittings, guest, valid=None):
+    """How many people a whole day feeds - the number that goes beside the cook.
+
+    Not the sum of the sittings' head counts. A day with two meals on it is one
+    cook feeding a household twice, and someone who is marked for both is still
+    one person; summing would tell the kitchen display that Tuesday feeds eleven
+    when four people live here.
+
+    So: distinct named people across the day, plus the guest slot counted once,
+    at the largest number any single meal puts on it. Guests are anonymous, so
+    there is no way to tell "the same two visitors at lunch and dinner" from
+    "two at lunch and two more at dinner" - and of the two readings, the one
+    that never double-counts is the one that can't produce a silly number.
+
+    On a day with one meal, which is nearly every day, this is exactly
+    head_count() of that meal. That equality is the point: the figure beside the
+    cook and the figure the ingredients were scaled by must not disagree."""
+    named, guests = set(), 0
+    for sitting in sittings or []:
+        # Type-checked rather than trusted. Unlike head_count(), which is only
+        # ever handed a sitting the app just built, this one is given whatever
+        # a day in data.json turned out to be - including shapes written by
+        # versions that predate sittings entirely.
+        if not isinstance(sitting, dict):
+            continue
+        raw = sitting.get("eaters")
+        if not isinstance(raw, list):
+            continue
+        eaters = [e for e in raw if isinstance(e, str)
+                  and (valid is None or e in valid)]
+        named.update(e for e in eaters if e != guest)
+        if guest and guest in eaters:
+            guests = max(guests, max(1, clean_guests(sitting.get("guests"))))
+    return len(named) + guests
 
 
 def migrate_day(cell):
@@ -693,6 +730,16 @@ def kitchen_view(data, key, rolling=False, span=7):
     people = {p["id"]: p["name"] for p in data["people"]}
     meals = {m["id"]: m for m in data["meals"]}
     settings = display.load()
+    # Read here rather than in the payload literal so a bell.json that has gone
+    # missing costs the display its button and nothing else. This feed is what
+    # keeps the kitchen screen alive; nothing optional on it may be fatal.
+    try:
+        bell_settings = bell.load()
+        bell_ready = bool(bell_settings["enabled"] and bell_settings["devices"]
+                          and cast.configured())
+        bell_button = bool(bell_settings["showButton"])
+    except Exception:                                  # noqa: BLE001
+        bell_ready, bell_button = False, False
     calendar_today = date.today()
     shift = timedelta(days=display.day_shift(settings)) if rolling else timedelta(0)
     today = (calendar_today + shift).isoformat()
@@ -756,6 +803,10 @@ def kitchen_view(data, key, rolling=False, span=7):
             "name": DAY_NAMES[day],
             "isToday": day_date == today,
             "cook": people.get(cell.get("cookId")),
+            # How many the cook is cooking for. Sent even when nobody is
+            # marked - zero is the display's cue to say nothing rather than
+            # "for 0 people", and that decision belongs to the screen.
+            "headCount": day_head_count(sittings, guest, set(people)),
             "meals": entries,
             "notEating": ([p["name"] for p in household if p["id"] not in fed]
                           if entries else []),
@@ -778,6 +829,11 @@ def kitchen_view(data, key, rolling=False, span=7):
         # for the sake of a dozen small settings. It is also how a change made
         # on a phone reaches the Hub without anything being re-cast.
         "display": settings,
+        # Whether to draw the "Dinner time!" button, and nothing else about the
+        # bell: which speakers it rings is the app's business, not the Hub's.
+        # Two booleans on a feed the display already asks for once a minute,
+        # rather than a second endpoint for a button that is usually hidden.
+        "bell": {"ready": bell_ready, "showButton": bell_button},
         "generated": datetime.now().isoformat(timespec="seconds"),
         "household": [p["name"] for p in data["people"]],
         "days": days,
@@ -1264,16 +1320,28 @@ def note_host(host_header):
         SEEN_HOST[slot] = host
 
 
-def kitchen_url():
-    """The address to cast to the kitchen display, best guess first.
+def http_base():
+    """The plain-http address this app is reachable at on the network, best
+    guess first.
 
     An IPv4 a phone actually used beats everything: it is known to work from
     another device on this network. Home Assistant's own idea of its address
     comes next, because this add-on shares a machine with it. A hostname is
     third - a Nest Hub's mDNS is not something to rely on - and the container's
-    own address is the last resort, and usually wrong."""
+    own address is the last resort, and usually wrong.
+
+    http and not https, always. Everything that asks for this address is a Cast
+    device fetching something for itself - the kitchen page, the dinner chime -
+    and none of them has been told to trust this app's certificate authority.
+    A Nest Hub given an https URL it can't verify shows nothing and says
+    nothing about why."""
     host = (SEEN_HOST["ip"] or cast.ha_host() or SEEN_HOST["name"] or lan_ip())
-    return "http://%s:%d/kitchen" % (host, PORT)
+    return "http://%s:%d" % (host, PORT)
+
+
+def kitchen_url():
+    """The address to cast to the kitchen display."""
+    return http_base() + "/kitchen"
 
 
 def lan_ip():
@@ -1599,6 +1667,9 @@ class Handler(BaseHTTPRequestHandler):
         ".webmanifest": "application/manifest+json; charset=utf-8",
         ".png": "image/png",
         ".ico": "image/x-icon",
+        # The built-in dinner chime. Fetched by a Cast speaker rather than by a
+        # browser, and a speaker handed the wrong content type doesn't play it.
+        ".wav": "audio/wav",
     }
 
     # Friendly URLs, so the kitchen display is easy to type or cast.
@@ -1763,6 +1834,19 @@ class Handler(BaseHTTPRequestHandler):
             self._serve_manifest()
             return
 
+        # The uploaded dinner chime. Served here rather than out of static/
+        # because it lives in /data, and cached hard for the same reason the
+        # photos are: the name carries a timestamp and is never rewritten, so a
+        # speaker that has heard it once needn't fetch it again.
+        if path.startswith("/chime/"):
+            target, ctype = bell.chime_file()
+            wanted = path[len("/chime/"):]
+            if not wanted or os.path.basename(target) != wanted:
+                self._send(404, "Not found", "text/plain; charset=utf-8")
+                return
+            self._serve_file(target, ctype, "public, max-age=31536000, immutable")
+            return
+
         if path.startswith("/images/"):
             target = os.path.normpath(os.path.join(IMAGES_DIR, path[len("/images/"):]))
             if not target.startswith(IMAGES_DIR) or not os.path.isfile(target):
@@ -1801,11 +1885,39 @@ class Handler(BaseHTTPRequestHandler):
     def do_POST(self):
         path = urlparse(self.path).path
         # Taken here rather than in _api_write because that reads the body as
-        # JSON before it looks at the path, and this one is a zip.
+        # JSON before it looks at the path, and these two are raw bytes - a zip
+        # and a sound file.
         if path in ("/api/restore", "/api/restore/check"):
             self._restore(path.endswith("/check"))
             return
+        if path == "/api/bell/chime":
+            self._chime_upload()
+            return
         self._api_write("POST", path)
+
+    def _chime_upload(self):
+        """Take an uploaded dinner chime. The filename comes on the query
+        string because the body is the file itself - there is no form parser
+        here and a single file has never needed one."""
+        raw = self._raw_body(bell.MAX_CHIME)
+        if raw is None:
+            # _raw_body refuses an oversized body rather than reading it, so
+            # this is the only place that can tell the difference between "too
+            # big" and "empty", and it is worth telling.
+            return self._error(400, "That file didn't arrive, or it was bigger "
+                                    "than the %d MB this accepts."
+                                    % (bell.MAX_CHIME // 1_000_000))
+        name = ""
+        for part in (urlparse(self.path).query or "").split("&"):
+            if part.startswith("name="):
+                name = unquote(part[5:])
+        try:
+            bell.save_chime(name, raw or b"")
+        except bell.ChimeError as exc:
+            return self._error(400, str(exc))
+        except OSError as exc:
+            return self._error(500, "Couldn't save that sound: %s" % exc)
+        return self._json(bell.status())
 
     def _restore(self, check_only):
         """Put a backup zip back. `check_only` reports what is in the file
@@ -1948,6 +2060,9 @@ class Handler(BaseHTTPRequestHandler):
             else:
                 self._json(cast.status())
             return
+        if path == "/api/bell":
+            self._json(bell.status())
+            return
         if path.startswith("/api/week/"):
             key = parse_week_key(path[len("/api/week/"):])
             with _lock:
@@ -1989,6 +2104,29 @@ class Handler(BaseHTTPRequestHandler):
             except OSError as exc:
                 return self._error(500, "Couldn't save that: %s" % exc)
             return self._json(cast.status())
+
+        # ---- dinner bell ----
+        if path == "/api/bell" and method == "POST":
+            try:
+                bell.save(body or {})
+            except OSError as exc:
+                return self._error(500, "Couldn't save that: %s" % exc)
+            # status() rather than what save() returned: the panel wants the
+            # chime and whether the bell is ready as well as the switches, and
+            # one answer means it can't show a half-updated card.
+            return self._json(bell.status())
+
+        if path == "/api/bell/ring" and method == "POST":
+            # The one write here that touches the network on a request thread.
+            # See bell.ring(): somebody pressed a button and is standing there.
+            try:
+                return self._json(bell.ring())
+            except RuntimeError as exc:
+                return self._error(409, str(exc))
+
+        if path == "/api/bell/chime" and method == "DELETE":
+            bell.clear_chime()
+            return self._json(bell.status())
 
         # ---- people ----
         if path == "/api/people" and method == "POST":
@@ -2552,7 +2690,15 @@ def main():
             print("  Kitchen display: keeping %s on %s"
                   % (", ".join(chosen), kitchen_url()))
         else:
-            print("  Kitchen display: no Cast device chosen yet (Household tab).")
+            print("  Kitchen display: no Cast device chosen yet (Settings tab).")
+
+    # No thread and no network: the bell only ever acts when somebody presses
+    # it. All this hands over is how to work out the address a speaker should
+    # fetch the chime from.
+    bell.start(http_base)
+    ringers = bell.load()
+    if cast.configured() and ringers["enabled"] and ringers["devices"]:
+        print("  Dinner bell: ringing %s" % ", ".join(ringers["devices"]))
 
     print("")
     print("  Leave this window open. Press Ctrl+C to stop.")

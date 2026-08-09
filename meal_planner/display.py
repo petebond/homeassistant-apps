@@ -49,6 +49,11 @@ DEFAULTS = {
     "theme": "dark",           # a Hub in a kitchen is on all evening
     "scale": 100,
     "showCook": True,
+    # How many the cook is cooking for, under their name. On by default: it is
+    # the question the display is stood in front of most often after "what is
+    # it", and it costs one short line. Off for a household of a fixed size who
+    # already know the answer.
+    "showHeads": True,
     "showClock": True,
     "showDate": True,
     "showWeek": True,          # the seven-day strip along the bottom
@@ -107,8 +112,8 @@ def clean(raw, base=None):
     out["dimLevel"] = _clamp(raw.get("dimLevel", base["dimLevel"]), MIN_DIM, MAX_DIM,
                              base["dimLevel"])
 
-    for flag in ("showCook", "showClock", "showDate", "showWeek", "showPhotos",
-                 "showEmpty", "dim", "castWindow"):
+    for flag in ("showCook", "showHeads", "showClock", "showDate", "showWeek",
+                 "showPhotos", "showEmpty", "dim", "castWindow"):
         out[flag] = bool(raw.get(flag, base[flag]))
 
     for field in ("dimFrom", "dimTo", "rollover", "castFrom", "castTo"):

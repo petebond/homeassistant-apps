@@ -59,8 +59,23 @@ def check_raises(label, message_part, fn):
 
 SAMPLE = {
     "meals": [{"id": "m_1", "name": "Fish pie"}, {"id": "m_2", "name": "Dal"}],
-    "people": [{"id": "p_1", "name": "Pete"}],
-    "weeks": {"2026-08-03": {"mon": {"mealId": "m_1"}}},
+    "people": [{"id": "p_1", "name": "Pete"}, {"id": "p_2", "name": "Jules"}],
+    # A planned week and an empty one. The ratings are the point: they are kept
+    # on the sittings rather than in a file of their own, so the only thing
+    # carrying them out of the house is data.json going into the zip whole.
+    "weeks": {
+        "2026-08-03": {
+            "mon": {"cookId": "p_1", "sittings": [
+                {"id": "s_1", "mealId": "m_1", "eaters": ["p_1", "p_2"],
+                 "guests": 0, "note": "", "ratings": {"p_1": 5, "p_2": 3}}]},
+            "tue": {"cookId": None, "sittings": [
+                {"id": "s_2", "mealId": "m_2", "eaters": ["p_1"],
+                 "guests": 0, "note": "", "ratings": {"p_1": 4}}]},
+        },
+        # Opened and never filled in. Written the moment somebody looked at it,
+        # which is why the count is of weeks with something in them.
+        "2026-08-10": {"wed": {"cookId": None, "sittings": []}},
+    },
     "extras": [{"id": "e_1", "item": "foil", "state": "need"}],
 }
 
@@ -123,6 +138,11 @@ def test_manifest():
     check("certs flagged", manifest["includesCerts"], True)
     check("meal count", manifest["contents"]["meals"], 2)
     check("photo count", manifest["contents"]["images"], 2)
+    # Named in the manifest so the restore screen can say the stars are in
+    # there. They always were; a summary that listed everything except them
+    # read like a summary that meant it.
+    check("rating count", manifest["contents"]["ratings"], 3)
+    check("weeks planned", manifest["contents"]["weeks"], 1)
 
 
 def test_certs_can_be_left_out():
@@ -278,9 +298,45 @@ def test_inspect_reports_contents():
     seed()
     found = backup.inspect(backup.make_zip())
     check("meals", found["actual"]["meals"], 2)
-    check("people", found["actual"]["people"], 1)
+    check("people", found["actual"]["people"], 2)
     check("images", found["actual"]["images"], 2)
     check("certs", found["actual"]["certs"], True)
+    check("ratings", found["actual"]["ratings"], 3)
+    check("weeks", found["actual"]["weeks"], 1)
+
+
+def test_ratings_survive_the_round_trip():
+    """The question this whole file exists to answer, for the one thing in the
+    app that can't be typed back in. A meal can be re-entered from a recipe
+    book; what the house thought of it in March cannot be re-entered from
+    anywhere."""
+    seed()
+    raw = backup.make_zip()
+    shutil.rmtree(DATA, ignore_errors=True)
+    os.makedirs(DATA, exist_ok=True)
+    backup.restore(raw)
+
+    week = json.loads(read("data.json"))["weeks"]["2026-08-03"]
+    check("monday's ratings came back",
+          week["mon"]["sittings"][0]["ratings"], {"p_1": 5, "p_2": 3})
+    check("tuesday's came back too",
+          week["tue"]["sittings"][0]["ratings"], {"p_1": 4})
+
+
+def test_counts_survive_rubbish():
+    """_data_counts reads files that came off the wire, so every level of it
+    has to shrug rather than raise. A zip whose data.json is the wrong shape
+    all the way down should describe itself as empty, not blow up the screen
+    that was about to warn somebody what they were replacing."""
+    for junk in (None, [], "weeks", {"weeks": "lots"},
+                 {"weeks": {"2026-08-03": None}},
+                 {"weeks": {"2026-08-03": {"mon": {"sittings": "no"}}}},
+                 {"weeks": {"2026-08-03": {"mon": {"sittings": [None, 7]}}}},
+                 {"weeks": {"2026-08-03": {"mon": {"sittings":
+                                                   [{"ratings": "five"}]}}}}):
+        got = backup._data_counts(junk)
+        check("nothing counted from %r" % (junk,),
+              (got["ratings"], got["weeks"]), (0, 0))
 
 
 for test in [test_zip_holds_everything, test_manifest, test_certs_can_be_left_out,
@@ -288,7 +344,8 @@ for test in [test_zip_holds_everything, test_manifest, test_certs_can_be_left_ou
              test_only_keeps_a_couple_of_undos,
              test_partial_backup_leaves_the_rest_alone,
              test_refusals, test_a_refused_file_changes_nothing,
-             test_inspect_reports_contents]:
+             test_inspect_reports_contents, test_ratings_survive_the_round_trip,
+             test_counts_survive_rubbish]:
     test()
 
 shutil.rmtree(DATA, ignore_errors=True)

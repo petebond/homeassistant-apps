@@ -120,9 +120,9 @@
       <svg class="tab-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12.5h19a9.5 9.5 0 0 1-19 0Z"/><path d="M22 21H2"/><path d="M8 8.5c0-2 2-2.5 2-4M12 8c0-2 2-2.5 2-4M16 8.5c0-2 2-2.5 2-4"/></svg>
       <span class="tab-txt">Meals</span>
     </button>
-    <button class="tab" data-view="people">
-      <svg class="tab-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M16 20.5v-1.8a3.7 3.7 0 0 0-3.7-3.7H6.2a3.7 3.7 0 0 0-3.7 3.7v1.8"/><circle cx="9.2" cy="7.7" r="3.7"/><path d="M21.5 20.5v-1.8a3.7 3.7 0 0 0-2.8-3.6M15.5 4.2a3.7 3.7 0 0 1 0 7.1"/></svg>
-      <span class="tab-txt">Household</span>
+    <button class="tab" data-view="settings">
+      <svg class="tab-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1.04 1.56V21a2 2 0 1 1-4 0v-.11A1.7 1.7 0 0 0 8.9 19.3a1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.54 15a1.7 1.7 0 0 0-1.56-1.04H3a2 2 0 1 1 0-4h.11A1.7 1.7 0 0 0 4.7 8.9a1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.7 1.7 0 0 0 9 4.54a1.7 1.7 0 0 0 1.04-1.56V3a2 2 0 1 1 4 0v.11A1.7 1.7 0 0 0 15.1 4.7a1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.7 1.7 0 0 0 19.46 9v.05a1.7 1.7 0 0 0 1.56 1.04H21a2 2 0 1 1 0 4h-.11a1.7 1.7 0 0 0-1.49 1.04Z"/></svg>
+      <span class="tab-txt">Settings</span>
     </button>
   </nav>
 </header>
@@ -317,28 +317,37 @@
     <div id="meal-list" class="meal-list"></div>
   </section>
 
-  <!-- ================= PEOPLE ================= -->
-  <section class="view" id="view-people" hidden>
-    <h1>Household</h1>
-    <p class="muted">Everyone here can be marked as eating, or as the cook.</p>
+  <!-- ================= SETTINGS ================= -->
+  <!-- Was the Household tab, when the household was all that was on it. It has
+       been a settings page in everything but name for a while: the cast picker,
+       how the display looks, and backups all live here, and the list of people
+       is one card among several. -->
+  <section class="view" id="view-settings" hidden>
+    <h1>Settings</h1>
+    <p class="muted">Everything the house shares, rather than this phone.</p>
 
-    <form class="card form" id="person-form">
-      <label>Add a person
-        <input type="text" id="person-name" maxlength="60" placeholder="Name" required>
-      </label>
-      <div class="form-actions">
-        <button class="btn" type="submit">Add</button>
-      </div>
-      <p class="form-error" id="person-error" hidden></p>
-    </form>
+    <div class="card settings-card" id="people-card">
+      <h2>Household</h2>
+      <p class="muted small">Everyone here can be marked as eating, or as the cook.</p>
 
-    <div id="person-list" class="person-list"></div>
+      <form class="form" id="person-form">
+        <label>Add a person
+          <input type="text" id="person-name" maxlength="60" placeholder="Name" required>
+        </label>
+        <div class="form-actions">
+          <button class="btn" type="submit">Add</button>
+        </div>
+        <p class="form-error" id="person-error" hidden></p>
+      </form>
+
+      <div id="person-list" class="person-list"></div>
+    </div>
 
     <!-- The kitchen display picker. Hidden unless the planner is running as a
          Home Assistant add-on, which is the only place casting is possible -
          on a PC there is nothing behind it and an empty dropdown would only
          raise questions. app.js fills it in; see renderCast(). -->
-    <div class="card cast-card" id="cast-card" hidden>
+    <div class="card settings-card" id="cast-card" hidden>
       <h2>Kitchen display</h2>
       <p class="muted small">
         Keeps this week's meals on a Google Cast screen. It only takes the
@@ -382,7 +391,7 @@
          propped up on a shelf with nothing to cast to. Unlike the app's own
          appearance panel these are shared by the house, because the display
          has nobody sitting at it to set them. -->
-    <div class="card cast-card" id="display-card" hidden>
+    <div class="card settings-card" id="display-card" hidden>
       <h2>How the kitchen display looks</h2>
       <p class="muted small">
         Shared by everyone, and picked up by the display within a minute.
@@ -432,16 +441,73 @@
       </p>
     </div>
 
+    <!-- The dinner bell. Home-Assistant-only for the same reason casting is:
+         the speakers belong to Home Assistant and there is nothing behind this
+         without it. Everything below the master switch is hidden until it is
+         on - a card of eight controls for a feature nobody has enabled is the
+         longest thing on this tab and the least often wanted. -->
+    <div class="card settings-card" id="bell-card" hidden>
+      <h2>Dinner bell</h2>
+      <p class="muted small">
+        Plays a sound on the speakers you choose, so nobody has to shout up the
+        stairs. It plays over whatever they are doing, and Cast can't put that
+        back afterwards &mdash; so it only ever rings when somebody presses it.
+      </p>
+
+      <label class="display-check bell-master">
+        <input type="checkbox" id="bell-enabled">
+        <span>Switch the dinner bell on</span>
+      </label>
+
+      <div id="bell-body" hidden>
+        <p class="theme-label">The sound</p>
+        <p class="muted small" id="bell-chime-name"></p>
+        <!-- Hidden input plus a real button, the same pattern the restore
+             control uses: the native file control can't be styled and reads
+             "No file chosen" for something that is never empty. -->
+        <input type="file" id="bell-chime-file" accept="audio/*" hidden>
+        <div class="form-actions bell-sound-actions">
+          <button class="btn ghost small" id="bell-choose" type="button">Choose a sound</button>
+          <button class="btn ghost small" id="bell-reset" type="button" hidden>Use the built-in bell</button>
+          <button class="btn ghost small" id="bell-preview" type="button">Listen</button>
+        </div>
+        <!-- Plays on this phone, not on the speakers. Two different questions,
+             and this is the one you can answer without waking the house. -->
+        <audio id="bell-audio" preload="none"></audio>
+
+        <p class="theme-label">Ring on</p>
+        <div class="cast-list" id="bell-devices"></div>
+        <div class="form-actions bell-pick-actions">
+          <button class="btn ghost small" id="bell-all" type="button">Select all</button>
+          <button class="btn ghost small" id="bell-none" type="button">Clear</button>
+        </div>
+        <p class="muted small" id="bell-devices-note"></p>
+
+        <p class="theme-label">On the kitchen display</p>
+        <label class="display-check">
+          <input type="checkbox" id="bell-button">
+          <span>Show a &ldquo;Dinner time!&rdquo; button</span>
+        </label>
+
+        <div class="form-actions">
+          <button class="btn" id="bell-ring" type="button">Ring it now</button>
+        </div>
+      </div>
+
+      <p class="muted small" id="bell-state"></p>
+      <p class="form-error" id="bell-error" hidden></p>
+    </div>
+
     <!-- Backup and restore. Last card on the tab on purpose: it is the one
          thing here that can throw something away, so it sits below the
-         settings rather than above them. Unlike the two cards above it this
-         is not Home-Assistant-only - a planner running on a PC has data worth
-         keeping too - so it is never hidden. -->
+         settings rather than above them. Unlike the cards above it this is not
+         Home-Assistant-only - a planner running on a PC has data worth keeping
+         too - so it is never hidden. -->
     <div class="card backup-card" id="backup-card">
       <h2>Backup &amp; restore</h2>
       <p class="muted small">
-        Everything the household has put in - meals, the plan, photos and
-        settings - in one file you can keep anywhere. Restoring puts it all
+        Everything the household has put in - meals, the plan, ratings, photos
+        and settings - in one file you can keep anywhere. Restoring puts it all
         back, which is what makes it safe to reinstall the app.
       </p>
 

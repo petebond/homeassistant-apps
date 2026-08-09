@@ -46,15 +46,23 @@ FORMAT = 1
 
 MANIFEST_NAME = "meal-planner-backup.json"
 
-# Single files taken as they are. data.json is the planner itself; the other two
-# are settings that belong to the house rather than to a phone, so a restored
-# app should come back with the same kitchen display and the same look.
-FILES = ("data.json", "cast.json", "display.json")
+# Single files taken as they are. data.json is the planner itself; the rest are
+# settings that belong to the house rather than to a phone, so a restored app
+# should come back with the same kitchen display, the same look and the same
+# speakers on the dinner bell.
+FILES = ("data.json", "cast.json", "display.json", "bell.json")
+
+# data.json carries the star ratings, because they are kept on the sittings
+# inside the weeks rather than in a file of their own - so they have been in
+# every backup since they existed, and copying the file whole is what keeps
+# that true without anyone having to remember. _data_counts() says so out loud
+# on the restore screen, which is the only place the question ever gets asked.
 
 # Whole folders. images/ is the photos; certs/ is the private CA, the server
 # certificate and learned.hosts, which together are what keeps https working
-# without setting every phone up again.
-DIRS = ("images", "certs")
+# without setting every phone up again; chime/ is the sound somebody chose for
+# the dinner bell, which is small, theirs, and not in the repository.
+DIRS = ("images", "certs", "chime")
 
 # The daily snapshots server.py keeps are deliberately left out: they are a
 # local undo for a bad edit, not something worth carrying to a new install, and
@@ -116,15 +124,66 @@ def _safe_member(name):
     return ".." not in parts and "" not in parts[:-1]
 
 
+def _data_counts(data):
+    """What a data.json holds, as numbers a person would recognise.
+
+    One function for both ends of the round trip: the live count on the backup
+    card and the count read out of a zip on the restore screen. Two versions of
+    this would eventually disagree, and the one place a disagreement would show
+    up is the screen that asks "replace all of this with all of that".
+
+    Written to survive anything, because half of its callers are handed a file
+    off the wire: every level is type-checked and a shape it doesn't recognise
+    contributes nothing rather than raising.
+
+    `weeks` counts weeks with something actually planned in them, not keys in
+    the dict - an empty week gets written the moment somebody looks at one.
+    `ratings` counts individual stars given, one per person per sitting, which
+    is the number that grows as the household uses the thing."""
+    out = {"meals": 0, "people": 0, "weeks": 0, "ratings": 0}
+    if not isinstance(data, dict):
+        return out
+    if isinstance(data.get("meals"), list):
+        out["meals"] = len(data["meals"])
+    if isinstance(data.get("people"), list):
+        out["people"] = len(data["people"])
+
+    weeks = data.get("weeks")
+    if not isinstance(weeks, dict):
+        return out
+    for week in weeks.values():
+        if not isinstance(week, dict):
+            continue
+        used = False
+        for cell in week.values():
+            if not isinstance(cell, dict):
+                continue
+            sittings = cell.get("sittings")
+            if not isinstance(sittings, list):
+                continue
+            for sitting in sittings:
+                if not isinstance(sitting, dict):
+                    continue
+                # A block with a meal or somebody eating counts as planned. A
+                # bare id with nothing on it is a row someone opened and left.
+                if sitting.get("mealId") or sitting.get("eaters"):
+                    used = True
+                ratings = sitting.get("ratings")
+                if isinstance(ratings, dict):
+                    out["ratings"] += len(ratings)
+        if used:
+            out["weeks"] += 1
+    return out
+
+
 def _counts():
     """A few numbers for the manifest, so the restore screen can say what is in
     the file before replacing anything with it."""
-    out = {"meals": 0, "people": 0, "images": 0}
+    out = {"meals": 0, "people": 0, "weeks": 0, "ratings": 0, "images": 0}
     try:
         with open(os.path.join(DATA_DIR, "data.json"), "r", encoding="utf-8") as fh:
             data = json.load(fh)
-        out["meals"] = len(data.get("meals") or [])
-        out["people"] = len(data.get("people") or [])
+        out.update(_data_counts(data))
     except (OSError, ValueError, AttributeError, TypeError):
         pass
     images = os.path.join(DATA_DIR, "images")
@@ -251,14 +310,17 @@ def inspect(raw):
         raise BackupError("The meal data inside that backup isn't the right "
                           "shape, so nothing has been changed.")
 
+    # Counted out of the zip's own data.json rather than read off its manifest.
+    # The manifest is what the writing app said; this is what is actually in
+    # there, and the confirmation screen should only ever promise the second.
+    # It is also how a backup written before these numbers existed still gets
+    # described in full.
     manifest["_names"] = names
-    manifest["actual"] = {
-        "meals": len(data.get("meals") or []),
-        "people": len(data.get("people") or []),
+    manifest["actual"] = dict(_data_counts(data), **{
         "images": sum(1 for n in names if n.startswith("images/")),
         "certs": any(n.startswith("certs/") for n in names),
         "bytes": len(raw),
-    }
+    })
     return manifest
 
 

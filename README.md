@@ -45,6 +45,10 @@ on the screen by itself and hand the screen back at night. The kitchen display
 needs the [DashCast](https://github.com/AlexxIT/DashCast) integration from
 HACS; everything else works without it.
 
+**Call everyone to the table** — one button plays a chime on every speaker in
+the house. A bell is included; upload your own if you'd rather. Needs Home
+Assistant for the speakers.
+
 **Read it away from home** — the week installs on a phone as an app and can be
 read offline, for the supermarket car park where the signal has gone.
 

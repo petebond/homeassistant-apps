@@ -161,6 +161,19 @@ def _call(path, payload=None, timeout=HTTP_TIMEOUT):
     return json.loads(body) if body.strip() else None
 
 
+def call_service(domain, service, payload, timeout=HTTP_TIMEOUT):
+    """Call a Home Assistant service. The one thing in this module anything
+    else is allowed to use.
+
+    It is here rather than in a module of its own because this is where the
+    Supervisor token, the proxy address and the error handling already live,
+    and a second copy of all three would be a second thing to get wrong. The
+    dinner bell (bell.py) is the only caller outside this file; it plays a
+    sound on the same speakers this module puts pages on, and has no more
+    business knowing about Supervisor than it does about DashCast."""
+    return _call("/services/%s/%s" % (domain, service), payload, timeout)
+
+
 def _service_domain():
     """Which DashCast is installed. AlexxIT's fork registers `dash_cast` and the
     original registers `dashcast`; both spell the service `load_url` and take

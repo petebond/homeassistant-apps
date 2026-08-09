@@ -646,6 +646,10 @@ main { max-width: 1500px; margin: 0 auto; padding: 1.1rem 1rem; }
 
 .cook-line { font-size: .86rem; margin-top: .5rem; }
 .cook-line .label { color: var(--muted); }
+/* The number of mouths, muted so the cook's name stays the thing the line is
+   about. It is the tail of a sentence, not a second field, so it must be free
+   to wrap with the name rather than being pushed onto a row of its own. */
+.cook-line .head-count { color: var(--muted); }
 
 .eaters { display: flex; flex-wrap: wrap; gap: .3rem; margin-top: auto; padding-top: .6rem; }
 
@@ -1424,12 +1428,14 @@ select:focus, input:focus, textarea:focus { outline: 2px solid var(--green); out
   align-self: center;
 }
 
-/* ---------- kitchen display picker ---------- */
+/* ---------- the Settings tab ---------- */
 
-/* Sits below the household list, with air above it: it is a setting, not
-   another person, and shouldn't read as the last row of the list. */
-.cast-card { margin-top: 1.4rem; }
-.cast-card h2 { margin: 0 0 .3rem; font-size: 1.05rem; }
+/* Every card on the Settings tab, one under the next with air between them.
+   Used to be .cast-card, when the only such card was the display picker at the
+   foot of the household list; the tab is now a settings page with the
+   household as one card on it, and the name had stopped meaning anything. */
+.settings-card { margin-top: 1.4rem; }
+.settings-card h2 { margin: 0 0 .3rem; font-size: 1.05rem; }
 
 /* One row per Cast device. A list of checkboxes rather than a dropdown: the
    week can go on more than one screen, and a multiple-select box is a thing
@@ -1458,8 +1464,30 @@ select:focus, input:focus, textarea:focus { outline: 2px solid var(--green); out
 .cast-row.is-gone .cast-name { color: var(--muted); }
 .cast-show-all { margin-top: .7rem; font-size: .82rem; color: var(--muted); }
 .cast-show-all[hidden] { display: none; }
-.cast-card #cast-state:empty { display: none; }
-.cast-card .form-actions { margin-top: .8rem; }
+.settings-card #cast-state:empty { display: none; }
+.settings-card .form-actions { margin-top: .8rem; }
+
+/* ---------- dinner bell ---------- */
+
+/* The master switch, with air under it: everything below appears and
+   disappears with it, and it should read as the thing doing that rather than
+   as the first of a list of tick boxes. */
+.bell-master { margin: .8rem 0 .2rem; font-weight: 600; }
+.bell-master + #bell-body { margin-top: .2rem; }
+
+/* Both rows of small buttons wrap: three of them plus a long chime name is
+   more than a phone has across, and a button that has fallen off the side is
+   a button nobody knows about. */
+.bell-sound-actions,
+.bell-pick-actions { flex-wrap: wrap; }
+.bell-pick-actions { margin-top: .5rem; }
+
+#bell-chime-name { margin: .2rem 0 .1rem; }
+#bell-state:empty { display: none; }
+
+/* The preview element is never seen - it is played, not shown - but a bare
+   <audio> with no controls still takes a line in some browsers. */
+#bell-audio { display: none; }
 
 /* The display's own appearance. Shares the swatches and the light/dark buttons
    with the theme panel, because they are choosing the same twelve colours and
@@ -1887,7 +1915,7 @@ html[data-offline="1"] .extras-add,
 html[data-offline="1"] .extras-tick,
 html[data-offline="1"] .extras-stepper,
 html[data-offline="1"] .person-list .icon-btn,
-html[data-offline="1"] .cast-card,
+html[data-offline="1"] .settings-card,
 html[data-offline="1"] .meal-list .icon-btn {
   opacity: .45;
   pointer-events: none;

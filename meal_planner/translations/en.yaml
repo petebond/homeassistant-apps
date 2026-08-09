@@ -24,7 +24,7 @@ configuration:
   cast_device:
     name: Kitchen displays (Cast devices)
     description: >-
-      Leave empty to choose screens on the Household tab. Entity ids here pin
+      Leave empty to choose screens on the Settings tab. Entity ids here pin
       the choice instead. Needs DashCast installed.
   cast_url:
     name: Kitchen display address

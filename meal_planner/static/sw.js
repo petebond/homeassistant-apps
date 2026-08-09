@@ -14,7 +14,7 @@
  * Bump CACHE_VERSION on release: it is what evicts the old shell.
  */
 
-var CACHE_VERSION = "mp-v24";
+var CACHE_VERSION = "mp-v25";
 var SHELL_CACHE = CACHE_VERSION + "-shell";
 var DATA_CACHE = CACHE_VERSION + "-data";
 var IMAGE_CACHE = CACHE_VERSION + "-img";
@@ -114,6 +114,12 @@ self.addEventListener("fetch", function (event) {
   /* The kitchen display and the design preview are always used at home on a
      device that stays put - leave them entirely alone. */
   if (url.pathname.indexOf("/kitchen") === 0 || url.pathname.indexOf("/preview") === 0) return;
+
+  /* The dinner chime, likewise. It is only ever fetched to preview it on the
+     Settings tab, which needs the server anyway, and a bell nobody can ring
+     from a hotel is no use in the offline shell - it would just be the largest
+     thing in it. */
+  if (url.pathname.indexOf("/chime") === 0) return;
 
   if (url.pathname === "/api/data") {
     event.respondWith(dataFirst(request,

@@ -89,8 +89,12 @@ bare names, so the number you needed last time doesn't come back with them.
 
 Everything is written to `/data`, the app's persistent volume:
 
-- `/data/data.json` — the meal plan, and the shopping list's weekly extras
+- `/data/data.json` — the meal plan, the star ratings, and the shopping list's
+  weekly extras
 - `/data/images/` — meal photos
+- `/data/chime/` — the dinner bell's sound, if you uploaded one
+- `/data/display.json`, `/data/cast.json`, `/data/bell.json` — the kitchen
+  display, the screens it casts to, and the dinner bell
 - `/data/data.json.backup-YYYYMMDD` — automatic daily copies, last 7 kept
 - `/data/certs/` — the private CA and server certificate, if https is on.
   `ca.key` is the one file worth not sharing.
@@ -103,14 +107,15 @@ is copied in. Updates never overwrite live data.
 
 ### Taking a copy out, and putting one back
 
-The bottom of the **Household** tab has **Backup & restore**. One button
+The bottom of the **Settings** tab has **Backup & restore**. One button
 downloads all of the above as a single zip; the other puts one back. This is
 what makes reinstalling the app safe: download a backup, uninstall, install
 again from the repository, restore.
 
-The zip holds `data.json`, `images/`, `certs/`, and the kitchen-display and
-Cast settings. The daily `data.json.backup-*` snapshots are left out — they are
-a local undo for a bad edit, not something worth carrying to a new install.
+The zip holds `data.json` (the plan and every star given), `images/`, `certs/`,
+your dinner-bell sound, and the kitchen-display, Cast and bell settings. The
+daily `data.json.backup-*` snapshots are left out — they are a local undo for a
+bad edit, not something worth carrying to a new install.
 
 Two things worth knowing:
 
@@ -209,7 +214,7 @@ by itself:
    `AlexxIT/DashCast`) and restart Home Assistant. Casting is a protocol nothing
    in the Python standard library speaks, so the app asks Home Assistant to
    do it rather than growing a dependency.
-2. Open the planner → **Household** → **Kitchen display**, and tick the screens
+2. Open the planner → **Settings** → **Kitchen display**, and tick the screens
    you want. **More than one is fine** — the kitchen and a bedroom Hub is an
    ordinary pair — and each is watched separately.
 
@@ -251,7 +256,7 @@ set a rollover time (below).
 
 ### How it looks
 
-Household → **How the kitchen display looks**, on a phone. Unlike the app's own
+Settings → **How the kitchen display looks**, on a phone. Unlike the app's own
 appearance panel, these are shared by the house: the Hub has nobody sitting at
 it to set them.
 
@@ -260,9 +265,9 @@ it to set them.
   kitchen.
 - **Text size** — 70% to 140%, scaling the whole design rather than the type
   alone, so photos and gaps keep their proportions.
-- **What's on screen** — the cook, the clock, the date, meal photos, the week
-  strip, and whether an empty evening says "Nothing planned" or stays quiet.
-  Whatever is left takes the space.
+- **What's on screen** — the cook, how many they're cooking for, the clock, the
+  date, meal photos, the week strip, and whether an empty evening says "Nothing
+  planned" or stays quiet. Whatever is left takes the space.
 - **Moving on to the next day** — when the display stops showing today and
   starts showing tomorrow. Midnight by default, which is the calendar's own
   answer; set it to 21:00 and by nine the wall is answering the only question
@@ -281,6 +286,49 @@ size from a phone or laptop; its Light/Dark buttons affect only what is in the
 frame, by way of `/kitchen?theme=light`. That override works on a real display
 too — put it in `cast_url` to keep one screen light in a house set to dark. It
 is the only setting that can differ per screen.
+
+## The dinner bell
+
+Settings → **Dinner bell**. Switch it on, tick the speakers, and one press
+plays a chime on all of them.
+
+There are two ways to press it: **Dinner time!** on the kitchen display, for
+whoever is plating up, and **Ring it now** on the phone. The display's button
+has its own switch — a Hub within reach of a small child need not have one.
+
+**The sound** is a bell shipped with the app, so the switch works the moment it
+is turned on. Choose a sound to replace it with anything else: mp3, wav, ogg,
+m4a or flac, up to 8 MB. The file is identified by its contents rather than by
+what the phone's file picker called it, so a `.wav` that is really an mp3 works
+fine. **Listen** plays it on the device you are holding rather than on the
+speakers, which is the question worth answering before you wake the house.
+**Use the built-in bell** deletes yours and puts the original back. Your sound
+lives in `/data/chime/` and goes into the backup.
+
+**Any media player Home Assistant has** can be ticked, screens included —
+unlike the display picker, nothing is filtered out, because a speaker with no
+screen is exactly what most people want here. **Select all** and **Clear** are
+there for a house with a lot of them.
+
+Three things worth knowing:
+
+- **It plays over whatever is on, and Cast can't put that back.** A podcast the
+  bell interrupts stays stopped. This is why nothing rings on a schedule and
+  nothing ever will — the interruption is only acceptable when somebody meant
+  it.
+- **It doesn't touch the volume.** The chime plays at whatever each speaker is
+  already set to. Reading and restoring six volumes is three round trips each,
+  and an app that dies between the two leaves the house loud for good.
+- **Pressed twice, it rings once.** The second press inside about ten seconds
+  is swallowed.
+
+The speakers fetch the sound from the app over plain `http`, the same as the
+kitchen page and the meal photos: a Cast device has never been told to trust
+the app's own certificate authority, and one handed an `https` address it can't
+verify downloads nothing and says nothing about why.
+
+Needs Home Assistant, like casting does — the speakers belong to it. On a PC
+the card doesn't appear. Settings live in `/data/bell.json`.
 
 ## Notes
 
@@ -307,7 +355,8 @@ From then on:
 | --- | --- |
 | `static/` — HTML, CSS, JS | Just refresh the browser. Files are read per request. |
 | `static/sw.js` | Refresh twice, or DevTools → Application → Service Workers → Update. Bump `CACHE_VERSION` inside it or the old shell stays cached. |
-| `server.py`, `backup.py`, `cast.py`, `display.py`, `icon.py`, `tls.py` | Restart the app (a few seconds). |
+| `server.py`, `backup.py`, `bell.py`, `cast.py`, `display.py`, `icon.py`, `tls.py` | Restart the app (a few seconds). |
+| `static/chime.wav` — the built-in dinner bell | `python3 tools/make_chime.py` to resynthesise it, then refresh. Not copied into the image from `tools/`; only the `.wav` it writes is. |
 | The shapes in `icon.py` | `python3 icon.py --brand .` to redraw `icon.png` and `logo.png`, then Rebuild — Home Assistant reads those from the folder. |
 | `config.yaml`, `Dockerfile`, `run.sh` | Rebuild. These are read at build time. |
 | `translations/en.yaml` — the wording in the Configuration panel | Rebuild, or Reload from the App store. |
@@ -342,8 +391,12 @@ anywhere with Python 3:
 
 ```
 python3 tests/test_backup.py
-python3 tests/test_extras.py
+python3 tests/test_bell.py
 python3 tests/test_cast_churn.py
+python3 tests/test_extras.py
+python3 tests/test_head_count.py
+python3 tests/test_naming.py
+python3 tests/test_ratings.py
 ```
 
 Each works in a temporary directory of its own and never touches `/data`.

@@ -149,6 +149,7 @@
 
   function showPhotos() { return !look || look.showPhotos !== false; }
   function showEmpty() { return !look || look.showEmpty !== false; }
+  function showHeads() { return !look || look.showHeads !== false; }
 
   function fetchJson(url, onOk, onFail) {
     var xhr = new XMLHttpRequest();
@@ -201,6 +202,21 @@
     $("day-date").firstChild.nodeValue = d.getDate() + " " + MONTHS[d.getMonth()];
     // Who's cooking now lives in the top bar, and follows the day on show.
     $("cook").firstChild.nodeValue = (entry && entry.cook) ? entry.cook : "not decided";
+
+    /* And how many for. The server sends the day's total; the names on the
+       cards can't be counted for it, because one of them may read "3 guests".
+
+       Hidden rather than blanked when there is nobody to feed, and hidden on a
+       feed from a server too old to send the number at all - the display is
+       expected to survive an app that hasn't been updated yet, and "for
+       undefined people" on a kitchen wall is worse than no line. */
+    var heads = entry && typeof entry.headCount === "number" ? entry.headCount : 0;
+    var forLine = $("cook-for");
+    forLine.hidden = !heads || !showHeads();
+    if (heads) {
+      forLine.firstChild.nodeValue =
+        "for " + heads + (heads === 1 ? " person" : " people");
+    }
   }
 
   function renderToday(entry) {
@@ -438,7 +454,72 @@
     renderHeader(data, entry);
     renderToday(entry);
     renderWeek(data, entry);
+    renderBell(data.bell);
     shownDate = data.today;
+  }
+
+  // ------------------------------------------------------------ the bell
+
+  /* One button, and the app does the rest. Which speakers it rings, what it
+     plays and whether it is allowed at all are all settled on a phone; this
+     screen is only ever told yes or no.
+
+     `bell` is absent from a server too old to send it, which reads correctly
+     as no button - a display kept alive by an add-on that hasn't been updated
+     shouldn't grow a control that 404s. */
+  function renderBell(bell) {
+    var btn = $("bell-btn");
+    var on = !!(bell && bell.ready && bell.showButton);
+    btn.hidden = !on;
+    if (!on) { btn.classList.remove("is-ringing", "is-sorry"); }
+  }
+
+  var BELL_SETTLE_MS = 4000;
+  var bellTimer = null;
+
+  function ringBell() {
+    var btn = $("bell-btn");
+    if (btn.disabled) { return; }
+    btn.disabled = true;
+    btn.classList.remove("is-sorry");
+    btn.classList.add("is-ringing");
+    btn.firstChild.nodeValue = "Ringing…";
+
+    /* Nothing on this screen can be read from across a kitchen anyway, so the
+       outcome is the button itself: rung, or sorry. The reason lives on the
+       phone, in Settings, where somebody can stand and read it. */
+    function settle(label, sorry) {
+      btn.classList.remove("is-ringing");
+      btn.classList.toggle("is-sorry", !!sorry);
+      btn.firstChild.nodeValue = label;
+      if (bellTimer) { clearTimeout(bellTimer); }
+      bellTimer = setTimeout(function () {
+        btn.disabled = false;
+        btn.classList.remove("is-ringing", "is-sorry");
+        btn.firstChild.nodeValue = "Dinner time!";
+      }, BELL_SETTLE_MS);
+    }
+
+    var xhr = new XMLHttpRequest();
+    xhr.open("POST", "/api/bell/ring", true);
+    xhr.setRequestHeader("Content-Type", "application/json");
+    xhr.timeout = 15000;
+    xhr.onreadystatechange = function () {
+      if (xhr.readyState !== 4) { return; }
+      /* A ring that reached the app but not the speakers comes back 200 with
+         ok:false - the phone's card wants the detail either way, so the status
+         line stays about whether the request worked. Here, only the speakers
+         matter, so it is the body that decides. */
+      var body = {};
+      try { body = JSON.parse(xhr.responseText); } catch (e) { /* not JSON */ }
+      var reached = xhr.status >= 200 && xhr.status < 300;
+      settle(reached && body.ok ? "Ringing…" : "Wouldn't ring",
+             !(reached && body.ok));
+    };
+    xhr.ontimeout = xhr.onerror = function () {
+      settle("Wouldn't ring", true);
+    };
+    xhr.send("{}");
   }
 
   // ---------------------------------------------------------------- polling
@@ -473,6 +554,8 @@
       window.location.reload();
     }
   }
+
+  $("bell-btn").onclick = ringBell;
 
   tickClock();
   load();

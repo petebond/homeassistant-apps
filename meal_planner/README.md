@@ -40,9 +40,16 @@ Only the people the plan says ate it can rate it, only from today backwards,
 and not the guest slot — it stands for however many visitors turned up, so one
 star count against it would be nobody's opinion in particular.
 
-The **meal library** can then be ordered by highest rated, lowest rated, most
-divisive, not yet rated, or by what one person likes most or least. Each card
-shows the house average and a pill per person with theirs.
+The **meal library** is ordered from the button beside the search box, which
+reads back what the list is doing ("Highest · Pete, Jules +1"). Tapping it
+opens two rows: the household, where you pick whose opinion counts, and the
+order — A–Z, Highest, Lowest, Divisive, Unrated. Pick three names and the list
+answers for those three: their average, their disagreements, the things none of
+them has tried. No names picked means everyone. The choice is remembered per
+device.
+
+Each card shows the selected people's average and a pill per person; anyone not
+being asked keeps their pill in grey.
 
 Ratings belong to the night, not to the recipe: deleting a week takes its
 ratings with it, and taking somebody off a meal — or out of the household —

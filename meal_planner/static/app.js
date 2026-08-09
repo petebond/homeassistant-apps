@@ -23,7 +23,9 @@
     view: "week",
     editingMealId: null,
     mealFilter: "",
-    mealSort: "library",  // how the library is ordered; see MEAL_SORTS
+    mealSort: "az",       // how the library is ordered; see MEAL_SORTS
+    ratedBy: [],          // whose ratings the order uses; empty = everyone
+    sortOpen: false,      // the order panel under the search box
     shopWeek: null,
     planFocus: null,      // day just added to from the library; see applyPlanFocus
     shopList: null,       // last list fetched, kept so it can be shared
@@ -2545,8 +2547,15 @@
      Everything is keyed by meal id and rebuilt on each render. It is a few
      hundred numbers in the largest household this app is for; caching it would
      only be somewhere else for the figures to go stale. */
-  function ratingStats() {
+  function ratingStats(who) {
     var by = {};
+    // `who` is the set of people whose opinion is being asked for. Empty means
+    // the whole house - see whoseTaste().
+    var only = null;
+    if (who && who.length) {
+      only = {};
+      who.forEach(function (pid) { only[pid] = true; });
+    }
     function slot(id) {
       if (!by[id]) by[id] = { all: [], people: {} };
       return by[id];
@@ -2560,6 +2569,7 @@
           Object.keys(s.ratings).forEach(function (pid) {
             var stars = s.ratings[pid];
             if (!stars || !personById(pid)) return;
+            if (only && !only[pid]) return;
             var entry = slot(s.mealId);
             entry.all.push(stars);
             (entry.people[pid] = entry.people[pid] || []).push(stars);
@@ -2608,19 +2618,19 @@
      the house, it is an unknown, and unknowns go to the bottom in every
      direction rather than winning "lowest rated" by default. */
   var MEAL_SORTS = {
-    library: null,
+    az: { label: "A–Z", pill: "A–Z" },
     best: {
-      label: "Highest rated",
+      label: "Highest rated", pill: "Highest",
       rank: function (m, st) { return st[m.id] ? st[m.id].mean : null; },
       dir: -1
     },
     worst: {
-      label: "Lowest rated",
+      label: "Lowest rated", pill: "Lowest",
       rank: function (m, st) { return st[m.id] ? st[m.id].mean : null; },
       dir: 1
     },
     divisive: {
-      label: "Most divisive",
+      label: "Most divisive", pill: "Divisive",
       rank: function (m, st) {
         var e = st[m.id];
         return e && e.raters > 1 ? e.spread : null;
@@ -2628,29 +2638,37 @@
       dir: -1
     },
     unrated: {
-      label: "Not yet rated",
+      label: "Not yet rated", pill: "Unrated",
       rank: function (m, st) { return st[m.id] ? null : 0; },
       dir: 1,
       only: true      // a filter, not an order: rated meals drop out entirely
     }
   };
 
-  function personSort(value) {
-    // "best:p_abc123" / "worst:p_abc123"
-    var bits = String(value || "").split(":");
-    if (bits.length !== 2 || !personById(bits[1])) return null;
-    var pid = bits[1], dir = bits[0] === "worst" ? 1 : -1;
-    return {
-      rank: function (m, st) { return personMean(st, m.id, pid); },
-      dir: dir,
-      pid: pid
-    };
+  var SORT_ORDER = ["az", "best", "worst", "divisive", "unrated"];
+
+  function mealSort() {
+    return MEAL_SORTS.hasOwnProperty(state.mealSort) ? state.mealSort : "az";
+  }
+
+  /* Whose ratings the library is being asked about. Empty means everybody,
+     which is both the starting state and where deselecting the last name lands
+     - a library ordered by nobody's opinion would be an empty screen with no
+     way to tell what you had done. Anyone who has since left the household
+     drops out here rather than being cleaned up on delete: the selection is a
+     per-device preference, not part of the plan. */
+  function whoseTaste() {
+    return (state.ratedBy || []).filter(personById);
   }
 
   function sortMeals(meals, stats) {
-    var how = personSort(state.mealSort) ||
-      (MEAL_SORTS.hasOwnProperty(state.mealSort) ? MEAL_SORTS[state.mealSort] : null);
-    if (!how) return meals;
+    var how = MEAL_SORTS[mealSort()];
+    // A–Z is the default and the only order that ignores the ratings entirely.
+    if (!how.rank) {
+      return meals.slice().sort(function (a, b) {
+        return a.name.toLowerCase().localeCompare(b.name.toLowerCase());
+      });
+    }
 
     var ranked = meals.map(function (m, i) {
       return { meal: m, at: i, rank: how.rank(m, stats) };
@@ -2685,88 +2703,152 @@
     return row;
   }
 
-  /* The rating block on a meal card: the house's average, then who thought
-     what. The per-person line is the point of the whole feature - "4.2" is a
-     number, "Ellie 5, Sam 2" is why you are or aren't cooking it again. */
-  function ratingBlock(meal, stats, highlight) {
+  /* The rating block on a meal card: the average, then who thought what.
+
+     The average is over whoever is selected, not the whole house, so the
+     figure on the card agrees with the order the card is sitting in - a meal
+     at the top of "highest rated by Pete, Jules and Han" showing 2.8 because
+     three other people can't stand it is a card arguing with its own list. The
+     people who aren't being asked keep their pill, greyed: what they thought
+     is still worth knowing, it just isn't what the list is about. */
+  function ratingBlock(meal, stats, asked) {
     var entry = stats[meal.id];
+    var subset = asked.length > 0;
     if (!entry || !entry.count) {
-      return el("div", "macro-none", "Not rated yet");
+      return el("div", "macro-none",
+        subset ? "Not rated by " + nameList(asked) : "Not rated yet");
     }
     var wrap = el("div", "rating-block");
     var top = el("div", "rating-mean");
     top.appendChild(starRow(entry.mean));
     top.appendChild(el("span", "rating-figure", round(entry.mean).toFixed(1)));
     top.appendChild(el("span", "rating-count",
-      "· " + entry.count + (entry.count === 1 ? " rating" : " ratings")));
+      subset ? "· from " + nameList(asked)
+             : "· " + entry.count + (entry.count === 1 ? " rating" : " ratings")));
     if (entry.raters > 1 && entry.spread >= 2) {
       top.appendChild(el("span", "rating-split", "· split"));
     }
     wrap.appendChild(top);
 
+    /* Every rating on file, whoever gave it - so the greyed pills need their
+       own pass over the data rather than the filtered stats above. */
+    var everyone = stats.$all || stats;
     var who = el("div", "rating-people");
     household().forEach(function (p) {
-      var avg = personMean(stats, meal.id, p.id);
+      var avg = personMean(everyone, meal.id, p.id);
       if (avg === null) return;
-      var pill = el("span", "rating-pill" + (highlight === p.id ? " lead" : ""));
-      pill.style.background = p.color || "#3d8361";
+      var asked_ = !subset || asked.indexOf(p.id) !== -1;
+      var pill = el("span", "rating-pill" + (asked_ ? "" : " aside"));
+      if (asked_) pill.style.background = p.color || "#3d8361";
       pill.appendChild(el("span", null, p.name));
       pill.appendChild(el("span", "rating-pill-n", "★" + round(avg).toFixed(1)));
       pill.title = p.name + " averages " + round(avg).toFixed(1) +
-        " over " + stats[meal.id].people[p.id].length + " of these";
+        " over " + everyone[meal.id].people[p.id].length + " of these";
       who.appendChild(pill);
     });
     if (who.childNodes.length) wrap.appendChild(who);
     return wrap;
   }
 
-  /* The sort control next to the search box. Rebuilt with the household on it,
-     so a person added or renamed is on the list without a reload. */
-  function renderMealSort() {
-    var box = $("meal-sort");
-    if (!box) return;
-    clear(box);
-    box.appendChild(option("library", "Library order"));
-    Object.keys(MEAL_SORTS).forEach(function (id) {
-      if (MEAL_SORTS[id]) box.appendChild(option(id, MEAL_SORTS[id].label));
-    });
-    var people = household();
-    if (people.length) {
-      /* Per person, in the same select rather than behind a second dropdown:
-         with a household of four this is six more lines on a list you are
-         already looking at, and the alternative is a control that means
-         nothing until the first one is set a particular way. */
-      var group = el("optgroup");
-      group.label = "By person";
-      people.forEach(function (p) {
-        group.appendChild(option("best:" + p.id, p.name + " likes most"));
-        group.appendChild(option("worst:" + p.id, p.name + " likes least"));
-      });
-      box.appendChild(group);
-    }
-    // A person removed takes their sort with them; fall back to the library.
-    if (!personSort(state.mealSort) && !MEAL_SORTS.hasOwnProperty(state.mealSort)) {
-      state.mealSort = "library";
-    }
-    box.value = state.mealSort;
-    if (!box.value) { state.mealSort = "library"; box.value = "library"; }
+  function nameList(ids) {
+    var names = ids.map(function (id) {
+      var p = personById(id);
+      return p ? p.name : null;
+    }).filter(Boolean);
+    if (names.length <= 2) return names.join(" and ");
+    return names.slice(0, -1).join(", ") + " and " + names[names.length - 1];
   }
 
-  function option(value, label) {
-    var o = el("option", null, label);
-    o.value = value;
-    return o;
+  // ------------------------------------------- ordering the meal library
+
+  /* One button that reads back what the list is doing - "Highest · Pete,
+     Jules +1" - and opens two rows of chips underneath it. A dropdown was the
+     obvious control and the wrong one: it can only hold one choice, so asking
+     for the meals three of six people like meant six entries in a list that
+     grew with the household and still couldn't combine two of them. */
+  function sortSummary() {
+    var how = MEAL_SORTS[mealSort()];
+    var asked = whoseTaste();
+    if (!asked.length || !how.rank) return how.pill;
+    var names = asked.map(function (id) { return personById(id).name; });
+    var shown = names.slice(0, 2).join(", ");
+    if (names.length > 2) shown += " +" + (names.length - 2);
+    return how.pill + " · " + shown;
+  }
+
+  function renderSortControl() {
+    var btn = $("meal-sort-btn");
+    if (!btn) return;
+    clear(btn);
+    btn.appendChild(el("span", "sort-btn-icon", "⇅"));
+    btn.appendChild(el("span", null, sortSummary()));
+    btn.classList.toggle("set", mealSort() !== "az" || whoseTaste().length > 0);
+    btn.setAttribute("aria-expanded", state.sortOpen ? "true" : "false");
+    $("meal-sort-panel").hidden = !state.sortOpen;
+    if (!state.sortOpen) return;
+
+    var asked = whoseTaste();
+    var people = $("sort-people");
+    clear(people);
+    household().forEach(function (p) {
+      var on = asked.indexOf(p.id) !== -1;
+      var chip = el("button", "sort-chip person" + (on ? " on" : ""), p.name);
+      chip.type = "button";
+      chip.setAttribute("aria-pressed", on ? "true" : "false");
+      if (on) {
+        chip.style.background = p.color || "#3d8361";
+        chip.style.borderColor = p.color || "#3d8361";
+      } else {
+        chip.style.color = p.color || "#3d8361";
+        chip.style.borderColor = p.color || "#3d8361";
+      }
+      chip.onclick = function () {
+        var next = asked.filter(function (id) { return id !== p.id; });
+        if (!on) next.push(p.id);
+        // All six selected is the same question as none: the whole house.
+        setTaste(next.length === household().length ? [] : next);
+      };
+      people.appendChild(chip);
+    });
+    var all = el("span", "sort-note",
+      asked.length ? "" : "Everyone - tap a name to narrow it down");
+    people.appendChild(all);
+
+    var orders = $("sort-orders");
+    clear(orders);
+    SORT_ORDER.forEach(function (id) {
+      var on = mealSort() === id;
+      var pill = el("button", "sort-chip" + (on ? " on" : ""), MEAL_SORTS[id].pill);
+      pill.type = "button";
+      pill.setAttribute("aria-pressed", on ? "true" : "false");
+      pill.title = MEAL_SORTS[id].label;
+      pill.onclick = function () {
+        state.mealSort = id;
+        store("mealSort", id);
+        renderMeals();
+      };
+      orders.appendChild(pill);
+    });
+  }
+
+  function setTaste(ids) {
+    state.ratedBy = ids;
+    store("ratedBy", ids.join(","));
+    renderMeals();
   }
 
   function renderMeals() {
     $("meal-count").textContent = state.meals.length ? "(" + state.meals.length + ")" : "";
     var list = $("meal-list");
     clear(list);
-    renderMealSort();
+    renderSortControl();
 
-    var stats = ratingStats();
-    var chosen = personSort(state.mealSort);
-    var highlight = chosen ? chosen.pid : null;
+    /* Two passes over the same ratings: `stats` is what the list is ordered
+       and averaged by, `$all` is everybody, which the cards need for the greyed
+       pills of the people not being asked. */
+    var asked = whoseTaste();
+    var stats = ratingStats(asked);
+    if (asked.length) stats.$all = ratingStats([]);
 
     var filter = state.mealFilter.toLowerCase();
     var shown = state.meals.filter(function (m) {
@@ -2779,8 +2861,9 @@
     if (shown.length === 0) {
       list.appendChild(el("div", "empty-state",
         !state.meals.length ? "No meals saved yet. Add one above."
-          : state.mealSort === "unrated" ? "Everything that matches has been rated."
-          : "No meals match that search."));
+          : mealSort() !== "unrated" ? "No meals match that search."
+          : asked.length ? nameList(asked) + " have rated everything that matches."
+          : "Everything that matches has been rated."));
       return;
     }
 
@@ -2821,7 +2904,7 @@
       } else {
         front.appendChild(el("div", "macro-none", "No nutrition info yet"));
       }
-      front.appendChild(ratingBlock(m, stats, highlight));
+      front.appendChild(ratingBlock(m, stats, asked));
       if (m.notes) front.appendChild(el("p", null, m.notes));
       if (hasLink(m)) front.appendChild(recipeLink(m));
       var actions = el("div", "actions");
@@ -3737,10 +3820,18 @@
       renderMeals();
     };
 
-    $("meal-sort").onchange = function () {
-      state.mealSort = this.value;
-      renderMeals();
+    $("meal-sort-btn").onclick = function () {
+      state.sortOpen = !state.sortOpen;
+      renderSortControl();
     };
+
+    /* Which order and whose taste are a per-device preference, like the theme:
+       the phone in Pete's pocket asking for what Pete likes shouldn't change
+       what the kitchen tablet shows. Restored here rather than in the state
+       literal because the household has to be loaded before a stored id means
+       anything. */
+    state.mealSort = stored("mealSort", "az");
+    state.ratedBy = stored("ratedBy", "").split(",").filter(Boolean);
 
     $("cast-show-all").onchange = renderCast;
 

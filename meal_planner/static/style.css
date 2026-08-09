@@ -1138,7 +1138,66 @@ select:focus, input:focus, textarea:focus { outline: 2px solid var(--green); out
   flex-wrap: wrap;
 }
 .list-tools input { flex: 2 1 10rem; max-width: none; }
-.list-tools select { flex: 1 1 9rem; width: auto; min-width: 9rem; }
+
+/* ---------- ordering the meal library ---------- */
+
+/* The button reads back what the list is doing - "Highest · Pete, Jules +1" -
+   and opens the two rows of chips below. One line at rest, which is what a
+   page you mostly scroll wants. */
+.sort-btn {
+  flex: 0 1 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--input-bg);
+  color: var(--muted);
+  font: inherit;
+  font-size: .84rem;
+  padding: .4rem .7rem;
+  min-height: 36px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.sort-btn:hover { border-color: var(--accent); }
+/* Anything other than plain A-Z for the whole house is worth being able to
+   see from across the page - it is the reason the list isn't in the order you
+   expect. */
+.sort-btn.set { border-color: var(--accent); color: var(--accent-dark); }
+.sort-btn-icon { font-size: .95rem; line-height: 1; }
+
+.sort-panel {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--bg);
+  padding: .6rem .75rem;
+  margin: 0 0 .7rem;
+}
+.sort-row { display: flex; align-items: baseline; gap: .5rem; flex-wrap: wrap; }
+.sort-row + .sort-row { margin-top: .5rem; }
+.sort-row-label { font-size: .78rem; color: var(--muted); flex: 0 0 5.2rem; }
+.sort-chips { display: flex; gap: .35rem; flex-wrap: wrap; align-items: center; flex: 1; }
+
+.sort-chip {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--muted);
+  font: inherit;
+  font-size: .78rem;
+  padding: .25rem .7rem;
+  min-height: 30px;
+  cursor: pointer;
+}
+.sort-chip:hover { border-color: var(--accent); }
+.sort-chip.on { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+/* A person's chip carries their own colour: filled when their opinion counts,
+   outlined in it when it doesn't, so the row reads the same way as the name
+   chips on the week view. */
+.sort-chip.person { background: var(--card); }
+.sort-chip.person.on { color: #fff; }
+.sort-note { font-size: .76rem; color: var(--muted); }
 
 /* 320, not 250: a library card carries a photo, tags, a macro strip and three
    buttons, and at 250 the buttons wrapped onto their own line. The wider
@@ -1293,9 +1352,14 @@ select:focus, input:focus, textarea:focus { outline: 2px solid var(--green); out
   opacity: .9;
 }
 .rating-pill-n { font-weight: 700; }
-/* The person the list is currently sorted by. Their pill is the reason this
-   meal is where it is, so it stops being one of a row of equals. */
-.rating-pill.lead { opacity: 1; outline: 2px solid var(--ink); outline-offset: 1px; }
+/* Someone whose opinion the list isn't asking for. Still shown - what the rest
+   of the house thought is worth knowing - but drained of colour so the pills
+   that count are the ones you see. */
+.rating-pill.aside {
+  background: var(--tag-bg);
+  color: var(--muted);
+  opacity: 1;
+}
 
 .day-total {
   font-size: .76rem;
@@ -1837,7 +1901,8 @@ html[data-offline="1"] .meal-list .icon-btn {
 html[data-offline="1"] .tabs,
 html[data-offline="1"] .nav-btn,
 html[data-offline="1"] #meal-search,
-html[data-offline="1"] #meal-sort {
+html[data-offline="1"] #meal-sort-btn,
+html[data-offline="1"] .sort-panel {
   opacity: 1;
   pointer-events: auto;
   filter: none;

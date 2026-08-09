@@ -1,5 +1,40 @@
 # Changelog
 
+## 1.14.0
+
+**New: order the library by what *some* of the house thinks.** Tap the button
+beside the search box — it reads back what the list is doing, "Highest · Pete,
+Jules +1" — and two rows of chips open underneath. The first row is the
+household: tap the names whose opinion you want. The second is the order:
+A–Z, Highest, Lowest, Divisive, Unrated. So "the meals Pete, Jules and Han
+rate highly, never mind what the other three make of them" is four taps, and
+the answer can be a meal the house as a whole scores 3.0.
+
+Everything downstream follows the selection. Highest and Lowest average only
+the people you picked. Divisive is the spread between them, so a meal three
+people all give 5 stops being divisive the moment the two who hate it are
+deselected. Unrated means none of *them* has rated it — which is the useful
+question when three of six have never tried something.
+
+The card agrees with the list it is in: the stars and the figure are the
+selected people's average, captioned "from Pete, Jules and Han", and everyone
+else's pill goes grey rather than disappearing. What the rest of the house
+thought is still worth seeing; it just isn't what you asked.
+
+No chips lit means the whole house, which is where it starts and where
+deselecting the last name lands. Selecting everybody is the same thing, so it
+collapses back to that. The choice is remembered per device, like the theme —
+the phone in your pocket asking for what you like doesn't change what the
+kitchen tablet shows.
+
+**Changed: the default order is A–Z.** It was whatever order the library
+happened to be stored in, which was alphabetical in practice but only by
+accident.
+
+**Removed: the order dropdown.** A `<select>` holds one choice, so "best for
+one person" meant two entries per person — a list that grew with the household
+and still couldn't answer a question about three of them at once.
+
 ## 1.13.1
 
 **Changed: the name chips on The Week are just names again.** 1.13.0 put a

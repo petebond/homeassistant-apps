@@ -296,9 +296,22 @@
       <h2>Saved meals <span class="count" id="meal-count"></span></h2>
       <div class="list-tools">
         <input type="search" id="meal-search" placeholder="Search meals..." aria-label="Search meals">
-        <!-- Filled in by app.js: the fixed orders, then two entries per person
-             in the household, which is only known at run time. -->
-        <select id="meal-sort" aria-label="Order meals by"></select>
+        <!-- Reads back the order and whose ratings it is using, e.g.
+             "Highest · Pete, Jules +1". app.js writes the text. -->
+        <button type="button" class="sort-btn" id="meal-sort-btn"
+                aria-expanded="false" aria-controls="meal-sort-panel"></button>
+      </div>
+    </div>
+    <!-- Two rows, both filled in by app.js: the household as chips to pick
+         whose opinion counts, then the order. -->
+    <div class="sort-panel" id="meal-sort-panel" hidden>
+      <div class="sort-row">
+        <span class="sort-row-label">Whose taste</span>
+        <div class="sort-chips" id="sort-people"></div>
+      </div>
+      <div class="sort-row">
+        <span class="sort-row-label">Order</span>
+        <div class="sort-chips" id="sort-orders"></div>
       </div>
     </div>
     <div id="meal-list" class="meal-list"></div>

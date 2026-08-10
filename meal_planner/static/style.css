@@ -732,32 +732,55 @@ main { max-width: 1500px; margin: 0 auto; padding: 1.1rem 1rem; }
   cursor: pointer;
   text-align: left;
 }
-.star-btn:hover, .star-btn:focus-visible { background: rgba(255,255,255,.2); }
+/* A wash in whichever direction the picker isn't. White over a yellow is not a
+   hover state; app.js sets --star-wash to match the lettering it chose. */
+.star-btn:hover, .star-btn:focus-visible {
+  background: var(--star-wash, rgba(255,255,255,.2));
+}
 .star-btn:focus-visible { outline: 0; }
 
 .star-n {
   font-size: .78rem;
   font-weight: 700;
-  /* Inherited from the picker, which is coloured per person - see .star-clear. */
+  /* Inherited from the picker, which is coloured per person - see .star-clear.
+     .9 rather than the .75 this was: below about .89 the lettering washes into
+     the colour behind it on the strongest reds and pinks, and 2.38:1 is not a
+     number you can read at .78rem. It is still visibly the quieter half of the
+     row, which is all the dimming was for. */
   color: inherit;
-  opacity: .75;
+  opacity: .9;
   width: .8rem;
   text-align: center;
 }
 .star-btn.on .star-n { opacity: 1; }
 
 .star-svg { width: 20px; height: 20px; display: block; flex: none; }
-/* Stroked in its own fill colour with round joins, which is what rounds the
-   points off - the path itself is a plain five-pointer. */
+
+/* Outline by default, solid once given. A star rating is read by that
+   difference everywhere else it appears, and it is a difference of shape, so
+   it survives whatever colour the picker is wearing.
+
+   It used to be a difference of alpha: an unearned star was white at 35% and
+   an earned one a fixed gold. On the old palette of ten mid-tones that was
+   merely faint. Against the palette now it is not there at all - white at 35%
+   on the yellow is 1.01:1, and the gold is under 3:1 on fourteen of the
+   thirty-six, worst of them 1.03:1 on the green.
+
+   The stroke is what rounds the points off; the path itself is a plain
+   five-pointer, so the outline state costs nothing to draw. */
 .star-svg path {
-  fill: currentColor;
+  fill: none;
   stroke: currentColor;
   stroke-width: 3.2;
   stroke-linejoin: round;
   stroke-linecap: round;
 }
-.star-btn .star-svg { color: rgba(255,255,255,.35); }
-.star-btn.on .star-svg { color: #ffd452; }
+.star-btn.on .star-svg path { fill: currentColor; }
+
+/* Gold where gold can be seen, and the picker's own lettering colour where it
+   can't - app.js sets --star-on per person, the same way it sets the
+   lettering. The fallback is for a picker built before that ran. */
+.star-btn.on .star-svg { color: var(--star-on, #ffd452); }
 
 /* currentColor throughout, not white: the picker wears the person's colour and
    app.js sets its lettering to whatever can be read on that, which is black on
@@ -770,7 +793,8 @@ main { max-width: 1500px; margin: 0 auto; padding: 1.1rem 1rem; }
   border-top: 1px solid currentColor;
   background: none;
   color: inherit;
-  opacity: .8;
+  /* .9 for the same reason as .star-n. */
+  opacity: .9;
   font: inherit;
   font-size: .72rem;
   padding: .3rem 0 .05rem;
@@ -1365,7 +1389,10 @@ select:focus, input:focus, textarea:focus { outline: 2px solid var(--green); out
   border-radius: 999px;
   color: #fff;
   white-space: nowrap;
-  opacity: .9;
+  /* Full strength. At .9 the whole pill composited with the card behind it,
+     which pulled the strongest colours down to 3.48:1 - and the softening it
+     bought is already carried by .aside, which is the real distinction here. */
+  opacity: 1;
 }
 .rating-pill-n { font-weight: 700; }
 /* Someone whose opinion the list isn't asking for. Still shown - what the rest
@@ -1414,6 +1441,54 @@ select:focus, input:focus, textarea:focus { outline: 2px solid var(--green); out
 .dot-btn:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
 
 .person-row .name { flex: 1; font-weight: 500; }
+
+/* ---------- reordering the household ---------- */
+
+/* The grip. Six dots is the shape people already read as "drag me", so it
+   needs no caption and no arrows beside it to explain itself.
+
+   touch-action:none is what makes the drag work on a phone at all. Without it
+   the browser claims a vertical drag as a page scroll the moment it starts,
+   and the row is dropped a few pixels in. It is on the handle alone, so the
+   rest of Settings still scrolls normally under a thumb. */
+.drag-handle {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.9rem;
+  padding: .35rem .3rem;
+  touch-action: none;
+  cursor: grab;
+  /* Colour comes from .icon-btn: muted, and the accent on hover, like the
+     other controls on the row. The dots are drawn in currentColor. */
+}
+.drag-handle:active { cursor: grabbing; }
+.grip { width: 10px; height: 16px; display: block; }
+
+/* The guest slot has no handle, so its row needs the same gap where one would
+   be or the discs and names stop lining up down the list. */
+.drag-spacer { flex: none; width: 1.9rem; }
+
+/* The row while it is being carried. Lifted off the list rather than tinted:
+   the row already wears a person's colour on its disc, and a highlight would
+   be one more colour arguing with it. */
+.person-row.dragging {
+  z-index: 70;
+  box-shadow: 0 10px 24px rgba(0,0,0,.28);
+  border-color: var(--accent);
+  cursor: grabbing;
+  pointer-events: none;
+}
+
+/* Where it will land. An outline rather than a filled block, so it reads as an
+   opening in the list rather than as another row. */
+.person-gap {
+  border: 2px dashed var(--accent);
+  border-radius: var(--radius);
+  background: var(--accent-wash);
+  box-sizing: border-box;
+}
 
 /* ---------- the colour picker ---------- */
 

@@ -362,6 +362,98 @@ def test_keeping_your_own_colour():
     check("and you keep it", updated["color"], fay["color"])
 
 
+# ------------------------------------------------------- the household order
+#
+# The order people are kept in is the order their names are drawn in
+# everywhere: the chips on a week card, the eating toggles, the rating pills,
+# the kitchen display. Before it was reorderable it was arrival order and
+# nothing read it, so a sitting's `eaters` - the order people were tapped -
+# was what the week card used. That gave the same two people at the same table
+# a different order on Tuesday than on Wednesday.
+
+
+def test_the_guest_slot_stays_at_the_end():
+    """ensure_guest() adds it as soon as there is one real person, and everyone
+    after that is appended behind it. A house of five had it sitting second."""
+    ann = add("Ann")
+    bob = add("Bob")
+    _, data = call("GET", "/api/data")
+    order = [p["id"] for p in data["people"]]
+    check("the guest is last after adding people", order[-1], server.GUEST_ID)
+    check("and the people are in the order they arrived",
+          order[:2], [ann["id"], bob["id"]])
+
+
+def test_reordering():
+    ann, bob, cal = add("Ann"), add("Bob"), add("Cal")
+    ids = [cal["id"], ann["id"], bob["id"], server.GUEST_ID]
+
+    status, people = call("POST", "/api/people/order", {"ids": ids})
+    check("the new order is accepted", status, 200)
+    check("and is what comes back", [p["id"] for p in people], ids)
+
+    _, data = call("GET", "/api/data")
+    check("and it survived the save",
+          [p["id"] for p in data["people"]], ids)
+
+
+def test_the_guest_cannot_be_moved_off_the_end():
+    ann, bob = add("Ann"), add("Bob")
+    status, people = call("POST", "/api/people/order",
+                          {"ids": [server.GUEST_ID, ann["id"], bob["id"]]})
+    check("an order with the guest first is still accepted", status, 200)
+    check("but the guest is put back on the end",
+          [p["id"] for p in people], [ann["id"], bob["id"], server.GUEST_ID])
+
+
+def test_an_order_that_no_longer_fits_the_household():
+    """Two phones in Settings at once. The one holding the older list must not
+    be able to drop whoever the other one added."""
+    ann, bob = add("Ann"), add("Bob")
+
+    for bad, why in (
+            ([ann["id"]], "a list missing people"),
+            ([ann["id"], bob["id"], server.GUEST_ID, "p_nobody"],
+             "a list with somebody who isn't here"),
+            ([ann["id"], ann["id"], server.GUEST_ID], "a list with a repeat"),
+            ("not a list", "something that isn't a list"),
+            ([1, 2, 3], "a list of things that aren't ids")):
+        status, _ = call("POST", "/api/people/order", {"ids": bad})
+        ok("%s is refused (got %d)" % (why, status), status == 400)
+
+    _, data = call("GET", "/api/data")
+    check("and the household is untouched",
+          [p["id"] for p in data["people"]],
+          [ann["id"], bob["id"], server.GUEST_ID])
+
+
+def test_the_kitchen_display_reads_the_household_order():
+    """The display is read at a glance from across a room, so a name that moves
+    between days is a name you have to read rather than recognise."""
+    ann, bob, cal = add("Ann"), add("Bob"), add("Cal")
+
+    # Tapped in the reverse of the household's order.
+    data = server.load_data()
+    key = server.monday_of(server.date.today()).isoformat()
+    data["weeks"][key] = server.blank_week()
+    data["weeks"][key]["mon"]["sittings"] = [
+        server.new_sitting(eaters=[cal["id"], ann["id"], bob["id"]])]
+    server.save_data(data)
+
+    view = server.kitchen_view(server.load_data(), key)
+    monday = [d for d in view["days"] if d["day"] == "mon"][0]
+    check("the display lists them in household order",
+          monday["meals"][0]["eaters"], ["Ann", "Bob", "Cal"])
+
+    # And it follows the order when that changes.
+    call("POST", "/api/people/order",
+         {"ids": [cal["id"], bob["id"], ann["id"], server.GUEST_ID]})
+    view = server.kitchen_view(server.load_data(), key)
+    monday = [d for d in view["days"] if d["day"] == "mon"][0]
+    check("and follows it when it changes",
+          monday["meals"][0]["eaters"], ["Cal", "Bob", "Ann"])
+
+
 def serve():
     global HOST
     httpd = ThreadingHTTPServer(("127.0.0.1", 0), server.Handler)
@@ -390,7 +482,12 @@ for test in [test_the_app_is_told_what_it_may_choose_from,
              test_a_name_on_its_own_still_works,
              test_both_at_once,
              test_what_is_refused,
-             test_keeping_your_own_colour]:
+             test_keeping_your_own_colour,
+             test_the_guest_slot_stays_at_the_end,
+             test_reordering,
+             test_the_guest_cannot_be_moved_off_the_end,
+             test_an_order_that_no_longer_fits_the_household,
+             test_the_kitchen_display_reads_the_household_order]:
     reset()
     test()
 httpd.shutdown()

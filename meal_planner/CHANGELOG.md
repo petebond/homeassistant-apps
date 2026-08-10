@@ -1,5 +1,45 @@
 # Changelog
 
+## 1.18.0
+
+**New: drag the household into the order you want.** Settings → Household, grip
+handle on each row. That order is now the order names appear in everywhere —
+the chips on a week card, the eating toggles, the rating pills, the kitchen
+display.
+
+Before this, a meal card listed people in the order they were *tapped*, so the
+same two people at the same table could read "Sam, Alex" on Tuesday and "Alex,
+Sam" on Wednesday. A row of names in a settled order is something you
+recognise; one that shuffles is something you have to read.
+
+The grip is the whole hit area, so a thumb resting on a name while scrolling
+Settings doesn't pick anybody up. It is also a button: with it focused, the
+arrow keys move that person one place, which is how this stays reachable from a
+keyboard and from a screen reader. Escape during a drag puts everything back.
+
+The guest slot is pinned to the end, because that is where it reads on a card —
+"Alex, Sam and 2 guests". It had been drifting into the middle of the Settings
+list, which nothing noticed while the order meant nothing.
+
+**Fixed: the star picker was unreadable on the brighter half of the palette.**
+An unearned star was white at 35% opacity and an earned one a fixed gold. On
+the ten muted colours that preceded 1.17.0 that was merely faint; against the
+palette as it is now, white at 35% on the yellow is 1.01:1, and the gold falls
+under 3:1 on fourteen of the thirty-six — worst 1.03:1 on the green.
+
+Stars are now outlined when unearned and solid when earned, which is how a star
+rating is read everywhere else and is a difference of shape rather than of
+colour, so it survives any background. The gold is kept where it can be seen
+and falls back to the picker's own lettering colour where it can't. The rating
+numbers and the Clear label were dimmed to 75% and 80%, which washed them into
+the strongest reds and pinks at 2.4:1; both are at 90% now. Worst pairing
+anywhere in the picker is 3.07:1.
+
+**Fixed:** rating pills on a library card were drawn at 90% opacity, which
+composited them with the card behind and cost the strongest colours about
+0.15:1. They are full strength; the drained look for someone whose opinion the
+list isn't asking for was always carried by its own rule.
+
 ## 1.17.0
 
 **New: pick everyone's colour.** Settings → Household, tap the coloured disc

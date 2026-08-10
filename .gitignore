@@ -4,6 +4,12 @@ __pycache__/
 
 # Local test artefacts
 .bintest.png
+.pytest_cache/
+
+# jsdom, for tests/browser. Installed with `npm install jsdom` and not shipped:
+# the add-on image is Python, and nothing here is a dependency of the app.
+node_modules/
+package-lock.json
 
 # Anything that looks like live data or keys - none of this belongs in git.
 data.json

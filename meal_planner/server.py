@@ -145,6 +145,7 @@ def load_data():
     migrate_weeks(data)
     migrate_extras(data)
     ensure_guest(data)
+    settle_people(data)
     return data
 
 
@@ -373,6 +374,31 @@ def ensure_guest(data):
         "guest": True,
     })
     return data
+
+
+def settle_people(data):
+    """Keep the guest slot at the end of the household.
+
+    It was ending up in the middle. ensure_guest() adds it the moment the first
+    real person exists, and everyone after that is appended behind it, so a
+    house of five had it sitting second. That never showed while the order
+    meant nothing; now the order is what the name chips on the week are drawn
+    in, and the guest reads last there - "Alex, Sam and 2 guests" - so it has
+    to read last here too, or Settings and the week disagree.
+
+    Run on load rather than as a migration: it costs nothing, and it covers a
+    file restored from a backup taken before any of this."""
+    people = data.setdefault("people", [])
+    guests = [p for p in people if p.get("guest")]
+    if guests and people[-len(guests):] != guests:
+        data["people"] = [p for p in people if not p.get("guest")] + guests
+    return data
+
+
+def household_rank(data):
+    """{person id: where they come in the household}. The order the app draws
+    every list of people in, so it is worked out in one place."""
+    return {p["id"]: i for i, p in enumerate(data.get("people", []))}
 
 
 def head_count(sitting, guest, valid=None):
@@ -762,6 +788,7 @@ def kitchen_view(data, key, rolling=False, span=7):
     shopping list that started talking about tomorrow at teatime would be a
     bug in every other part of the house."""
     people = {p["id"]: p["name"] for p in data["people"]}
+    rank = household_rank(data)
     meals = {m["id"]: m for m in data["meals"]}
     settings = display.load()
     # Read here rather than in the payload literal so a bell.json that has gone
@@ -804,7 +831,12 @@ def kitchen_view(data, key, rolling=False, span=7):
 
         for sitting in sittings:
             meal = meals.get(sitting.get("mealId"))
-            marked = [e for e in sitting.get("eaters", []) if e in people]
+            # In household order, not the order they were tapped. The display
+            # is read at a glance from across a kitchen, and a name that moves
+            # from second to fourth between Tuesday and Wednesday is a name you
+            # have to actually read rather than recognise.
+            marked = sorted((e for e in sitting.get("eaters", []) if e in people),
+                            key=lambda e: rank.get(e, len(rank)))
             fed.update(marked)
             heads = head_count(sitting, guest, set(people))
             # The guest slot reads as what it stands for: "Alex, Sam, Jo and
@@ -2190,8 +2222,40 @@ class Handler(BaseHTTPRequestHandler):
             def add(data):
                 person = {"id": new_id("p"), "name": name, "color": next_color(data["people"])}
                 data["people"].append(person)
+                # Appending puts them behind the guest slot; this puts the
+                # guest back on the end. Without it the file is briefly in an
+                # order the next load would correct anyway, which is the kind
+                # of difference that makes a test pass and a screen wrong.
+                settle_people(data)
                 return person
             return self._json(mutate(add), 201)
+
+        # The household's order, which is the order names are drawn in
+        # everywhere: the chips on a week card, the eating toggles, the rating
+        # pills. Sent whole rather than as "move this one up" - the browser
+        # already has the list, and a whole list cannot half-apply or land in
+        # the wrong place because two phones pressed the arrow at once.
+        if path == "/api/people/order" and method == "POST":
+            wanted = (body or {}).get("ids")
+            if not isinstance(wanted, list) or not all(
+                    isinstance(i, str) for i in wanted):
+                return self._error(400, "An order needs a list of people")
+
+            def reorder(data):
+                people = data["people"]
+                by_id = {p["id"]: p for p in people}
+                # Every id exactly once, and nothing invented. A partial list
+                # would silently drop whoever was left out of it.
+                if sorted(wanted) != sorted(by_id):
+                    return None
+                data["people"] = [by_id[i] for i in wanted]
+                settle_people(data)
+                return data["people"]
+
+            result = mutate(reorder)
+            return self._json(result) if result else self._error(
+                400, "That order doesn't match the household - it may have "
+                     "changed on another phone. Reopen Settings.")
 
         m = re.match(r"^/api/people/([\w]+)$", path)
         if m and method == "PUT":

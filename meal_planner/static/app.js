@@ -36,6 +36,7 @@
     planFocus: null,      // day just added to from the library; see applyPlanFocus
     shopList: null,       // last list fetched, kept so it can be shared
     shopRendered: null,   // which week that list is on screen for
+    grabbed: null,        // person whose drag handle should keep the focus
     pendingImage: null,   // picture chosen from this device, awaiting save
     imageShown: "",       // what the image field held when editing began
     offline: false,       // server unreachable; the page is read-only
@@ -204,13 +205,18 @@
            0.0722 * srgbPart(n & 255);
   }
 
+  function contrastRatio(a, b) {
+    var la = luminance(a), lb = luminance(b);
+    return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
+  }
+
   /* White unless white would be hard work, then near-black.
      3.6:1 rather than the 4.5 a body of text wants: these are short, mostly a
      single name, on a filled pill at a size the eye is not scanning. Going to
      4.5 pushes reds and magentas onto black lettering, which reads as a
      highlighter pen. Nothing in the palette is below 3.6 on the ink it gets. */
   function inkOn(color) {
-    return (1.05 / (luminance(color) + 0.05)) >= 3.6 ? "#fff" : DARK_INK;
+    return contrastRatio(color, "#ffffff") >= 3.6 ? "#fff" : DARK_INK;
   }
 
   /* Put a person's colour on something, with lettering that can be read on it.
@@ -219,6 +225,29 @@
     var c = color || DEFAULT_COLOR;
     node.style.background = c;
     node.style.color = inkOn(c);
+    return node;
+  }
+
+  /* The star picker has two things on it that the lettering colour doesn't
+     cover, because neither is lettering: the fill of an earned star, and the
+     wash under a pressed one.
+
+     The gold is worth keeping where it can be seen - it is what says "star"
+     before the shape has been read - but it is a fixed colour against a
+     background that is now anything from pure yellow to deep indigo, and it
+     clears 3:1 on only twenty-two of the thirty-six. On the rest the star
+     falls back to the picker's own lettering colour, where the outline/solid
+     distinction carries it instead. */
+  var STAR_GOLD = "#ffd452";
+
+  function starTones(node, color) {
+    var c = color || DEFAULT_COLOR;
+    var ink = inkOn(c);
+    node.style.setProperty("--star-on",
+      contrastRatio(STAR_GOLD, c) >= 3 ? STAR_GOLD : ink);
+    // A wash away from the lettering, so it shows on either kind of picker.
+    node.style.setProperty("--star-wash",
+      ink === "#fff" ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.16)");
     return node;
   }
 
@@ -275,6 +304,24 @@
 
   function household() {
     return state.people.filter(function (p) { return !p.guest; });
+  }
+
+  /* People in the order the household is kept in, whatever order they arrived
+     in. Everything that draws a list of names goes through here or through
+     state.people directly, so the same faces come in the same order on every
+     card - which is what makes a row of chips something you recognise rather
+     than something you read.
+
+     The one that didn't was the week card: a sitting's `eaters` is the order
+     people were tapped, so Tuesday could say "Sam, Alex" and Wednesday "Alex,
+     Sam" for the same two people at the same table. */
+  function inHouseholdOrder(people) {
+    var rank = {};
+    state.people.forEach(function (p, i) { rank[p.id] = i; });
+    return people.slice().sort(function (a, b) {
+      return (rank[a.id] === undefined ? 1e6 : rank[a.id]) -
+             (rank[b.id] === undefined ? 1e6 : rank[b.id]);
+    });
   }
 
   function guestsOn(sitting) {
@@ -1437,8 +1484,9 @@
        which is another line to read before you can do the thing you opened it
        to do. */
     /* paint(), not just a background: the stars and the numbers inside are
-       drawn in currentColor, so they follow the lettering this picks. */
-    paint(pop, person.color);
+       drawn in currentColor, so they follow the lettering this picks.
+       starTones() covers the two things on here that aren't lettering. */
+    starTones(paint(pop, person.color), person.color);
     // The colour is the cue on screen; a screen reader gets the name here
     // instead, since there is no longer a heading to read out.
     pop.setAttribute("role", "group");
@@ -1634,7 +1682,7 @@
   function renderSitting(sitting, isExtra, ctx) {
     var block = el("div", "sitting" + (isExtra ? " extra" : ""));
     var meal = sitting.mealId ? mealById(sitting.mealId) : null;
-    var eating = sitting.eaters.map(personById).filter(Boolean);
+    var eating = inHouseholdOrder(sitting.eaters.map(personById).filter(Boolean));
     var heads = headCount(sitting);
     var lines = meal ? ingredientLines(meal, heads) : [];
 
@@ -3565,8 +3613,20 @@
       list.appendChild(el("div", "empty-state", "No one added yet."));
       return;
     }
-    state.people.forEach(function (p) {
+    /* The guest slot is pinned to the end and has no handle. It reads last on
+       a week card - "Alex, Sam and 2 guests" - so a household order that could
+       put it anywhere else would only be an order Settings and the week
+       disagreed about. The server pins it too; this is the same rule drawn. */
+    var movable = household();
+
+    state.people.forEach(function (p, at) {
       var row = el("div", "person-row" + (p.guest ? " is-guest" : ""));
+      row.dataset.id = p.id;
+      /* A spacer on the guest's row rather than nothing, so the discs and
+         names below it stay in the same column as the ones above. */
+      row.appendChild(!p.guest && movable.length > 1
+        ? dragHandle(p, at, movable.length)
+        : el("span", "drag-spacer"));
       row.appendChild(colorDot(p));
       var name = el("span", "name", p.name);
       if (p.guest) {
@@ -3597,6 +3657,211 @@
       if (!p.guest) row.appendChild(del);
       list.appendChild(row);
     });
+
+    /* Dragging replaces this list, so the handle that was being held no longer
+       exists. Put the focus back on the new one, or a keyboard moving somebody
+       down three places would have to find them again after every press. */
+    if (state.grabbed) {
+      var back = list.querySelector('.person-row[data-id="' + state.grabbed +
+                                    '"] .drag-handle');
+      if (back) back.focus();
+      state.grabbed = null;
+    }
+  }
+
+  // ------------------------------------------- reordering the household
+  //
+  /* The grip is the standard way to say "this row can be moved", and it says it
+     without a caption. It is also the whole hit area: the row itself stays
+     inert, so a thumb resting on a name while scrolling Settings does not pick
+     anybody up.
+
+     The handle is a real button as well as a drag target. Arrow keys on it move
+     the person one place, which is what makes this reachable from a keyboard
+     and from a screen reader - dragging on its own would leave both with
+     nothing at all. It is the same one-place move either way, through the same
+     endpoint. */
+
+  var drag = null;
+
+  function gripShape() {
+    var ns = "http://www.w3.org/2000/svg";
+    var svg = document.createElementNS(ns, "svg");
+    svg.setAttribute("class", "grip");
+    svg.setAttribute("viewBox", "0 0 10 16");
+    svg.setAttribute("aria-hidden", "true");
+    [[3, 3], [7, 3], [3, 8], [7, 8], [3, 13], [7, 13]].forEach(function (at) {
+      var dot = document.createElementNS(ns, "circle");
+      dot.setAttribute("cx", at[0]);
+      dot.setAttribute("cy", at[1]);
+      dot.setAttribute("r", "1.35");
+      dot.setAttribute("fill", "currentColor");
+      svg.appendChild(dot);
+    });
+    return svg;
+  }
+
+  function dragHandle(person, at, count) {
+    var handle = el("button", "icon-btn drag-handle");
+    handle.type = "button";
+    handle.appendChild(gripShape());
+    handle.setAttribute("aria-label",
+      person.name + ", " + (at + 1) + " of " + count +
+      ". Drag to reorder, or use the arrow keys.");
+    handle.title = "Drag " + person.name + " to reorder";
+    handle.onpointerdown = function (e) { startDrag(e, handle, person); };
+    handle.onkeydown = function (e) {
+      var delta = e.key === "ArrowUp" ? -1 : e.key === "ArrowDown" ? 1 : 0;
+      if (!delta) return;
+      e.preventDefault();
+      movePerson(person, delta);
+    };
+    return handle;
+  }
+
+  function startDrag(e, handle, person) {
+    if (state.offline || drag) return;
+    if (e.button !== undefined && e.button !== 0) return;   // right-click
+
+    var row = handle.parentNode;
+    var list = row.parentNode;
+    var rect = row.getBoundingClientRect();
+
+    // Stops the browser reading the gesture as a scroll and taking it away
+    // half way through. touch-action:none on the handle is the other half.
+    e.preventDefault();
+    if (handle.setPointerCapture) handle.setPointerCapture(e.pointerId);
+
+    /* A gap the size of the row, left where the row will land. It is what the
+       drop reads to work out the new order, so there is no separate model of
+       "where things are" to get out of step with the screen. */
+    var gap = el("div", "person-gap");
+    gap.style.height = rect.height + "px";
+    list.insertBefore(gap, row);
+
+    row.classList.add("dragging");
+    row.style.position = "fixed";
+    row.style.left = rect.left + "px";
+    row.style.top = rect.top + "px";
+    row.style.width = rect.width + "px";
+
+    drag = { handle: handle, row: row, list: list, gap: gap,
+             hold: e.clientY - rect.top, moved: false, person: person };
+
+    handle.onpointermove = onDrag;
+    handle.onpointerup = dropDrag;
+    handle.onpointercancel = abandonDrag;
+    document.addEventListener("keydown", dragKey, true);
+  }
+
+  function onDrag(e) {
+    if (!drag) return;
+    drag.moved = true;
+    drag.row.style.top = (e.clientY - drag.hold) + "px";
+    placeGap(e.clientY);
+    edgeScroll(e.clientY);
+  }
+
+  /* The gap goes wherever the pointer is, by midpoints: above a row while the
+     pointer is in its top half, below it after that. */
+  function placeGap(y) {
+    var rows = Array.prototype.filter.call(drag.list.children, function (n) {
+      return n !== drag.row && n.classList &&
+             n.classList.contains("person-row");
+    });
+    var before = null;
+    for (var i = 0; i < rows.length; i++) {
+      var at = rows[i].getBoundingClientRect();
+      if (y < at.top + at.height / 2) { before = rows[i]; break; }
+    }
+    // The guest slot keeps the end of the list whatever the pointer says.
+    var guest = drag.list.querySelector(".person-row.is-guest");
+    if (!before && guest) before = guest;
+    if (before !== drag.gap.nextSibling) drag.list.insertBefore(drag.gap, before);
+  }
+
+  /* Dragging to a row that is off the top or bottom of the screen. The list
+     lives on a page with several other cards on it, so on a phone the far end
+     of a big household can easily be past the edge. */
+  function edgeScroll(y) {
+    var margin = 72, step = 0;
+    if (y < margin) step = -Math.ceil((margin - y) / 5);
+    else if (y > window.innerHeight - margin) {
+      step = Math.ceil((y - (window.innerHeight - margin)) / 5);
+    }
+    if (step) window.scrollBy(0, step);
+  }
+
+  function dragKey(e) {
+    if (e.key === "Escape" || e.key === "Esc") {
+      e.stopPropagation();
+      abandonDrag();
+    }
+  }
+
+  function releaseDrag() {
+    var held = drag;
+    drag = null;
+    document.removeEventListener("keydown", dragKey, true);
+    held.handle.onpointermove = null;
+    held.handle.onpointerup = null;
+    held.handle.onpointercancel = null;
+    held.row.classList.remove("dragging");
+    held.row.removeAttribute("style");
+    return held;
+  }
+
+  function dropDrag() {
+    if (!drag) return;
+    var held = releaseDrag();
+    if (!held.moved) {
+      // A tap on the grip rather than a drag. Nothing to save.
+      if (held.gap.parentNode) held.gap.parentNode.removeChild(held.gap);
+      return;
+    }
+    held.list.insertBefore(held.row, held.gap);
+    held.gap.parentNode.removeChild(held.gap);
+
+    var ids = Array.prototype.map.call(
+      held.list.querySelectorAll(".person-row"),
+      function (n) { return n.dataset.id; });
+    state.grabbed = held.person.id;
+    commitOrder(ids);
+  }
+
+  /* Escape, or the phone deciding the gesture belongs to something else. The
+     list is redrawn from state rather than unpicked by hand, so whatever half
+     of the move had happened on screen goes with it. */
+  function abandonDrag() {
+    if (!drag) return;
+    var held = releaseDrag();
+    if (held.gap.parentNode) held.gap.parentNode.removeChild(held.gap);
+    state.grabbed = held.person.id;
+    renderPeople();
+  }
+
+  function movePerson(person, delta) {
+    var ids = state.people.map(function (p) { return p.id; });
+    var at = ids.indexOf(person.id);
+    var to = at + delta;
+    // Not past the guest slot, and not off either end.
+    var guest = guestPerson();
+    var last = guest && ids[ids.length - 1] === guest.id
+      ? ids.length - 2 : ids.length - 1;
+    if (at < 0 || to < 0 || to > last) return;
+    ids.splice(to, 0, ids.splice(at, 1)[0]);
+    state.grabbed = person.id;
+    commitOrder(ids);
+  }
+
+  /* The whole order goes to the server, not "move this one". The browser has
+     the list already, and a whole list can't half-apply or land somewhere
+     unintended because another phone reordered it a second ago - the server
+     checks it still describes the same household and refuses it if not. */
+  function commitOrder(ids) {
+    return api("POST", "/api/people/order", { ids: ids })
+      .then(refresh)
+      .catch(function (err) { refresh().catch(function () {}); fail(err); });
   }
 
   // ------------------------------------------------ picking a person's colour

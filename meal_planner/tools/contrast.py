@@ -72,12 +72,56 @@ def ink_on(color):
     return WHITE if ratio(color, WHITE) >= INK_SWITCH else DARK_INK
 
 
+def over(color, background, alpha):
+    """What a browser actually paints for `color` at `alpha` over `background`.
+
+    This is the part a colour-picker website cannot tell you, and it is where
+    both of the bugs this file was written for were hiding. An opacity looks
+    like a cosmetic softening in a stylesheet; what it really does is move the
+    colour towards whatever is behind it, and a value that reads as "slightly
+    dimmed" over one background reads as "gone" over another. The star picker's
+    unearned star was white at 35%, which on ten muted mid-tones was faint and
+    on a pure yellow was 1.01:1.
+
+    Compositing is done in sRGB because that is what browsers do - the
+    luminance conversion comes afterwards, on the result."""
+    f, b = rgb(color), rgb(background)
+    return "#%02x%02x%02x" % tuple(
+        round(alpha * f[i] + (1 - alpha) * b[i]) for i in range(3))
+
+
 # ------------------------------------------------------- reading the app's own
 
 def person_palette():
     src = open(os.path.join(ROOT, "server.py"), encoding="utf-8").read()
     block = re.search(r"^COLORS = \[(.*?)\]", src, re.S | re.M)
     return re.findall(r"#[0-9a-f]{6}", block.group(1)) if block else []
+
+
+def star_gold():
+    m = re.search(r'STAR_GOLD = "(#[0-9a-fA-F]{6})"',
+                  open(os.path.join(ROOT, "static", "app.js"),
+                       encoding="utf-8").read())
+    return m.group(1) if m else "#ffd452"
+
+
+def star_picker_parts(background):
+    """Everything drawn on a star picker, which is filled with a person's
+    colour. Each entry is (label, colour, alpha) as the stylesheet has it.
+
+    The alphas are read off style.css by hand rather than parsed, because they
+    are the thing under review - a parser would faithfully reproduce whatever
+    is there and agree with itself."""
+    ink = ink_on(background)
+    gold = star_gold()
+    earned = gold if ratio(gold, background) >= AA_LARGE else ink
+    return [
+        ("star, earned", earned, 1.0),
+        ("star, unearned", ink, 1.0),      # outlined now, so full strength
+        ("number, unearned", ink, 0.9),
+        ("number, earned", ink, 1.0),
+        ("Clear", ink, 0.9),
+    ]
 
 
 def kitchen_accents():
@@ -117,6 +161,15 @@ def audit(verbose=False):
 
     for color in person_palette():
         checks.append(("person chip " + color, color, ink_on(color), INK_SWITCH))
+
+    # The star picker, on every colour it can be opened from. These are marks
+    # and short numerals rather than prose, so they are held to the large-text
+    # threshold - but they are held to it on the composited colour, which is
+    # the whole point.
+    for color in person_palette():
+        for label, ink, alpha in star_picker_parts(color):
+            checks.append(("%s on %s" % (label, color), color,
+                           over(ink, color, alpha), AA_LARGE))
 
     for label, color, ink in kitchen_accents():
         if ink is None:

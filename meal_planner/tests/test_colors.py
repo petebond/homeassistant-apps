@@ -20,6 +20,7 @@ Run: python3 tests/test_colors.py  (kept out of the image: Dockerfile copies
 """
 
 import json
+import re
 import os
 import sys
 import tempfile
@@ -230,6 +231,43 @@ def test_the_bell_button_can_be_read_on_every_accent():
         got = checker.ratio(background, ink)
         ok("%s: %s on %s is readable (%.2f:1)" % (label, ink, background, got),
            got >= 4.5)
+
+
+def test_buttons_on_a_coloured_surface_declare_their_own_colour():
+    """The star picker is filled with a person's colour, and everything on it is
+    meant to inherit the lettering app.js chose for that colour: the numeral
+    through `color: inherit`, the star through `currentColor`.
+
+    A <button> does not inherit colour. The browser's own stylesheet gives it
+    `buttontext`, which is black, and that wins over the picker's colour because
+    it is set on the button rather than passed through it. So every button
+    between the picker and its contents has to declare a colour of its own, or
+    the chain breaks there and the contents come out black.
+
+    This shipped. On the bright half of the palette black is what those get
+    anyway, so it looked correct; on a deep blue the name chip said the name in
+    white and her star picker came up in black.
+
+    The check is on the stylesheet because it cannot be done in the browser
+    tests: jsdom does not model the button rule, and reports the inherited
+    colour whether or not it has been declared - so a computed-style test would
+    have passed with the bug in place, which is worse than no test at all."""
+    sys.path.insert(0, os.path.join(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "tools"))
+    import contrast as checker  # noqa: E402
+
+    for selector in (".star-btn", ".star-clear"):
+        ok("%s declares a colour, so what is inside it inherits the picker's"
+           % selector, checker.declares_colour("style.css", selector))
+
+    # And the other half of the same fix: nothing on the picker goes back to a
+    # hardcoded white, which is what ruled out the bright half of the palette.
+    for selector in (".star-btn", ".star-clear", ".star-n",
+                     ".star-pop.upward .star-clear"):
+        body = checker.declarations("style.css", selector)
+        ok("%s has no hardcoded white left in it" % selector,
+           not re.search(r"#fff\b|#ffffff\b|\brgba?\(\s*255\s*,\s*255\s*,\s*255",
+                         body))
 
 
 def test_the_checker_agrees_with_the_app():
@@ -473,6 +511,7 @@ for test in [test_the_palette_is_well_formed,
              test_a_colour_two_people_want,
              test_a_person_with_no_colour_blocks_nothing,
              test_the_bell_button_can_be_read_on_every_accent,
+             test_buttons_on_a_coloured_surface_declare_their_own_colour,
              test_the_checker_agrees_with_the_app]:
     test()
 

@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.18.1
+
+**Fixed: the star picker came up in black lettering on the deep colours.** A
+name chip set to the pure blue said the name in white, as it should, but the
+1–5 and the stars on that person's rating picker were black.
+
+A `<button>` doesn't inherit its colour. The browser's own stylesheet gives it
+`buttontext` — black — and that beats the colour the app put on the picker,
+because it lands on the button rather than passing through it. So the numeral
+and the star, both of which are meant to inherit, were inheriting black from
+the button in between. It looked right on the bright half of the palette,
+where black is what they get anyway.
+
 ## 1.18.0
 
 **New: drag the household into the order you want.** Settings → Household, grip

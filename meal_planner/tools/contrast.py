@@ -98,6 +98,24 @@ def person_palette():
     return re.findall(r"#[0-9a-f]{6}", block.group(1)) if block else []
 
 
+def declarations(sheet, selector):
+    """The declaration body of the rule for exactly `selector`, or "".
+
+    A blunt reader, not a CSS parser: it wants one named rule out of a
+    stylesheet this repo controls, and anything cleverer would be a dependency
+    to keep working for no gain."""
+    css = open(os.path.join(ROOT, "static", sheet), encoding="utf-8").read()
+    for raw, body in re.findall(r"([^{}]+)\{([^{}]*)\}", css):
+        heads = [h.strip() for h in raw.strip().split("\n")[-1].split(",")]
+        if selector in heads:
+            return body
+    return ""
+
+
+def declares_colour(sheet, selector):
+    return bool(re.search(r"(^|;|\s)color\s*:", declarations(sheet, selector)))
+
+
 def star_gold():
     m = re.search(r'STAR_GOLD = "(#[0-9a-fA-F]{6})"',
                   open(os.path.join(ROOT, "static", "app.js"),

@@ -729,6 +729,16 @@ main { max-width: 1500px; margin: 0 auto; padding: 1.1rem 1rem; }
   border-radius: 8px;
   background: none;
   font: inherit;
+  /* Not optional, and not covered by `font: inherit`. A <button> does not
+     inherit colour: the browser's own stylesheet gives it `buttontext`, which
+     is black. Everything inside this one - the numeral, and the star through
+     currentColor - then inherits black from the button rather than the
+     lettering colour app.js put on the picker.
+
+     It looked right on the bright half of the palette, because black is what
+     those get anyway. On a deep blue the name chip said Chloe in white and her
+     star picker came up in black. */
+  color: inherit;
   cursor: pointer;
   text-align: left;
 }

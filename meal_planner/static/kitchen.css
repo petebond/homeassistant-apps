@@ -23,6 +23,16 @@
   --k-strip: #dfe4e9;
   --k-strip-2: #a8b1ba;
   --k-accent: #6fbf95;
+  /* Lettering for anything filled with the accent - which is the dinner bell
+     button and nothing else. One value covers all twelve accents because the
+     two sets are pitched at opposite ends: the dark theme's are bright colours
+     meant to glow against a dark screen, so they take black. The light theme's
+     are the deep versions, so they take white. See --k-accent-ink below.
+
+     Not a fixed colour on the button, which is what it was: that was black
+     against all twenty-four, and the light theme's blue is #2a5474, where
+     black lands at 2:1 and is unreadable across a kitchen. */
+  --k-accent-ink: #10241a;
   --k-rule-1: var(--k-accent);
   --k-rule-2: #c9772f;
   --k-rule-3: #5b7db1;
@@ -64,6 +74,9 @@ html[data-theme="light"] {
   --k-strip: #2f2c28;
   --k-strip-2: #6d6862;
   --k-accent: #2f6a4e;
+  /* White, because every accent in the light set is a deep colour. The worst
+     of the twelve is rust at 6.3:1. */
+  --k-accent-ink: #ffffff;
   color-scheme: light;
 }
 
@@ -192,7 +205,7 @@ html[data-zoomed] .screen {
   border: 0;
   border-radius: 999px;
   background: var(--k-accent);
-  color: #10241a;
+  color: var(--k-accent-ink);
   font: inherit;
   font-size: 3vh;
   font-weight: 700;

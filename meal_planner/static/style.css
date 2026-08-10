@@ -713,7 +713,7 @@ main { max-width: 1500px; margin: 0 auto; padding: 1.1rem 1rem; }
   order: -1;
   margin: 0 0 .1rem;
   border-top: 0;
-  border-bottom: 1px solid rgba(255,255,255,.28);
+  border-bottom: 1px solid currentColor;
   padding: .05rem 0 .3rem;
 }
 
@@ -738,7 +738,8 @@ main { max-width: 1500px; margin: 0 auto; padding: 1.1rem 1rem; }
 .star-n {
   font-size: .78rem;
   font-weight: 700;
-  color: #fff;
+  /* Inherited from the picker, which is coloured per person - see .star-clear. */
+  color: inherit;
   opacity: .75;
   width: .8rem;
   text-align: center;
@@ -758,12 +759,17 @@ main { max-width: 1500px; margin: 0 auto; padding: 1.1rem 1rem; }
 .star-btn .star-svg { color: rgba(255,255,255,.35); }
 .star-btn.on .star-svg { color: #ffd452; }
 
+/* currentColor throughout, not white: the picker wears the person's colour and
+   app.js sets its lettering to whatever can be read on that, which is black on
+   the bright half of the palette. A hardcoded white rule here would survive the
+   inline colour on the parent - it is on the child - and put an invisible
+   divider and an invisible word "Clear" on a yellow picker. */
 .star-clear {
   margin-top: .1rem;
   border: 0;
-  border-top: 1px solid rgba(255,255,255,.28);
+  border-top: 1px solid currentColor;
   background: none;
-  color: #fff;
+  color: inherit;
   opacity: .8;
   font: inherit;
   font-size: .72rem;
@@ -781,6 +787,12 @@ main { max-width: 1500px; margin: 0 auto; padding: 1.1rem 1rem; }
   padding: .08rem .35rem;
   margin-right: .25rem;
 }
+
+/* Tags earn their place in the library, where "fast" and "weekend" are how you
+   find a meal. On the week view the meal is already chosen, so they were seven
+   rows of noise above the thing you came to read. The cards still build them -
+   deleting one line here is all it takes to have them back. */
+#w-grid .tag { display: none; }
 
 .footnote { margin-top: 1.2rem; color: var(--muted); font-size: .85rem; }
 
@@ -1365,12 +1377,6 @@ select:focus, input:focus, textarea:focus { outline: 2px solid var(--green); out
   opacity: 1;
 }
 
-.day-total {
-  font-size: .76rem;
-  color: var(--muted);
-  margin-top: .2rem;
-}
-
 .person-list { display: flex; flex-direction: column; gap: .5rem; }
 .person-row {
   background: var(--card);
@@ -1382,8 +1388,83 @@ select:focus, input:focus, textarea:focus { outline: 2px solid var(--green); out
   gap: .7rem;
   box-shadow: var(--shadow);
 }
-.person-dot { width: .9rem; height: .9rem; border-radius: 50%; flex: none; }
+/* The ring matters more than it looks: the palette has a pure yellow and a
+   pure cyan in it, and a bare disc of either on a white card has no edge. */
+.person-dot {
+  width: .9rem;
+  height: .9rem;
+  border-radius: 50%;
+  flex: none;
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,.28);
+}
+/* Tappable. The disc stays the size it always was - it is a label, and growing
+   it to thumb size would make the household list read as a row of buttons - so
+   the target is an invisible square around it instead. */
+.dot-btn {
+  appearance: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  position: relative;
+}
+.dot-btn::after { content: ""; position: absolute; inset: -.45rem; }
+.dot-btn:hover, .dot-btn.picking {
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,.28), 0 0 0 2px var(--accent);
+}
+.dot-btn:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+
 .person-row .name { flex: 1; font-weight: 500; }
+
+/* ---------- the colour picker ---------- */
+
+.color-pop {
+  position: fixed;
+  visibility: hidden;
+  z-index: 60;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: 0 6px 18px rgba(0,0,0,.28);
+  padding: .4rem;
+}
+/* Six across, always. The grid is the map - "third row, second in" is how
+   somebody finds the colour they had last time - so it does not reflow. */
+.color-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: .3rem;
+}
+.swatch-cell {
+  appearance: none;
+  width: 2rem;
+  height: 2rem;
+  border: 0;
+  border-radius: 8px;
+  padding: 0;
+  cursor: pointer;
+  /* Same reason as .person-dot: the bright half of the palette needs an edge
+     to sit on a pale card. */
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,.28);
+}
+.swatch-cell:hover { transform: scale(1.08); }
+.swatch-cell:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+/* The one being worn now. A ring in the page's own ink rather than a tick
+   glyph: it reads at a glance across a grid of 36 and needs no colour of its
+   own to be legible on. */
+.swatch-cell.is-current {
+  box-shadow: inset 0 0 0 2px var(--card), 0 0 0 2px var(--ink);
+}
+
+/* Somebody else's. Drained rather than hidden - the grid keeps its shape, and
+   a colour that is missing entirely looks like the app forgot it. The title
+   says whose it is. */
+.swatch-cell.taken {
+  cursor: not-allowed;
+  opacity: .22;
+  filter: grayscale(.7);
+}
+.swatch-cell.taken:hover { transform: none; }
 
 /* The guest slot. It reads as one of the household everywhere else on purpose;
    here it says what it is. */
@@ -1436,6 +1517,16 @@ select:focus, input:focus, textarea:focus { outline: 2px solid var(--green); out
    household as one card on it, and the name had stopped meaning anything. */
 .settings-card { margin-top: 1.4rem; }
 .settings-card h2 { margin: 0 0 .3rem; font-size: 1.05rem; }
+
+/* Air between a card's form and whatever it produces. Without this the Add
+   person button sits directly on top of the first name in the household, and
+   the two read as one control - press Add, and the row underneath looks like
+   what you just did. Written once here rather than per card so the next card
+   with a form in it starts out spaced correctly.
+
+   :not(:last-child) because a form at the foot of a card wants no trailing
+   margin; that is padding the card already has. */
+.settings-card .form:not(:last-child) { margin-bottom: 1.1rem; }
 
 /* One row per Cast device. A list of checkboxes rather than a dropdown: the
    week can go on more than one screen, and a multiple-select box is a thing

@@ -1,5 +1,45 @@
 # Changelog
 
+## 1.17.0
+
+**New: pick everyone's colour.** Settings → Household, tap the coloured disc
+beside a name. Thirty-six colours in a grid, and they are proper colours now —
+pure red, pure blue, yellow, cyan, hot pink — rather than the ten muted
+mid-tones that were hard to tell apart on a chip the size of a name.
+
+That is possible because the lettering on a chip now follows the colour behind
+it: white on the deep half of the palette, near-black on the bright half. White
+on yellow is why yellow could not be offered before.
+
+A colour somebody else in the house is already wearing is greyed out and cannot
+be picked. The whole point of the colour is to say which chip is whose, and two
+people in the same one makes every name on the Week ambiguous — so rather than
+warn about the clash, the picker has nothing there to press. The app refuses it
+on the way in too, in case two phones reach for the same colour at once.
+
+**Changed: the Week's meal cards are quieter.** The "*N* kcal cooked in total
+for six people" line is gone — nobody eats the pan, and what one portion costs
+is the figure above it, which is still there. Tags are gone from these cards
+too: they are how you find a meal in the Library, but on the Week the meal is
+already chosen and seven rows of "fast" and "weekend" sat above the thing you
+opened the app to read. Both are untouched in the Library.
+
+**Changed: changing week lands at the top of it.** Paging forward from a Friday
+used to arrive on next Friday, with Monday to Thursday scrolled off above and
+unread. It now lands on the Monday. Coming *back* to this week is the exception
+and still lands on today, on the Week and the Planner both — that is what you
+pressed it for.
+
+**Fixed: the Dinner time! button on the kitchen display was unreadable on the
+light theme.** Its lettering was a fixed near-black, chosen against the dark
+theme's accents — those are bright colours meant to glow on a dark screen. The
+light theme's twelve are the deep versions of the same names, so black on the
+light blue came out at 2:1. The lettering now follows the theme: black on the
+bright set, white on the deep set. Worst of the twenty-four is now 6.3:1.
+
+**Fixed:** air between the Add person button and the household list, which read
+as one control.
+
 ## 1.16.0
 
 **New: the dinner bell.** Settings → **Dinner bell**. Switch it on, tick the

@@ -22,6 +22,7 @@
 
   var state = {
     people: [], meals: [], weeks: {},
+    palette: [],          // colours a person can wear; the server decides
     today: null, thisWeek: null,
     viewWeek: null,   // Monday key shown on the week view
     planWeek: null,   // Monday key shown on the planner
@@ -172,6 +173,53 @@
       if (state.meals[i].id === id) return state.meals[i];
     }
     return null;
+  }
+
+  // ---------------------------------------------------------------- colours
+  //
+  /* Everywhere a person's colour is worn - name chips, the eating toggles, the
+     rating pills, the star picker - it is worn behind their name, so the colour
+     decides what the lettering has to be. This used to be white everywhere,
+     which quietly ruled out half a colour wheel: white on yellow is unreadable,
+     so yellow could not be offered, and the palette was ten muted mid-tones
+     that were hard to tell apart on a small chip.
+     Working the lettering out per colour is what lets the palette be bright. */
+
+  var DEFAULT_COLOR = "#0055ff";
+  var DARK_INK = "#1b1a17";
+
+  function srgbPart(c) {
+    c = c / 255;
+    return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+  }
+
+  /* Relative luminance, per WCAG. Not the same as "how light does it look" -
+     green counts for far more than blue, which is why pure blue takes white
+     lettering and pure yellow takes black. */
+  function luminance(hex) {
+    var n = parseInt(String(hex).slice(1), 16);
+    if (isNaN(n)) return 0;
+    return 0.2126 * srgbPart((n >> 16) & 255) +
+           0.7152 * srgbPart((n >> 8) & 255) +
+           0.0722 * srgbPart(n & 255);
+  }
+
+  /* White unless white would be hard work, then near-black.
+     3.6:1 rather than the 4.5 a body of text wants: these are short, mostly a
+     single name, on a filled pill at a size the eye is not scanning. Going to
+     4.5 pushes reds and magentas onto black lettering, which reads as a
+     highlighter pen. Nothing in the palette is below 3.6 on the ink it gets. */
+  function inkOn(color) {
+    return (1.05 / (luminance(color) + 0.05)) >= 3.6 ? "#fff" : DARK_INK;
+  }
+
+  /* Put a person's colour on something, with lettering that can be read on it.
+     Always use this rather than setting background on its own. */
+  function paint(node, color) {
+    var c = color || DEFAULT_COLOR;
+    node.style.background = c;
+    node.style.color = inkOn(c);
+    return node;
   }
 
   /* A day holds a list of "sittings" - separate meals eaten that day by
@@ -819,6 +867,9 @@
         state.people = data.people || [];
         state.meals = data.meals || [];
         state.weeks = data.weeks || {};
+        /* Absent from an add-on older than the colour picker, which is exactly
+           when the picker should not be offered - the PUT would be refused. */
+        state.palette = data.palette || [];
         /* data.today and data.thisWeek are deliberately ignored - see
            localToday(). render() below covers any day change. */
         syncToday(true);
@@ -1164,6 +1215,11 @@
 
   function focusOnToday() {
     state.focusUntil = Date.now() + FOCUS_MS;
+    /* Aim once straight away as well as on the timer. Callers that have just
+       rebuilt the grid have today's card sitting there ready, and waiting a
+       tick for the first pass shows them the top of the week first and then
+       jumps. Callers that haven't find no card and this does nothing. */
+    scrollToToday();
     if (focusTimer) return;
     focusTimer = setInterval(function () {
       if (Date.now() > state.focusUntil) {
@@ -1177,6 +1233,36 @@
 
   function stopFocusingToday() { state.focusUntil = 0; }
 
+  /* The planner's version of the same idea, and a much smaller one. The week
+     view needs a re-aiming loop because its cards carry photos that can change
+     height after they are placed; a plan row is text and a couple of controls,
+     so it is where it is going to be by the time this runs. */
+  function scrollToPlanToday() {
+    var row = $("p-grid").querySelector(".plan-row.is-today");
+    if (!row) return;
+    window.scrollBy(0, row.getBoundingClientRect().top - (barsBottom("plan") + 8));
+  }
+
+  /* Changing week lands you at the top of the week you asked for.
+
+     The three week views have always held a Monday key rather than a day, so
+     "next week" was already a whole-week move. What carried over was the scroll
+     position: leave on Friday, arrive on next Friday, with Monday to Thursday
+     above the fold and unread. Nobody navigates a week ahead to look at the end
+     of it first.
+
+     This week is the exception, on purpose. Coming back to it - by pressing
+     Today, or by paging back from a week ahead - is almost always someone
+     asking what is happening now, and the top of this week is days already
+     eaten. So this one week lands on today, and the rest land on Monday. */
+  function goToWeek(field, key, redraw, focus) {
+    state[field] = key;
+    stopFocusingToday();
+    redraw();
+    if (key === state.thisWeek && focus) focus();
+    else window.scrollTo(0, 0);
+  }
+
   /* Where the page's own furniture ends.
 
      Measured from the week bar rather than added up from the parts. The bar is
@@ -1185,8 +1271,8 @@
      bar's height in it, along with whatever inset the phone keeps for its
      status bar and any banner above them. Adding up heights means modelling all
      of that correctly, and the model is what got this wrong before. */
-  function barsBottom() {
-    var weekbar = document.querySelector("#view-week .weekbar");
+  function barsBottom(view) {
+    var weekbar = document.querySelector("#view-" + (view || "week") + " .weekbar");
     return weekbar ? Math.max(0, weekbar.getBoundingClientRect().bottom) : 0;
   }
 
@@ -1274,8 +1360,7 @@
 
   function plainChip(person, label) {
     var chip = el("span", "chip", label);
-    chip.style.background = (person && person.color) || "#3d8361";
-    return chip;
+    return paint(chip, person && person.color);
   }
 
   /* A name chip you can tap to rate. It is a name chip and nothing else to
@@ -1287,7 +1372,7 @@
     var stars = ratingOf(rate.sitting, person.id);
     var chip = el("button", "chip chip-rate", person.name);
     chip.type = "button";
-    chip.style.background = person.color || "#3d8361";
+    paint(chip, person.color);
     chip.title = stars
       ? person.name + " gave this " + stars + (stars === 1 ? " star" : " stars")
       : "Tap to rate for " + person.name;
@@ -1351,7 +1436,9 @@
        and it is a better answer than a name written at the top of the list,
        which is another line to read before you can do the thing you opened it
        to do. */
-    pop.style.background = person.color || "#3d8361";
+    /* paint(), not just a background: the stars and the numbers inside are
+       drawn in currentColor, so they follow the lettering this picks. */
+    paint(pop, person.color);
     // The colour is the cue on screen; a screen reader gets the name here
     // instead, since there is no longer a heading to read out.
     pop.setAttribute("role", "group");
@@ -1583,13 +1670,12 @@
       front.appendChild(el("div", "meal-title empty", "Meal not chosen"));
     }
 
+    /* Per-serving macros only. There used to be a "N kcal cooked in total for
+       six people" line under this; nobody eats the pan, so the number answered
+       a question no one was asking. What one portion costs you is the figure
+       that means something, and it is the one above. */
     if (meal && meal.macros) {
       front.appendChild(macroStrip(meal.macros, 1));
-      if (heads > 1) {
-        front.appendChild(el("div", "day-total",
-          Math.round(meal.macros.calories * heads) + " kcal cooked in total for " +
-          heads + " people"));
-      }
     } else if (meal) {
       front.appendChild(el("div", "macro-none", "No nutrition info"));
     }
@@ -1874,7 +1960,7 @@
       var btn = el("button", "toggle" + (!on && elsewhere[p.id] ? " taken" : ""), p.name);
       btn.type = "button";
       btn.setAttribute("aria-pressed", on ? "true" : "false");
-      if (on) btn.style.background = p.color || "#3d8361";
+      if (on) paint(btn, p.color);
       if (!on && elsewhere[p.id]) btn.title = p.name + " is down for another meal this day";
       btn.onclick = function () {
         var next = sitting.eaters.slice();
@@ -2790,7 +2876,7 @@
       if (avg === null) return;
       var asked_ = !subset || asked.indexOf(p.id) !== -1;
       var pill = el("span", "rating-pill" + (asked_ ? "" : " aside"));
-      if (asked_) pill.style.background = p.color || "#3d8361";
+      if (asked_) paint(pill, p.color);
       pill.appendChild(el("span", null, p.name));
       pill.appendChild(el("span", "rating-pill-n", "★" + round(avg).toFixed(1)));
       pill.title = p.name + " averages " + round(avg).toFixed(1) +
@@ -2847,11 +2933,16 @@
       chip.type = "button";
       chip.setAttribute("aria-pressed", on ? "true" : "false");
       if (on) {
-        chip.style.background = p.color || "#3d8361";
-        chip.style.borderColor = p.color || "#3d8361";
+        paint(chip, p.color);
+        chip.style.borderColor = p.color || DEFAULT_COLOR;
       } else {
-        chip.style.color = p.color || "#3d8361";
-        chip.style.borderColor = p.color || "#3d8361";
+        /* Outlined, but the name stays in the page's own ink. It used to be
+           written in the person's colour, which only worked while the palette
+           was ten mid-tones - a yellow name on a white card is not a name, and
+           on the dark theme the deep ones disappear the same way. The border
+           carries the colour, and it carries it against a card either theme
+           keeps a contrast against. */
+        chip.style.borderColor = p.color || DEFAULT_COLOR;
       }
       chip.onclick = function () {
         var next = asked.filter(function (id) { return id !== p.id; });
@@ -3465,6 +3556,10 @@
 
   function renderPeople() {
     var list = $("person-list");
+    /* The picker is placed from a measurement of a disc in this list, and the
+       rebuild below throws that disc away. Anything left pointing at it would
+       be pointing at nothing. */
+    closePalette();
     clear(list);
     if (state.people.length === 0) {
       list.appendChild(el("div", "empty-state", "No one added yet."));
@@ -3472,9 +3567,7 @@
     }
     state.people.forEach(function (p) {
       var row = el("div", "person-row" + (p.guest ? " is-guest" : ""));
-      var dot = el("span", "person-dot");
-      dot.style.background = p.color || "#3d8361";
-      row.appendChild(dot);
+      row.appendChild(colorDot(p));
       var name = el("span", "name", p.name);
       if (p.guest) {
         /* It behaves like a person everywhere else in the app, so the one place
@@ -3504,6 +3597,145 @@
       if (!p.guest) row.appendChild(del);
       list.appendChild(row);
     });
+  }
+
+  // ------------------------------------------------ picking a person's colour
+  //
+  /* The disc beside a name is the colour that name is wearing everywhere else
+     in the app, so it is also the obvious place to change it. Tapping it opens
+     a grid of the palette; taking a colour somebody else has is not offered.
+
+     Refusing the clash rather than warning about it is the point of the whole
+     feature. Two people in the same colour makes every name chip on the week
+     view ambiguous, and the app has no way to tell you which one you are
+     looking at - so the picker simply has nothing there to press. */
+
+  var paletteOpen = null;
+
+  function wirePalette() {
+    document.addEventListener("click", function () { closePalette(); });
+    window.addEventListener("resize", closePalette);
+    window.addEventListener("scroll", closePalette, true);
+  }
+
+  function closePalette() {
+    if (!paletteOpen) return;
+    if (paletteOpen.node.parentNode) {
+      paletteOpen.node.parentNode.removeChild(paletteOpen.node);
+    }
+    paletteOpen.dot.classList.remove("picking");
+    paletteOpen = null;
+    document.removeEventListener("keydown", paletteKey, true);
+  }
+
+  function paletteKey(e) {
+    if (e.key === "Escape" || e.key === "Esc") {
+      e.stopPropagation();
+      var dot = paletteOpen && paletteOpen.dot;
+      closePalette();
+      if (dot) dot.focus();
+    }
+  }
+
+  /* A button when there is something to choose from, a plain disc when there
+     isn't: offline, or an add-on from before the palette was sent with the
+     data. A control that can only fail is worse than no control. */
+  function colorDot(person) {
+    var choosable = (state.palette || []).length > 0 && !state.offline;
+    if (!choosable) {
+      var flat = el("span", "person-dot");
+      flat.style.background = person.color || DEFAULT_COLOR;
+      return flat;
+    }
+
+    var dot = el("button", "person-dot dot-btn");
+    dot.type = "button";
+    dot.style.background = person.color || DEFAULT_COLOR;
+    dot.setAttribute("aria-label", "Change " + person.name + "'s colour");
+    dot.title = dot.getAttribute("aria-label");
+    dot.onclick = function (e) {
+      e.stopPropagation();
+      openPalette(dot, person);
+    };
+    return dot;
+  }
+
+  function openPalette(dot, person) {
+    var reopening = paletteOpen && paletteOpen.dot === dot;
+    closePalette();
+    if (reopening) return;
+
+    // Who has what, so a taken swatch can say whose it is rather than just
+    // refusing to be pressed.
+    var owner = {};
+    state.people.forEach(function (other) {
+      if (other.id !== person.id && other.color) owner[other.color] = other.name;
+    });
+
+    var pop = el("div", "color-pop");
+    pop.setAttribute("role", "group");
+    pop.setAttribute("aria-label", "Colour for " + person.name);
+
+    var grid = el("div", "color-grid");
+    state.palette.forEach(function (color) {
+      var taken = owner[color];
+      var mine = color === person.color;
+      var cell = el("button", "swatch-cell" +
+        (mine ? " is-current" : "") + (taken ? " taken" : ""));
+      cell.type = "button";
+      cell.style.background = color;
+      /* The tick on the current colour has to be legible on it, and half this
+         palette is too bright for a white one. */
+      cell.style.color = inkOn(color);
+      if (taken) {
+        cell.disabled = true;
+        cell.setAttribute("aria-label", taken + "'s colour");
+        cell.title = "Already " + taken + "'s colour";
+      } else {
+        cell.setAttribute("aria-label", mine
+          ? person.name + "'s colour now" : "Use this colour");
+        if (mine) cell.setAttribute("aria-pressed", "true");
+        cell.onclick = function () { setPersonColor(person, color); };
+      }
+      grid.appendChild(cell);
+    });
+    pop.appendChild(grid);
+
+    pop.addEventListener("click", function (e) { e.stopPropagation(); });
+    document.body.appendChild(pop);
+    dot.classList.add("picking");
+    paletteOpen = { node: pop, dot: dot };
+    placePalette(pop, dot);
+    document.addEventListener("keydown", paletteKey, true);
+  }
+
+  /* Centred on the disc and clamped to the screen, above it if there is no room
+     below. The grid is six swatches wide, which is wider than most of the rows
+     it opens from, so the clamp is doing real work on a phone. */
+  function placePalette(pop, dot) {
+    var at = dot.getBoundingClientRect();
+    var size = pop.getBoundingClientRect();
+    var gap = 6;
+    var up = window.innerHeight - at.bottom < size.height + gap &&
+             at.top > size.height + gap;
+
+    pop.style.top = (up ? at.top - size.height - gap : at.bottom + gap) + "px";
+    var left = at.left + at.width / 2 - size.width / 2;
+    pop.style.left =
+      Math.max(8, Math.min(left, window.innerWidth - size.width - 8)) + "px";
+    pop.style.visibility = "visible";
+  }
+
+  function setPersonColor(person, color) {
+    if (color === person.color) { closePalette(); return; }
+    closePalette();
+    api("PUT", "/api/people/" + person.id, { color: color })
+      .then(refresh)
+      .then(function () { toast(person.name + "'s colour changed"); })
+      /* A 409 lands here: another phone took the colour between this one
+         drawing the grid and the tap. refresh() puts the true state back, so
+         reopening the picker shows it greyed out. */
+      .catch(function (err) { refresh().catch(function () {}); fail(err); });
   }
 
   // ---------------------------------------------------- dinner bell
@@ -4011,21 +4243,26 @@
       tab.onclick = function () { setView(tab.dataset.view); };
     });
 
-    $("w-prev").onclick = function () { state.viewWeek = addDays(state.viewWeek, -7); renderWeek(); };
-    $("w-next").onclick = function () { state.viewWeek = addDays(state.viewWeek, 7); renderWeek(); };
-    $("w-today").onclick = function () {
-      state.viewWeek = state.thisWeek;
-      focusOnToday();               // "Today", not merely "this week"
-      renderWeek();
-    };
+    /* All six go through goToWeek, which decides where in the new week to put
+       you - Monday, or today if the new week is this one. */
+    function weekNav(field, ids, redraw, focus) {
+      $(ids[0]).onclick = function () {
+        goToWeek(field, addDays(state[field], -7), redraw, focus);
+      };
+      $(ids[1]).onclick = function () {
+        goToWeek(field, addDays(state[field], 7), redraw, focus);
+      };
+      $(ids[2]).onclick = function () {
+        goToWeek(field, state.thisWeek, redraw, focus);   // "Today", not merely
+      };                                                  // "this week"
+    }
 
-    $("p-prev").onclick = function () { state.planWeek = addDays(state.planWeek, -7); renderPlan(); };
-    $("p-next").onclick = function () { state.planWeek = addDays(state.planWeek, 7); renderPlan(); };
-    $("p-today").onclick = function () { state.planWeek = state.thisWeek; renderPlan(); };
-
-    $("s-prev").onclick = function () { state.shopWeek = addDays(state.shopWeek, -7); renderShopping(); };
-    $("s-next").onclick = function () { state.shopWeek = addDays(state.shopWeek, 7); renderShopping(); };
-    $("s-today").onclick = function () { state.shopWeek = state.thisWeek; renderShopping(); };
+    weekNav("viewWeek", ["w-prev", "w-next", "w-today"], renderWeek, focusOnToday);
+    weekNav("planWeek", ["p-prev", "p-next", "p-today"], renderPlan, scrollToPlanToday);
+    /* No focus for shopping: it is one list for the whole week rather than
+       seven days, so it has no "today" to land on. Top of the list every time,
+       which is where you start reading it anyway. */
+    weekNav("shopWeek", ["s-prev", "s-next", "s-today"], renderShopping, null);
     $("extras-form").onsubmit = function (e) {
       e.preventDefault();
       var field = $("extras-item");
@@ -4370,6 +4607,7 @@
   wireTheme();
   wireSwipe();
   wireStars();
+  wirePalette();
   wireServiceWorker();
   trackTopbarHeight();
   /* The hash is honoured so the manifest's shortcuts and any link into a tab

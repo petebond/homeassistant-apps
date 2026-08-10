@@ -79,10 +79,44 @@ MAX_EXTRAS = 100
 # a household's odds and ends, and is still a small thing to send with a list.
 MAX_KNOWN_EXTRAS = 200
 
+# The colours a person can wear, and the order new people are given them in.
+# Sent to the app as `palette` so the picker and the server agree on what is
+# choosable; nothing outside this list can be saved.
+#
+# Six hues per row, and each bright row is followed by the same six hues deep,
+# so a column is one hue at two weights. The bright row is genuinely bright -
+# pure red, yellow, cyan, blue, magenta - because a name chip is small and a
+# row of muted mid-tones is exactly where two people start looking alike.
+#
+# Every one of these is legible: the app picks black or white lettering per
+# colour (see inkOn() in app.js), which is what lets yellow and cyan be in here
+# at all. The worst pairing in the grid is 3.6:1 and most are far better. Adding
+# a colour means checking that - a chip nobody can read is worse than a dull one.
+#
+# The first ten are ordered so a household filling up gets well-separated hues
+# before it gets near-neighbours.
 COLORS = [
-    "#e07a5f", "#3d8361", "#5b7db1", "#c9a227", "#8e6fb0",
-    "#d1698a", "#4aa3a3", "#b5651d", "#6b8e23", "#7a6ff0",
+    "#ff0000", "#ff5500", "#ffaa00", "#ffff00", "#aaff00", "#55ff00",
+    "#7c0303", "#7c2c03", "#7c5403", "#7c7c03", "#547c03", "#2c7c03",
+    "#00ff00", "#00ff55", "#00ffaa", "#00ffff", "#00aaff", "#0055ff",
+    "#037c03", "#037c2c", "#037c54", "#037c7c", "#03547c", "#032c7c",
+    "#0000ff", "#5500ff", "#aa00ff", "#ff00ff", "#ff00aa", "#ff0055",
+    "#03037c", "#2c037c", "#54037c", "#7c037c", "#7c0354", "#7c032c",
 ]
+
+# The order next_color() hands them out in. Walking COLORS in grid order would
+# give the first three people three shades of red; this walks the grid so that
+# each new person is about as far from the last as the palette allows.
+COLOR_ORDER = [
+    "#0055ff", "#ff0000", "#03547c", "#ffaa00", "#037c2c", "#ff00aa",
+    "#00aaff", "#7c0303", "#55ff00", "#5500ff", "#ff5500", "#037c7c",
+    "#aa00ff", "#ffff00", "#032c7c", "#00ff55", "#7c032c", "#2c7c03",
+    "#0000ff", "#ff0055", "#00ffaa", "#7c5403", "#54037c", "#aaff00",
+    "#037c03", "#ff00ff", "#7c2c03", "#00ffff", "#2c037c", "#00ff00",
+    "#7c0354", "#547c03", "#03037c", "#7c7c03", "#037c54", "#7c037c",
+]
+
+_HEX_COLOR = re.compile(r"^#[0-9a-f]{6}$")
 
 DAYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
 
@@ -1288,10 +1322,27 @@ def clean_macros(value):
 
 def next_color(people):
     used = {p.get("color") for p in people}
-    for c in COLORS:
+    for c in COLOR_ORDER:
         if c not in used:
             return c
-    return COLORS[len(people) % len(COLORS)]
+    # Thirty-seven people in one household. Whoever they are, they can sort the
+    # duplicate out in Settings.
+    return COLOR_ORDER[len(people) % len(COLOR_ORDER)]
+
+
+def clean_color(value):
+    """A palette colour, or None. Anything else is not a colour we offer."""
+    if not isinstance(value, str):
+        return None
+    c = value.strip().lower()
+    if not _HEX_COLOR.match(c) or c not in COLORS:
+        return None
+    return c
+
+
+def color_taken(people, color, pid):
+    """Is somebody other than `pid` already wearing this?"""
+    return any(p.get("color") == color and p.get("id") != pid for p in people)
 
 
 _IPV4_HOST = re.compile(r"^\d{1,3}(\.\d{1,3}){3}$")
@@ -1960,6 +2011,9 @@ class Handler(BaseHTTPRequestHandler):
                 data = load_data()
             data["today"] = date.today().isoformat()
             data["thisWeek"] = monday_of(date.today()).isoformat()
+            # So the colour picker and the validator can never disagree about
+            # what is on offer.
+            data["palette"] = COLORS
             self._json(data)
             return
         if path.startswith("/api/shopping"):
@@ -2141,16 +2195,42 @@ class Handler(BaseHTTPRequestHandler):
 
         m = re.match(r"^/api/people/([\w]+)$", path)
         if m and method == "PUT":
-            pid, name = m.group(1), clean_str((body or {}).get("name"), 60)
-            if not name:
+            # Name and colour are both optional, but at least one has to be
+            # here: the picker sends a colour on its own, Rename sends a name
+            # on its own, and an empty body is a request to do nothing.
+            pid, body = m.group(1), (body or {})
+            has_name, has_color = "name" in body, "color" in body
+            name = clean_str(body.get("name"), 60) if has_name else None
+            color = clean_color(body.get("color")) if has_color else None
+
+            if has_name and not name:
                 return self._error(400, "A name is required")
-            def rename(data):
+            if has_color and not color:
+                return self._error(400, "That isn't one of the colours on offer")
+            if not has_name and not has_color:
+                return self._error(400, "Nothing to change")
+
+            # Checked here as well as in the picker. The picker greys out what
+            # is taken, but it is working from a copy of the household that
+            # another phone may already have moved on from.
+            if color:
+                with _lock:
+                    current = load_data()
+                if color_taken(current["people"], color, pid):
+                    return self._error(
+                        409, "Someone else in the house is already that colour. "
+                             "Reopen Settings to see who.")
+
+            def edit(data):
                 for p in data["people"]:
                     if p["id"] == pid:
-                        p["name"] = name
+                        if name:
+                            p["name"] = name
+                        if color:
+                            p["color"] = color
                         return p
                 return None
-            result = mutate(rename)
+            result = mutate(edit)
             return self._json(result) if result else self._error(404, "No such person")
 
         if m and method == "DELETE":

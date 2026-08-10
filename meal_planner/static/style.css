@@ -1551,15 +1551,6 @@ select:focus, input:focus, textarea:focus { outline: 2px solid var(--green); out
 }
 .swatch-cell.taken:hover { transform: none; }
 
-/* The guest slot. It reads as one of the household everywhere else on purpose;
-   here it says what it is. */
-.person-note {
-  display: block;
-  font-weight: 400;
-  font-size: .78rem;
-  color: var(--muted);
-}
-
 /* The number beside the guest toggle, while the toggle is on. Built to match
    the toggles it sits among rather than to stand out from them - it is part of
    the same control, not a second one. */

@@ -3628,33 +3628,32 @@
         ? dragHandle(p, at, movable.length)
         : el("span", "drag-spacer"));
       row.appendChild(colorDot(p));
-      var name = el("span", "name", p.name);
-      if (p.guest) {
-        /* It behaves like a person everywhere else in the app, so the one place
-           it is worth saying what it actually is, is here. */
-        name.appendChild(el("span", "person-note",
-          "counts for however many you set on each meal"));
-      }
-      row.appendChild(name);
+      row.appendChild(el("span", "name", p.name));
 
-      var rename = el("button", "icon-btn", "Rename");
-      rename.onclick = function () {
-        var name = prompt("New name for " + p.name + ":", p.name);
-        if (!name || !name.trim()) return;
-        api("PUT", "/api/people/" + p.id, { name: name.trim() }).then(refresh).catch(fail);
-      };
-      var del = el("button", "icon-btn danger", "Remove");
-      del.onclick = function () {
-        if (!confirm("Remove " + p.name + " from the household? They will be taken off all planned meals.")) return;
-        api("DELETE", "/api/people/" + p.id)
-          .then(refresh).then(function () { toast("Removed"); }).catch(fail);
-      };
-      row.appendChild(rename);
-      /* No Remove on the guest slot. It is a feature of the app rather than a
-         member of the household, the server refuses to delete it, and a button
-         whose only outcome is an error message is worse than no button. Rename
-         it to "Visitors" if the wording grates. */
-      if (!p.guest) row.appendChild(del);
+      /* The guest slot is a fixture of the app rather than a member of the
+         household: it cannot be renamed, removed or dragged, so it carries none
+         of the buttons that would do those things. What it is is explained by
+         where it turns up - a "+ 2 guests" chip beside the names on a meal -
+         rather than by a caption under it here.
+
+         It keeps its colour disc, because that chip has to be told apart from
+         the names beside it like any other. */
+      if (!p.guest) {
+        var rename = el("button", "icon-btn", "Rename");
+        rename.onclick = function () {
+          var name = prompt("New name for " + p.name + ":", p.name);
+          if (!name || !name.trim()) return;
+          api("PUT", "/api/people/" + p.id, { name: name.trim() }).then(refresh).catch(fail);
+        };
+        var del = el("button", "icon-btn danger", "Remove");
+        del.onclick = function () {
+          if (!confirm("Remove " + p.name + " from the household? They will be taken off all planned meals.")) return;
+          api("DELETE", "/api/people/" + p.id)
+            .then(refresh).then(function () { toast("Removed"); }).catch(fail);
+        };
+        row.appendChild(rename);
+        row.appendChild(del);
+      }
       list.appendChild(row);
     });
 

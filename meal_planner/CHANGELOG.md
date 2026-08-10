@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.18.2
+
+**Changed: the guest slot is a fixture rather than a member of the household.**
+Its row in Settings has lost the caption explaining what it is, and the Rename
+button with it — it already had no Remove and no drag handle. What it is is
+explained by where it turns up, as a "+ 2 guests" chip beside the names on a
+meal, which is a better explanation than a line of small print in Settings.
+
+It keeps its colour disc: that chip sits among the names on a card and has to
+be told apart from them like any other.
+
+The name is fixed on the server too, not just hidden in Settings, so a second
+phone on an older page can't do what this one no longer offers. A guest slot
+renamed before this stays as it was renamed — nothing goes back and overwrites
+a name you chose.
+
 ## 1.18.1
 
 **Fixed: the star picker came up in black lettering on the deep colours.** A

@@ -2274,6 +2274,21 @@ class Handler(BaseHTTPRequestHandler):
             if not has_name and not has_color:
                 return self._error(400, "Nothing to change")
 
+            # The guest slot's name is fixed. It is a fixture of the app rather
+            # than a member of the household - it stands for however many are
+            # visiting, and everything that reads it, from the "+ 2 guests"
+            # chip to the kitchen display, is written around that. Settings
+            # offers no Rename on it; this is the same rule at the other end.
+            #
+            # Its colour is still its own to change: that chip has to be told
+            # apart from the names beside it like any other.
+            if has_name:
+                with _lock:
+                    current = load_data()
+                if any(p["id"] == pid and p.get("guest")
+                       for p in current["people"]):
+                    return self._error(409, "The guest slot's name is fixed.")
+
             # Checked here as well as in the picker. The picker greys out what
             # is taken, but it is working from a copy of the household that
             # another phone may already have moved on from.
@@ -2304,7 +2319,7 @@ class Handler(BaseHTTPRequestHandler):
             if any(p["id"] == pid and p.get("guest") for p in current["people"]):
                 return self._error(
                     409, "The guest slot can't be removed - leave it off the "
-                         "meals where nobody is visiting. You can rename it.")
+                         "meals where nobody is visiting.")
 
             def remove(data):
                 before = len(data["people"])

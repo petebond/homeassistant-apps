@@ -119,6 +119,20 @@ window.eval(fs.readFileSync(DIR + '/app.js', 'utf8'));
      list.querySelectorAll('.drag-handle').length === 3);
   ok('the guest has no handle, but keeps the column',
      list.querySelectorAll('.person-row.is-guest .drag-spacer').length === 1);
+
+  /* The guest slot is a fixture, not a member of the household: nothing on its
+     row offers to rename, remove or move it, and there is no caption under it
+     explaining what it is. It keeps its colour disc - the "+ 2 guests" chip
+     sits among the names on a meal and has to be told apart from them. */
+  const guestRow = list.querySelector('.person-row.is-guest');
+  ok('the guest has no buttons but its colour disc',
+     [...guestRow.querySelectorAll('button')]
+       .every(b => b.classList.contains('dot-btn')));
+  ok('and no caption under its name',
+     !guestRow.querySelector('.person-note'));
+  ok('everyone else still has Rename and Remove',
+     [...list.querySelectorAll('.person-row:not(.is-guest)')]
+       .every(r => r.querySelectorAll('.icon-btn:not(.drag-handle)').length === 2));
   ok('the grip is six dots',
      handleFor('p_a').querySelectorAll('.grip circle').length === 6);
   ok('and it says what it is and how else to use it',

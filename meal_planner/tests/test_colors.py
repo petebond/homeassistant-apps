@@ -390,6 +390,34 @@ def test_what_is_refused():
           ("Dee", dee["color"]))
 
 
+def test_the_guest_slot_is_a_fixture_not_a_person():
+    """It cannot be renamed, removed or reordered. Settings shows it none of
+    those buttons; these are the same rules at the other end, so a second phone
+    on an older page cannot do what this one no longer offers.
+
+    Its colour is the exception, and deliberately: the "+ 2 guests" chip sits
+    among the names on a meal card and has to be told apart from them."""
+    add("Ann")                       # the guest appears with the first person
+    path = "/api/people/" + server.GUEST_ID
+
+    status, _ = call("PUT", path, {"name": "Visitors"})
+    check("the guest cannot be renamed", status, 409)
+
+    status, _ = call("DELETE", path)
+    check("nor removed", status, 409)
+
+    _, data = call("GET", "/api/data")
+    guest = [p for p in data["people"] if p["id"] == server.GUEST_ID][0]
+    check("and it still has the name it was born with",
+          guest["name"], server.GUEST_NAME)
+
+    # But its colour is still its own.
+    free = a_free_colour()
+    status, updated = call("PUT", path, {"color": free})
+    check("its colour can still be changed", status, 200)
+    check("and it is what it was given", updated["color"], free)
+
+
 def test_keeping_your_own_colour():
     """The picker doesn't send this - it closes instead - but a second phone
     can, and "the colour you already have is taken" would be a silly refusal."""
@@ -522,6 +550,7 @@ for test in [test_the_app_is_told_what_it_may_choose_from,
              test_both_at_once,
              test_what_is_refused,
              test_keeping_your_own_colour,
+             test_the_guest_slot_is_a_fixture_not_a_person,
              test_the_guest_slot_stays_at_the_end,
              test_reordering,
              test_the_guest_cannot_be_moved_off_the_end,

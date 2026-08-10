@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.18.3
+
+**Changed: "phone" is "device" where the app meant any of them.** Settings now
+reads "Everything the house shares, rather than this device" — the planner is
+used from a PC as often as from a phone, and the Appearance card next to it was
+already saying "device".
+
+Also the reorder clash message, and three lines of the add-on's startup log:
+the address list now says "On other devices", which is the actual distinction
+being drawn against "On this computer" one line above it.
+
+The certificate page keeps its "On an iPhone or iPad" and "On an Android phone"
+headings, because those are genuinely different sets of steps.
+
 ## 1.18.2
 
 **Changed: the guest slot is a fixture rather than a member of the household.**

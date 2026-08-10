@@ -2255,7 +2255,7 @@ class Handler(BaseHTTPRequestHandler):
             result = mutate(reorder)
             return self._json(result) if result else self._error(
                 400, "That order doesn't match the household - it may have "
-                     "changed on another phone. Reopen Settings.")
+                     "changed on another device. Reopen Settings.")
 
         m = re.match(r"^/api/people/([\w]+)$", path)
         if m and method == "PUT":
@@ -2805,7 +2805,7 @@ def start_https(ip):
         server.socket = context.wrap_socket(server.socket, server_side=True)
     except (tls.TLSUnavailable, ssl.SSLError, OSError) as exc:
         print("  HTTPS: could not start - %s" % exc)
-        print("    Plain http is unaffected. Offline viewing on phones needs")
+        print("    Plain http is unaffected. Offline viewing on a device needs")
         print("    https, so it stays switched off until this is fixed.")
         sys.stdout.flush()
         return None
@@ -2830,13 +2830,16 @@ def main():
     print("  Home Meal Planner is running.")
     print("")
     print("  On this computer:      http://localhost:%d" % PORT)
-    print("  On phones / tablets:   http://%s:%d" % (ip, PORT))
+    # "Other devices", not "phones / tablets": the line above it is already
+    # drawing the distinction between this machine and everything else on the
+    # network, and everything else includes the PC in the study.
+    print("  On other devices:      http://%s:%d" % (ip, PORT))
     print("  Kitchen display:       http://%s:%d/kitchen" % (ip, PORT))
     if secure:
         print("")
         print("  Secure address:        https://%s:%d" % (ip, HTTPS_PORT))
-        print("  Set a phone up at:     http://%s:%d/setup" % (ip, PORT))
-        print("    Each phone installs the certificate from that page once.")
+        print("  Set a device up at:    http://%s:%d/setup" % (ip, PORT))
+        print("    Each device installs the certificate from that page once.")
         print("    Until it does, https warns and offline viewing stays off.")
     print("")
     print("  Meals are saved to: %s" % DATA_FILE)

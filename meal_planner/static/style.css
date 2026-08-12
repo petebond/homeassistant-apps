@@ -429,6 +429,11 @@ main { max-width: 1500px; margin: 0 auto; padding: 1.1rem 1rem; }
    height moves with the safe-area inset and with the tabs wrapping, so it
    can't be a constant here. The negative margins pull the bar out to the full
    width of main, otherwise content scrolls up through the side gutters. */
+/* Today, then the two arrows, then the dates - the order Outlook and every
+   calendar app puts them in, and the order the row is used in: you go to a
+   week, and then you read which one you landed on. The dates used to sit
+   between the arrows, which meant the thing that changes was the thing you had
+   to look past to find the controls. */
 .weekbar {
   display: flex;
   align-items: center;
@@ -446,16 +451,25 @@ main { max-width: 1500px; margin: 0 auto; padding: 1.1rem 1rem; }
    "Week of ..." heading it used to carry is now screen-reader only, which is
    what takes the bar down to a single row. Whether you are on the current week
    is shown by the Today button going flat instead. */
+/* Takes what is left of the row, which now means it runs from the arrows to
+   the right-hand edge rather than being squeezed between them. Still one line,
+   still ellipsised: "3-9 November" has to survive a narrow phone. */
 .weekbar-range {
   flex: 1;
   min-width: 0;
-  margin: 0;
+  margin: 0 0 0 .2rem;
   font-size: 1rem;
   font-weight: 600;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+/* Back and forward are one control in two halves, so they sit closer to each
+   other than to anything else in the row. Without this the gap either side of
+   the pair is the same and they read as two separate buttons that happen to be
+   next to each other. */
+.nav-btn + .nav-btn { margin-left: -.25rem; }
 
 .sr-only {
   position: absolute;

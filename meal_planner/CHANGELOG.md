@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.19.2
+
+**Changed: the week bar reads Today, back, forward, then the dates.** The way
+Outlook and every other calendar orders it. All three bars — Week, Plan and
+Shopping — move together; the dates used to sit between the two arrows, which
+put the one thing on the row that changes in the middle of the controls you
+use to change it. Now the controls are a group at the left and the answer is
+beside them, running to the edge of the row rather than being squeezed.
+
+Back and forward sit closer to each other than to anything else, because they
+are one control in two halves.
+
+The section headings, which only a screen reader sees, now come first in the
+bar rather than after the back arrow — a heading before the controls it
+belongs to.
+
 ## 1.19.1
 
 **Changed: the shopping column says what to do with itself.** "Shopping" and

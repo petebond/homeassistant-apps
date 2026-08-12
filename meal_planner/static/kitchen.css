@@ -537,6 +537,9 @@ html[data-zoomed] .screen {
 }
 .no-week .shop-btn-label { margin-bottom: 0; font-size: 2.4vh; }
 .no-week .shop-count { font-size: 3vh; }
+/* No room for it on one line, and no need: a pill on an otherwise empty strip
+   is the most button-shaped this ever looks. */
+.no-week .shop-hint { display: none; }
 
 .no-photos .meal-photo { display: none; }
 
@@ -628,19 +631,23 @@ html[data-zoomed] .screen {
    screen and should stay the only one - a second accent-coloured slab would
    turn "the thing you press" into "one of the things you press", and the bell
    is the one that matters at the moment it appears. */
+/* Centred, where a day column is ranged left. The days are left-aligned
+   because they are a list of names that the eye reads down a column of; this
+   is one thing said in three lines about itself, and centring is what makes
+   the three read as one label rather than as a short list. */
 .shop-btn {
   display: flex;
   flex: 0 0 12vw;
   min-width: 0;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: center;
   padding: .8vh .6vw;
   border: 0;
   border-radius: .9vh;
   background: var(--k-card-2);
   box-shadow: inset 0 0 0 1px var(--k-line);
   font: inherit;
-  text-align: left;
+  text-align: center;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
@@ -679,6 +686,22 @@ html[data-zoomed] .screen {
   color: var(--k-accent);
 }
 .shop-count[hidden] { display: none; }
+
+/* What to do about it. Quieter than the label above it - smaller, and not
+   bold - because it is read once by whoever is standing there for the first
+   time and then never again, and it must not compete with the number for the
+   glance from across the room.
+
+   It stays when the count is hidden. A column reading just "SHOPPING" is the
+   case where somebody is least likely to guess there is anything behind it. */
+.shop-hint {
+  margin-top: .9vh;
+  font: inherit;
+  font-size: 1.9vh;
+  font-weight: 400;
+  line-height: 1.15;
+  color: var(--k-dim);
+}
 
 /* ---------- shopping: the screen itself ---------- */
 
@@ -1002,6 +1025,7 @@ html[data-zoomed] .shop {
   }
   .shop-btn-label { margin-bottom: 0; font-size: 2vh; }
   .shop-count { font-size: 2.6vh; }
+  .shop-hint { display: none; }        /* same as .no-week - it is a pill here */
   .shop-title { font-size: 3.4vh; }
   .shop-name { font-size: 2.8vh; }
   .shop-qty { font-size: 2.6vh; min-width: 16vw; }

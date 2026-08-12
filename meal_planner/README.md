@@ -292,9 +292,9 @@ is the only setting that can differ per screen.
 
 **Shopping** is the last column of the week strip, an eighth alongside the
 seven days, with the number of things still needed under it in the accent
-colour. That count is most of the answer on its own — you can read it from
-where you're standing. The seven days give up about a sixth of their width to
-make room.
+colour and a small *Tap to open* under that. The count is most of the answer on
+its own — you can read it from where you're standing. The seven days give up
+about a sixth of their width to make room.
 
 Pressing it takes the whole screen and shows the list — still needed first,
 then what is already on order, dimmed. Every line has a − and a +.

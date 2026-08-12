@@ -258,6 +258,9 @@ console.log('the shopping column');
     btn.parentNode.className === 'weekbar');
   ok('and the strip is its sibling',
     btn.parentNode.querySelector('#week') !== null);
+  ok('says what it is and what to do about it',
+    btn.querySelector('.shop-btn-label').textContent === 'Shopping'
+    && btn.querySelector('.shop-hint').textContent === 'Tap to open');
 
   const poll = timerOf(win, 60000);
   poll();

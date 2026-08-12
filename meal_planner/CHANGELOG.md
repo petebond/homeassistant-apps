@@ -1,5 +1,23 @@
 # Changelog
 
+## 1.19.1
+
+**Changed: the shopping column says what to do with itself.** "Shopping" and
+the count are centred rather than ranged left, and there is a small "Tap to
+open" under them.
+
+The rest of the display can afford to say nothing about how it works: the meal
+cards flip and the days can be tapped, but both are found by accident and
+neither costs anything if they never are. A way into a screen that is otherwise
+invisible is not in that position — somebody has to be told it is there once.
+The hint stays when the count is hidden, which is exactly the case where a
+column reading only "SHOPPING" gives least away.
+
+It is dropped when the column has to become a pill instead — the week strip
+switched off, or a screen tall enough that the strip is stacked away — where
+the shape is button-like enough on its own and there is no second line to
+put it on.
+
 ## 1.19.0
 
 **Added: the shopping list is on the kitchen display, and can be added to from

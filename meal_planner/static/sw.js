@@ -14,7 +14,7 @@
  * Bump CACHE_VERSION on release: it is what evicts the old shell.
  */
 
-var CACHE_VERSION = "mp-v31";
+var CACHE_VERSION = "mp-v32";
 var SHELL_CACHE = CACHE_VERSION + "-shell";
 var DATA_CACHE = CACHE_VERSION + "-data";
 var IMAGE_CACHE = CACHE_VERSION + "-img";

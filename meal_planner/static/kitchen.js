@@ -943,11 +943,19 @@
   // ---------------------------------------------------------------- polling
 
   function load() {
-    /* Today first, then the six days after it. A Monday-to-Sunday strip spends
-       half of itself on meals the house has already eaten, and a screen on a
-       wall is only ever asked what's next. The server keeps the calendar week
-       as its default for anything else reading this. */
-    fetchJson("/api/kitchen?from=today&days=7", function (data) {
+    /* Today and the five days after it. A Monday-to-Sunday strip spends half of
+       itself on meals the house has already eaten, and a screen on a wall is
+       only ever asked what's next.
+
+       Six rather than seven because nothing here is a week any more. Once the
+       strip stopped being a calendar week and became a look-ahead, the seventh
+       column was only there out of habit - and it was costing every other
+       column the width that long meal names need. The day it drops is the one
+       furthest away, which is the one least likely to be planned yet.
+
+       The server keeps the calendar week as its default for anything else
+       reading this endpoint. */
+    fetchJson("/api/kitchen?from=today&days=6", function (data) {
       failures = 0;
       $("stale").hidden = true;
       // Before render, so a change of accent or of what is on screen lands in

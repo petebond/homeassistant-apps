@@ -366,12 +366,19 @@ html[data-zoomed] .screen {
   background: var(--k-line);
 }
 
+/* Long names wrap, and past three lines they stop with an ellipsis rather than
+   being cut off mid-letter by the card's own overflow. Three because that is
+   what fits under a photo with the eaters still on screen; a name long enough
+   to need a fourth has already said what it is. */
 .meal-name {
   font-size: 5.6vh;
   font-weight: 700;
   line-height: 1.1;
   margin-bottom: 1.4vh;
-  /* Long names wrap rather than spill off the screen. */
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
   overflow-wrap: break-word;
   word-wrap: break-word;
 }
@@ -549,14 +556,18 @@ html[data-zoomed] .screen {
    show - an add-on too old to send one shouldn't grow a button that 404s. Two
    conditions don't fit in a class name, so the button carries `hidden` instead
    and .shop-btn[hidden] does the hiding. What it hands back either way is the
-   width of one column, which the seven days divide between them without being
-   told to. */
+   width of one column, which the days divide between them without being told
+   to. */
 
-/* ---------- the rest of the week ---------- */
+/* ---------- what's coming up ---------- */
 
-/* The bottom row: the seven days, and the shopping button as an eighth column.
-   The rule above and the height belong to the row rather than to the week, so
-   that turning the week off leaves a row that can collapse on its own instead
+/* The bottom row: today and the five days after it, and the shopping button as
+   one more column on the end. Six rather than seven - see load() in kitchen.js;
+   this stopped being a calendar week some time ago and the last column was
+   habit rather than need.
+
+   The rule above and the height belong to the row rather than to the days, so
+   that turning the days off leaves a row that can collapse on its own instead
    of an empty bordered box. */
 .weekbar {
   flex: none;
@@ -602,15 +613,41 @@ html[data-zoomed] .screen {
 }
 .wday.is-today .wday-name { color: var(--k-accent); }
 
+/* Two lines, then an ellipsis. The column is about an inch and a half wide on
+   a Hub, which is two lines of a name like "Chicken and Chorizo Traybake" - and
+   what used to happen to a third line was that .wday's overflow cut it off
+   halfway down the letters, which reads as a rendering fault rather than as a
+   long name.
+
+   A clamp rather than a height: the ellipsis is the whole point. Something has
+   been left out and the strip should say so, because the full name is one tap
+   away on the card. */
 .wday-meal {
   font-size: 2.7vh;
   line-height: 1.25;
   color: var(--k-strip);
   margin-bottom: .4vh;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
   overflow-wrap: break-word;
   word-wrap: break-word;
 }
 .wday-meal.second { color: var(--k-strip-2); }
+
+/* Three meals on one day, and two lines each no longer fit under the day name.
+   The selector counts backwards: a meal that is third from the end of the
+   column has two more after it, which can only happen when there are three -
+   the meals are always the last things in there, and never more than three
+   (see renderWeek). It then takes the two that follow it with it.
+
+   One line each is the right thing to lose. A day with three meals on it is
+   being asked "how many" and "roughly what" rather than read word for word,
+   and three names half-shown beats two names and a stripe of clipped
+   letters. */
+.wday-meal:nth-last-child(3),
+.wday-meal:nth-last-child(3) ~ .wday-meal { -webkit-line-clamp: 1; }
 .wday-empty { font-size: 2.5vh; color: var(--k-faint); font-style: italic; }
 
 /* ---------- shopping: the column on the week strip ---------- */
@@ -618,14 +655,14 @@ html[data-zoomed] .screen {
 /* An eighth column on the bottom row, built to read as one: same padding, same
    corner radius, same label-over-content shape as a day. It sits at the end
    rather than floating over the corner, which is what it used to do - a pill
-   parked on top of Sunday took a bite out of a live tap target and looked like
-   it had landed there rather than been placed.
+   parked on top of the last day took a bite out of a live tap target and looked
+   like it had landed there rather than been placed.
 
-   Narrower than a day, and fixed rather than shared. The seven days are
-   `flex: 1 1 0` inside .week, so they divide whatever is left and tighten by
-   about a sixth to make room. That is the intended trade: a day column shows a
-   day name and up to three meal names, all of which wrap, and they lose a
-   little width rather than the button losing legibility.
+   Narrower than a day, and fixed rather than shared. The days are `flex: 1 1 0`
+   inside .week, so they divide whatever is left and tighten to make room. That
+   is the intended trade, and dropping the sixth day ahead bought most of it
+   back: a day column shows a day name and up to three meal names, and they lose
+   a little width rather than the button losing legibility.
 
    Not filled with the accent. The dinner bell is the filled button on this
    screen and should stay the only one - a second accent-coloured slab would
@@ -673,8 +710,8 @@ html[data-zoomed] .screen {
 }
 
 /* The count, in the accent, at the size the meal names under a day name sit
-   at - so from across a kitchen the eighth column answers its own question the
-   same way the other seven do.
+   at - so from across a kitchen the last column answers its own question the
+   same way the others do.
 
    Hidden rather than showing a nought: a list with nothing on it has nothing
    to say, and a "0" invites a walk over to look at an empty screen. The word

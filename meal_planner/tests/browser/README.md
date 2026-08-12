@@ -13,6 +13,7 @@ is mocked inside the app itself, so a change that breaks the wiring between
     node tests/browser/test_chip_order.js
     node tests/browser/test_drag_handle.js
     node tests/browser/test_kitchen_shopping.js
+    node tests/browser/test_kitchen_strip.js
 
 Each exits non-zero and names what failed.
 
@@ -22,6 +23,7 @@ Each exits non-zero and names what failed.
 | `test_chip_order.js` | name chips in household order rather than tap order, and the star picker's tones on a colour where the gold can't be seen |
 | `test_drag_handle.js` | the grip, a pointer drag from `pointerdown` to `pointerup`, the guest slot staying last, Escape, and the arrow keys |
 | `test_kitchen_shopping.js` | the shopping panel on `/kitchen`: the corner count, what an ordered row won't do, what the stepper and the tiles post, the paging, and the three things that must not happen to a display somebody is touching |
+| `test_kitchen_strip.js` | the strip along the bottom of `/kitchen`: how many days it asks for, and which meal names the one-line clamp claims — a selector that counts backwards from the end of a column, read out of the stylesheet rather than copied into the test |
 
 ## Four things to know before adding to these
 

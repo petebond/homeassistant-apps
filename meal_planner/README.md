@@ -248,11 +248,17 @@ from the other side of the house. The app takes the one a phone last used to
 reach it, then Home Assistant's own address, then its own — override it with
 `cast_url` if all three are wrong.
 
-The strip along the bottom starts at **today** and runs forward a week. A
+The strip along the bottom is **today and the five days after it**. A
 Monday-to-Sunday strip spends half of itself on meals the house has already
 eaten, and a screen on a wall is only ever asked what's next. It rolls over on
 its own, without waiting for Monday — at midnight by default, or earlier if you
 set a rollover time (below).
+
+Six days rather than seven because it isn't a week and doesn't have to be: the
+column that went was the one furthest off and least likely to be planned, and
+the width it freed went to the ones you actually read. Meal names too long for
+a column are cut short with an ellipsis rather than clipped mid-letter — the
+full name is on the card above.
 
 ### How it looks
 
@@ -266,9 +272,9 @@ it to set them.
 - **Text size** — 70% to 140%, scaling the whole design rather than the type
   alone, so photos and gaps keep their proportions.
 - **What's on screen** — the cook, how many they're cooking for, the clock, the
-  date, meal photos, the week strip, whether an empty evening says "Nothing
-  planned" or stays quiet, and the shopping button. Whatever is left takes the
-  space.
+  date, meal photos, **Meals coming up** (the strip along the bottom), whether
+  an empty evening says "Nothing planned" or stays quiet, and the shopping
+  button. Whatever is left takes the space.
 - **Moving on to the next day** — when the display stops showing today and
   starts showing tomorrow. Midnight by default, which is the calendar's own
   answer; set it to 21:00 and by nine the wall is answering the only question
@@ -290,11 +296,10 @@ is the only setting that can differ per screen.
 
 ### The shopping list on the display
 
-**Shopping** is the last column of the week strip, an eighth alongside the
-seven days, with the number of things still needed under it in the accent
-colour and a small *Tap to open* under that. The count is most of the answer on
-its own — you can read it from where you're standing. The seven days give up
-about a sixth of their width to make room.
+**Shopping** is the last column of the bottom strip, one more alongside the six
+days, with the number of things still needed under it in the accent colour and
+a small *Tap to open* under that. The count is most of the answer on its own —
+you can read it from where you're standing.
 
 Pressing it takes the whole screen and shows the list — still needed first,
 then what is already on order, dimmed. Every line has a − and a +.

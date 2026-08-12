@@ -3483,7 +3483,11 @@
     { id: "showClock", label: "The clock" },
     { id: "showDate", label: "The date" },
     { id: "showPhotos", label: "Meal photos" },
-    { id: "showWeek", label: "The week along the bottom" },
+    /* Not "the week": the strip is today and the five days after it, and it
+       stopped being a calendar week long before it stopped being seven days
+       long. The stored name is still showWeek, because renaming a settings
+       field renames it in everybody's display.json for no gain. */
+    { id: "showWeek", label: "Meals coming up" },
     { id: "showEmpty", label: "“Nothing planned”" },
     { id: "showShopping", label: "The shopping button" }
   ];
@@ -3592,7 +3596,7 @@
     $("display-rollover-note").textContent = rollover === "00:00"
       ? "Midnight: the display follows the calendar, as it always has."
       : "From " + rollover + " the display shows tomorrow, labelled Tomorrow - "
-        + "the big card, who's cooking and the week along the bottom all move "
+        + "the big card, who's cooking and the meals coming up all move "
         + "on together. Only the display; the app still calls today today.";
 
     $("display-dim").checked = !!settings.dim;

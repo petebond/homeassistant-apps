@@ -1,5 +1,27 @@
 # Changelog
 
+## 1.20.0
+
+**Changed: the kitchen display looks five days ahead, not six.** The strip
+along the bottom is today and the next five. It stopped being a calendar week
+some versions ago; the seventh column was habit, and it was charging the other
+six the width that long meal names need. The column that went is the one
+furthest off, which is the one least likely to have been planned. What is left
+is about a fifth wider.
+
+**Changed: meal names too long for a column are cut short with an ellipsis.**
+They used to wrap to a third line and be sliced through the middle of the
+letters by the column's own edge, which reads as something broken rather than
+as a long name. Two lines in the strip, or one line each on a day with three
+meals — three names half-shown beats two names and a stripe of clipped
+letters. The big cards do the same past three lines. The full name is always on
+the card, and one tap away from the strip.
+
+**Renamed: "The week along the bottom" is now "Meals coming up."** It hasn't
+been a week for a while and it is now visibly not seven days, so the old name
+was promising something the display doesn't do. The setting itself is
+unchanged — nothing to re-tick.
+
 ## 1.19.2
 
 **Changed: the week bar reads Today, back, forward, then the dates.** The way

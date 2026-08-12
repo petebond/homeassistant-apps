@@ -266,8 +266,9 @@ it to set them.
 - **Text size** — 70% to 140%, scaling the whole design rather than the type
   alone, so photos and gaps keep their proportions.
 - **What's on screen** — the cook, how many they're cooking for, the clock, the
-  date, meal photos, the week strip, and whether an empty evening says "Nothing
-  planned" or stays quiet. Whatever is left takes the space.
+  date, meal photos, the week strip, whether an empty evening says "Nothing
+  planned" or stays quiet, and the shopping button. Whatever is left takes the
+  space.
 - **Moving on to the next day** — when the display stops showing today and
   starts showing tomorrow. Midnight by default, which is the calendar's own
   answer; set it to 21:00 and by nine the wall is answering the only question
@@ -286,6 +287,41 @@ size from a phone or laptop; its Light/Dark buttons affect only what is in the
 frame, by way of `/kitchen?theme=light`. That override works on a real display
 too — put it in `cast_url` to keep one screen light in a house set to dark. It
 is the only setting that can differ per screen.
+
+### The shopping list on the display
+
+**Shopping** is the last column of the week strip, an eighth alongside the
+seven days, with the number of things still needed under it in the accent
+colour. That count is most of the answer on its own — you can read it from
+where you're standing. The seven days give up about a sixth of their width to
+make room.
+
+Pressing it takes the whole screen and shows the list — still needed first,
+then what is already on order, dimmed. Every line has a − and a +.
+
+**Adding is done by tapping a name.** A Nest Hub running DashCast is a cast
+receiver, not a browser: there is no soft keyboard to raise, and a text box on
+one is a box you can look at. So **Add something** opens a grid of the names
+the app already remembers, most-used first — the same list the phone's "Also
+needed" box suggests from, filled up by every add anyone has ever made on a
+phone. Something genuinely new still has to be typed on a phone; it will be on
+the grid from then on.
+
+**Nothing here can lose anything.** There is no tick-off — that stays on the
+phone, where a shop gets unpacked. The stepper is the only way a line leaves
+this screen, and only by being counted down to none. A wall display gets
+touched by accident, and a list that quietly drops a line is worse than one
+with a line too many on it.
+
+The panel closes itself after a minute and a half of nobody touching it, so the
+Hub never spends an evening showing a shopping list. It also holds off the
+six-hourly self-heal reload while it is open, and a poll landing mid-tap
+changes nothing under your finger.
+
+Turn it off under **What's on screen** if you would rather the display stayed
+something you only look at; the seven days take the width back. With the week
+strip switched off instead, the button keeps its place at the bottom of the
+screen as a pill rather than a column.
 
 ## The dinner bell
 

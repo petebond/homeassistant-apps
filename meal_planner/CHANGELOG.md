@@ -1,5 +1,54 @@
 # Changelog
 
+## 1.19.0
+
+**Added: the shopping list is on the kitchen display, and can be added to from
+it.** "Shopping" is the last column of the week strip — an eighth beside the
+seven days — with the number still needed under it, which is most of the answer
+without anybody walking over. The days give up about a sixth of their width for
+it. Pressing it takes the whole screen: everything still wanted first, then
+what is already on order, dimmed. Each line has a − and a + big enough to hit
+while holding a pan.
+
+**Adding is done by tapping a name, not by typing one.** A Nest Hub running
+DashCast is a cast receiver rather than a browser — there is no soft keyboard
+to raise, and a text box on one is a box you can look at. So "Add something"
+opens a grid of the names the app has already remembered, most-used first. That
+list has been filling up from every add made on a phone since long before this
+screen existed, so it arrives useful rather than empty. Something genuinely new
+is still a job for the phone.
+
+**Nothing on this screen can lose anything.** There is no tick-off. The stepper
+is the only way a line leaves the display, and only by being counted down to
+none — which is somebody saying they don't need it after all, not a mis-tap. A
+wall display in a kitchen gets touched by accident, and a shopping list that
+quietly drops a line is worse than one with a line too many on it.
+
+Off in the app under Household → Kitchen display, with the rest of what the
+screen shows. On by default.
+
+Three things the panel does that a display on a wall needs it to do: it closes
+itself after a minute and a half of nobody touching it, so the Hub never sits
+on a shopping list all evening; the six-hourly self-heal reload waits until it
+is shut rather than reloading the page under somebody's hands; and a poll
+landing mid-tap updates nothing that is being touched — the rows the finger is
+over do not reorder, and the newest list is picked up on the way out.
+
+**Fixed: "Nothing planned" was too faint to read on the light theme.** The grey
+it is set in — the same one behind "Not decided" on a meal card — was 2.7:1
+against the page on the light theme and 3.8:1 on the dark. Both are under the
+4.5:1 the app holds its own colours to, and the light one is under the floor
+for large text as well. It is now 4.5:1 on both, still faded, still lighter
+than the labels around it.
+
+Nothing else moves: the two colours either side of it are unchanged, so
+everything keeps its order — a meal name is still far brighter than a label,
+and a label than an empty evening.
+
+The ordered lines on the new shopping screen use that label grey rather than
+the faintest one. The faintest is right for the "-" on an empty day, which is a
+mark; these are the names of things somebody bought.
+
 ## 1.18.3
 
 **Changed: "phone" is "device" where the app meant any of them.** Settings now

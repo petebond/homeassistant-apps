@@ -3484,7 +3484,8 @@
     { id: "showDate", label: "The date" },
     { id: "showPhotos", label: "Meal photos" },
     { id: "showWeek", label: "The week along the bottom" },
-    { id: "showEmpty", label: "“Nothing planned”" }
+    { id: "showEmpty", label: "“Nothing planned”" },
+    { id: "showShopping", label: "The shopping button" }
   ];
 
   function withPatch(base, patch) {

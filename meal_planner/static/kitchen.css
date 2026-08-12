@@ -17,7 +17,14 @@
   --k-soft: #c8cfd6;
   --k-body: #eae6de;
   --k-faint: #565e66;
-  --k-empty: #6c747d;
+  /* "Nothing planned for today", and "Not decided" on a meal card. Faded, but
+     these are sentences somebody reads from across a kitchen rather than
+     decoration, so they are held to 4.5:1 on both themes - the same floor the
+     accents are held to, and for the same reason: the colour is ours to pick,
+     so there is no reason to aim at the large-text 3:1 and hope. It was 3.80:1
+     here and 2.73:1 on the light theme, which was under the floor either way
+     you measure it. Stays between --k-faint and --k-dim in weight. */
+  --k-empty: #78808a;
   --k-note: #d9a441;
   --k-warn: #d98b6a;
   --k-strip: #dfe4e9;
@@ -68,7 +75,7 @@ html[data-theme="light"] {
   --k-soft: #3f3b36;
   --k-body: #2a2723;
   --k-faint: #a9a49b;
-  --k-empty: #9b958c;
+  --k-empty: #766f66;         /* 4.55:1 - see the note in :root */
   --k-note: #9a6b06;
   --k-warn: #a8502a;
   --k-strip: #2f2c28;
@@ -508,17 +515,60 @@ html[data-zoomed] .screen {
 .no-week .week { display: none; }
 .no-week .strip { padding-bottom: 0; }
 
+/* With the week gone there is no row for the shopping column to be part of, so
+   it stops being a column: no rule above it, no 23vh of height to fill, and
+   back to a pill at the end of the line - which is the shape it has to be
+   anyway when it is the only thing left down there. Turn both off and the row
+   has nothing in it and collapses to nothing, rather than leaving a bordered
+   band across the bottom of the display. */
+.no-week .weekbar {
+  height: auto;
+  border-top: 0;
+  padding-top: 0;
+  justify-content: flex-end;
+}
+.no-week .shop-btn {
+  flex: 0 0 auto;
+  flex-direction: row;
+  align-items: center;
+  gap: .8vw;
+  padding: 1vh 2vw;
+  border-radius: 999px;
+}
+.no-week .shop-btn-label { margin-bottom: 0; font-size: 2.4vh; }
+.no-week .shop-count { font-size: 3vh; }
+
 .no-photos .meal-photo { display: none; }
+
+/* There is deliberately no .no-shopping rule to go with these. Every other
+   part of the display is on or off by one setting, so a class on .screen says
+   it; this one is off unless the setting is on *and* the server sent a list to
+   show - an add-on too old to send one shouldn't grow a button that 404s. Two
+   conditions don't fit in a class name, so the button carries `hidden` instead
+   and .shop-btn[hidden] does the hiding. What it hands back either way is the
+   width of one column, which the seven days divide between them without being
+   told to. */
 
 /* ---------- the rest of the week ---------- */
 
-.week {
+/* The bottom row: the seven days, and the shopping button as an eighth column.
+   The rule above and the height belong to the row rather than to the week, so
+   that turning the week off leaves a row that can collapse on its own instead
+   of an empty bordered box. */
+.weekbar {
   flex: none;
   display: flex;
   gap: 1vw;
   border-top: 1px solid var(--k-line);
   padding-top: 1.4vh;
   height: 23vh;
+}
+
+.week {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  gap: 1vw;
 }
 
 .wday {
@@ -560,6 +610,342 @@ html[data-zoomed] .screen {
 .wday-meal.second { color: var(--k-strip-2); }
 .wday-empty { font-size: 2.5vh; color: var(--k-faint); font-style: italic; }
 
+/* ---------- shopping: the column on the week strip ---------- */
+
+/* An eighth column on the bottom row, built to read as one: same padding, same
+   corner radius, same label-over-content shape as a day. It sits at the end
+   rather than floating over the corner, which is what it used to do - a pill
+   parked on top of Sunday took a bite out of a live tap target and looked like
+   it had landed there rather than been placed.
+
+   Narrower than a day, and fixed rather than shared. The seven days are
+   `flex: 1 1 0` inside .week, so they divide whatever is left and tighten by
+   about a sixth to make room. That is the intended trade: a day column shows a
+   day name and up to three meal names, all of which wrap, and they lose a
+   little width rather than the button losing legibility.
+
+   Not filled with the accent. The dinner bell is the filled button on this
+   screen and should stay the only one - a second accent-coloured slab would
+   turn "the thing you press" into "one of the things you press", and the bell
+   is the one that matters at the moment it appears. */
+.shop-btn {
+  display: flex;
+  flex: 0 0 12vw;
+  min-width: 0;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: .8vh .6vw;
+  border: 0;
+  border-radius: .9vh;
+  background: var(--k-card-2);
+  box-shadow: inset 0 0 0 1px var(--k-line);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Author rule beats the browser's built-in [hidden], same as .stale. With it
+   gone the days take the width back, because nothing here is a fixed size but
+   this. */
+.shop-btn[hidden] { display: none; }
+.shop-btn:active { background: var(--k-card); }
+
+/* The word, set exactly like a day name so the column reads as one of the row
+   rather than as something bolted to the end of it. A button inherits neither
+   font nor colour, so both are said again here. */
+.shop-btn-label {
+  flex: none;
+  font: inherit;
+  font-size: 2.6vh;
+  font-weight: 700;
+  color: var(--k-dim);
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  margin-bottom: .9vh;
+}
+
+/* The count, in the accent, at the size the meal names under a day name sit
+   at - so from across a kitchen the eighth column answers its own question the
+   same way the other seven do.
+
+   Hidden rather than showing a nought: a list with nothing on it has nothing
+   to say, and a "0" invites a walk over to look at an empty screen. The word
+   above it stays, so the way in is still there. */
+.shop-count {
+  font-size: 5.4vh;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--k-accent);
+}
+.shop-count[hidden] { display: none; }
+
+/* ---------- shopping: the screen itself ---------- */
+
+/* Above the night sheet, not under it. Dimming exists to stop the display
+   lighting an empty kitchen; somebody standing at it with a finger on the
+   glass has settled that question. The meals go back to being dimmed the
+   moment it closes, with no fade to sit through either way.
+
+   The zoom is mirrored from .screen rather than inherited, because this is a
+   sibling of it - see the note there. Same two states, so the text size set in
+   the app means the same thing on both screens. */
+.shop {
+  display: flex;
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  width: 100vw;
+  height: 100vh;
+  padding: 2.6vh 2.4vw;
+  background: var(--k-bg);
+  flex-direction: column;
+}
+.shop[hidden] { display: none; }
+
+html[data-zoomed] .shop {
+  width: calc(100vw / var(--k-zoom, 1));
+  height: calc(100vh / var(--k-zoom, 1));
+  transform: scale(var(--k-zoom, 1));
+  transform-origin: top left;
+}
+
+/* One of the two faces at a time - the list, or the grid of names. */
+.shop-face {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  flex-direction: column;
+}
+.shop-face[hidden] { display: none; }
+
+.shop-head {
+  display: flex;
+  flex: none;
+  align-items: baseline;
+  justify-content: space-between;
+  padding-bottom: 1.4vh;
+  border-bottom: 1px solid var(--k-line);
+}
+
+.shop-title {
+  font-size: 4.4vh;
+  font-weight: 700;
+  letter-spacing: -.01em;
+}
+
+.shop-page {
+  font-size: 2.4vh;
+  font-weight: 600;
+  color: var(--k-dim);
+}
+.shop-page[hidden] { display: none; }
+
+/* Paged, never scrolled. A Nest Hub cannot be relied on to scroll an
+   overflowing box - the same reason the ingredient lists page - so the rows
+   that fit are shown and the rest wait behind "More". */
+/* Margin rather than padding, deliberately: the row count is worked out from
+   this box's clientHeight, and clientHeight counts padding as room there is
+   none of. A margin comes off the flex sizing instead and leaves the number
+   honest. Same reasoning on .pick-grid. */
+.shop-rows {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  margin-top: 1vh;
+}
+
+.shop-row {
+  display: flex;
+  align-items: center;
+  gap: 1.6vw;
+  padding: 1vh 0;
+  border-bottom: 1px solid var(--k-line);
+}
+
+/* Already ordered. Dimmed rather than struck through: struck text at this size
+   across a kitchen is just text with a line in it, and the point is only that
+   the eye skips these on the way down to what is still wanted.
+
+   --k-dim rather than --k-faint, which is what this wanted to be. Faint is the
+   colour of the "-" on an empty day: a mark, not a word. These are the names
+   of things somebody bought, and at 2.7:1 on the dark theme and 2.3:1 on the
+   light they were dimmed past legible rather than past notice. Dim is 5:1 on
+   both and still less than half the weight of a needed line. */
+.shop-row.is-ordered .shop-name,
+.shop-row.is-ordered .shop-qty { color: var(--k-dim); }
+
+.shop-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 3.4vh;
+  font-weight: 600;
+  color: var(--k-body);
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+}
+
+.shop-qty {
+  flex: none;
+  min-width: 9vw;
+  font-size: 3.2vh;
+  font-weight: 700;
+  color: var(--k-accent);
+  text-align: right;
+}
+
+/* The stepper. Round, large, and far enough apart that a thumb aimed at minus
+   cannot land on plus - which on this screen would be the difference between
+   removing the last one and asking for another. */
+.shop-step {
+  flex: none;
+  width: 8vh;
+  height: 8vh;
+  border: 0;
+  border-radius: 50%;
+  background: var(--k-card-2);
+  box-shadow: inset 0 0 0 1px var(--k-line);
+  color: var(--k-ink);
+  font: inherit;
+  font-size: 4vh;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* While the change is in flight. The row is still readable; it just isn't
+   taking another press yet. */
+.shop-step:disabled { opacity: .4; }
+
+/* An ordered line has nothing to step: the quantity belongs to the shop it was
+   put on, and changing it here would be editing an order already placed.
+   Hidden rather than disabled, so the row reads as finished rather than
+   broken. */
+.shop-row.is-ordered .shop-step { visibility: hidden; }
+
+/* Its parent is a plain block, not a flex column, so this needs a height of
+   its own to have anything to centre against. */
+/* Its parent is a plain block, not a flex column, so this needs a height of
+   its own to have anything to centre against.
+
+   --k-empty, the same as "Nothing planned" on the meals: this is the same
+   sentence about a different list and there is no reason for the two to be
+   different colours. */
+.shop-empty {
+  display: flex;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+  color: var(--k-empty);
+  font-size: 4vh;
+  font-style: italic;
+}
+
+.shop-foot {
+  display: flex;
+  flex: none;
+  gap: 1.6vw;
+  justify-content: flex-end;
+  padding-top: 1.4vh;
+  border-top: 1px solid var(--k-line);
+}
+
+.shop-act {
+  padding: 1.4vh 3vw;
+  border: 0;
+  border-radius: 999px;
+  background: var(--k-card-2);
+  box-shadow: inset 0 0 0 1px var(--k-line);
+  color: var(--k-ink);
+  font: inherit;
+  font-size: 2.8vh;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.shop-act[hidden] { display: none; }
+
+/* The one thing this screen is opened to do. Filled, and it takes the
+   lettering that goes with the accent rather than the panel's ink - a button
+   does not inherit either, and the two have to be set together or a bright
+   accent ends up carrying white text. */
+.shop-act-go {
+  margin-right: auto;             /* away from Done, at the other end */
+  background: var(--k-accent);
+  box-shadow: none;
+  color: var(--k-accent-ink);
+}
+.shop-act-go:disabled { opacity: .55; }
+
+/* ---------- shopping: the grid of names ---------- */
+
+/* Three across rather than four. A name has to be readable at arm's length and
+   hittable with the side of a thumb, and at four columns a Hub gives each tile
+   about two inches - enough for "Bicarbonate Of" and a guess. */
+/* A fixed row height rather than 1fr. Two reasons, and the second is the one
+   that matters: a tile has to be the same size on the page with three things
+   on it as on the page with fifteen, or the grid grows and shrinks as you page
+   through it - and 1fr means a single tile stretches to the full height of the
+   box, which makes the measuring probe unmeasurable. */
+.pick-grid {
+  display: grid;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  align-content: start;
+  grid-template-columns: repeat(3, 1fr);
+  grid-auto-rows: 13vh;
+  gap: 1.2vh 1.2vw;
+  margin: 1.2vh 0;
+}
+
+.pick-tile {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1vh 1vw;
+  border: 0;
+  border-radius: 1.2vh;
+  background: var(--k-card);
+  box-shadow: inset 0 0 0 1px var(--k-line);
+  color: var(--k-body);
+  font: inherit;
+  font-size: 3vh;
+  font-weight: 600;
+  line-height: 1.15;
+  text-align: center;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Tapped, and gone to the server. It stays lit until the list comes back, so
+   two taps on the same tile look like two of that thing rather than like
+   nothing having happened the first time. */
+.pick-tile.is-adding {
+  background: var(--k-accent);
+  box-shadow: none;
+  color: var(--k-accent-ink);
+}
+
+/* Across the whole grid, not into the first cell of it. The one piece of
+   instruction on this display - it says where to go to make the grid work -
+   so of everything here it is the least able to afford being faded. */
+.pick-none {
+  display: flex;
+  grid-column: 1 / -1;
+  align-items: center;
+  justify-content: center;
+  padding: 0 6vw;
+  color: var(--k-dim);
+  font-size: 3.2vh;
+  font-style: italic;
+  text-align: center;
+}
+
 /* Very small screens (a phone propped up, or a 7" Hub in portrait) */
 @media (max-aspect-ratio: 1/1) {
   .strip { flex-direction: column; }
@@ -594,4 +980,35 @@ html[data-zoomed] .screen {
   .week { display: none; }
   .meal-name { font-size: 3.6vh; }
   .meal-photo { height: 12vh; }
+  /* No week strip when stacked, so the shopping column has no row to be a
+     column of - the same situation as showWeek being off, and it gets the same
+     answer: a pill on the end of the line. Repeated rather than shared with
+     .no-week because that one is a class the display puts on itself and this
+     one is the shape of the screen; a selector that tried to be both would
+     have to name every combination of them. */
+  .weekbar {
+    height: auto;
+    border-top: 0;
+    padding-top: 0;
+    justify-content: flex-end;
+  }
+  .shop-btn {
+    flex: 0 0 auto;
+    flex-direction: row;
+    align-items: center;
+    gap: 1.6vw;
+    padding: .8vh 2.4vw;
+    border-radius: 999px;
+  }
+  .shop-btn-label { margin-bottom: 0; font-size: 2vh; }
+  .shop-count { font-size: 2.6vh; }
+  .shop-title { font-size: 3.4vh; }
+  .shop-name { font-size: 2.8vh; }
+  .shop-qty { font-size: 2.6vh; min-width: 16vw; }
+  .shop-step { width: 6.4vh; height: 6.4vh; font-size: 3.2vh; }
+  .shop-act { font-size: 2.4vh; padding: 1.2vh 4vw; }
+  /* Two across: a portrait screen has half the width and twice the rows to
+     spend it on. */
+  .pick-grid { grid-template-columns: repeat(2, 1fr); grid-auto-rows: 10vh; }
+  .pick-tile { font-size: 2.6vh; }
 }

@@ -59,6 +59,12 @@ DEFAULTS = {
     "showWeek": True,          # the seven-day strip along the bottom
     "showPhotos": True,
     "showEmpty": True,         # say "nothing planned" rather than leaving a gap
+    # The shopping button in the corner, and the screen behind it. On by
+    # default: it costs a small button on a display that has room for one, and
+    # a house that would rather the kitchen screen stayed a screen you only
+    # look at can turn it off. Unlike everything else in this list it doesn't
+    # hide a part of the layout - it hides a way in.
+    "showShopping": True,
     "dim": False,
     "dimFrom": "22:00",
     "dimTo": "06:30",
@@ -113,7 +119,7 @@ def clean(raw, base=None):
                              base["dimLevel"])
 
     for flag in ("showCook", "showHeads", "showClock", "showDate", "showWeek",
-                 "showPhotos", "showEmpty", "dim", "castWindow"):
+                 "showPhotos", "showEmpty", "showShopping", "dim", "castWindow"):
         out[flag] = bool(raw.get(flag, base[flag]))
 
     for field in ("dimFrom", "dimTo", "rollover", "castFrom", "castTo"):

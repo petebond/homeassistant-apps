@@ -79,6 +79,11 @@ MAX_EXTRAS = 100
 # a household's odds and ends, and is still a small thing to send with a list.
 MAX_KNOWN_EXTRAS = 200
 
+# How many remembered names the kitchen display is offered to add from. Four
+# pages of a six-tile grid: past that nobody is reading tiles, they are
+# hunting, and hunting on a wall display is what the phone is for.
+KITCHEN_SUGGESTIONS = 24
+
 # The colours a person can wear, and the order new people are given them in.
 # Sent to the app as `palette` so the picker and the server agree on what is
 # choosable; nothing outside this list can be saved.
@@ -801,6 +806,16 @@ def kitchen_view(data, key, rolling=False, span=7):
         bell_button = bool(bell_settings["showButton"])
     except Exception:                                  # noqa: BLE001
         bell_ready, bell_button = False, False
+    # The standing list, and the names to offer when adding to it from a screen
+    # with no keyboard. Same reasoning as the bell above: this feed is what
+    # keeps the kitchen screen alive, so nothing optional on it may be fatal.
+    # A house that has never added an extra has no remembered names, which is
+    # not an error - it is a grid the display doesn't draw.
+    try:
+        extras = extras_list(data)
+        extra_names = known_extras(data)
+    except Exception:                                  # noqa: BLE001
+        extras, extra_names = [], []
     calendar_today = date.today()
     shift = timedelta(days=display.day_shift(settings)) if rolling else timedelta(0)
     today = (calendar_today + shift).isoformat()
@@ -900,6 +915,19 @@ def kitchen_view(data, key, rolling=False, span=7):
         # Two booleans on a feed the display already asks for once a minute,
         # rather than a second endpoint for a button that is usually hidden.
         "bell": {"ready": bell_ready, "showButton": bell_button},
+        # The shopping list, whole, and the remembered names in suggestion
+        # order. Both ride the poll the display already makes rather than
+        # earning an endpoint of their own: the list is short, it is wanted at
+        # the same moment the meals are, and a second request a minute from a
+        # Nest Hub is a second thing that can be timing out when somebody
+        # reaches up to press the button.
+        #
+        # `knownExtras` is capped here rather than on the display. The server
+        # keeps up to two hundred names and the grid can show a couple of
+        # dozen; sending the tail would be sending most of a kilobyte a minute
+        # to a screen that has no way of reaching it.
+        "extras": extras,
+        "knownExtras": extra_names[:KITCHEN_SUGGESTIONS],
         "generated": datetime.now().isoformat(timespec="seconds"),
         "household": [p["name"] for p in data["people"]],
         "days": days,

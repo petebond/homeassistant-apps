@@ -69,7 +69,58 @@
     </aside>
   </main>
 
-  <footer id="week" class="week"></footer>
+  <!-- The bottom row: the week, and the way into the shopping list at the end
+       of it as one more column.
+
+       The button is a sibling of the strip rather than a cell inside it
+       because renderWeek() empties #week and rebuilds it from the feed every
+       minute - anything parked in there would be thrown away on the first
+       poll. This wrapper is what owns the rule above the row and the height of
+       it, so the two halves can't drift apart. -->
+  <div class="weekbar">
+    <footer id="week" class="week"></footer>
+    <button id="shop-btn" class="shop-btn" type="button" hidden>
+      <span class="shop-btn-label">Shopping</span>
+      <span id="shop-count" class="shop-count" hidden>0</span>
+    </button>
+  </div>
+
+</div>
+
+<!-- The shopping list, over the whole screen rather than in the panel. A list
+     of things to buy is not a glance, it is a thing somebody has walked over to
+     read, and squeezing it into a third of the width would make it neither.
+
+     Two faces, one at a time: the list itself, and the grid of names to add
+     from. The grid is a separate face rather than a strip along the bottom of
+     the list because the tiles have to be big enough to hit with a wet hand,
+     and there is no room for both. -->
+<div id="shop" class="shop" hidden>
+
+  <div id="shop-list" class="shop-face">
+    <header class="shop-head">
+      <h2 class="shop-title">Shopping list</h2>
+      <span id="shop-page" class="shop-page" hidden></span>
+    </header>
+    <div id="shop-rows" class="shop-rows"></div>
+    <footer class="shop-foot">
+      <button id="shop-add" class="shop-act shop-act-go" type="button">Add something</button>
+      <button id="shop-more" class="shop-act" type="button" hidden>More ↓</button>
+      <button id="shop-close" class="shop-act" type="button">Done</button>
+    </footer>
+  </div>
+
+  <div id="shop-pick" class="shop-face" hidden>
+    <header class="shop-head">
+      <h2 class="shop-title">What do you need?</h2>
+      <span id="pick-page" class="shop-page" hidden></span>
+    </header>
+    <div id="pick-grid" class="pick-grid"></div>
+    <footer class="shop-foot">
+      <button id="pick-more" class="shop-act" type="button" hidden>More ↓</button>
+      <button id="pick-back" class="shop-act" type="button">Back</button>
+    </footer>
+  </div>
 
 </div>
 

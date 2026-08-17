@@ -2353,41 +2353,48 @@
      lines is a way to lose track of which one you meant. */
   var extraEditing = "";
 
-  /* The row turned into a field. Tapping the name gets you here.
+  /* A name turned into a field, with Save and Cancel beside it.
 
-     A line goes onto this list the moment it is typed, which is the right
-     trade - stopping to check the spelling of "Worcestershire" is how a
+     Shared by the shopping list and by Shopping list management in Settings,
+     because they are the same gesture on the same words and the second one
+     exists precisely because somebody already knows the first. Two hand-rolled
+     editors would drift - one would grow Escape and the other wouldn't, and the
+     one that didn't would be the one you happened to be in.
+
+     The differences between the two are the three arguments: what the field
+     starts as, what to do with what comes out, and what to do if the whole
+     thing is called off.
+
+     A line goes onto the shopping list the moment it is typed, which is the
+     right trade - stopping to check the spelling of "Worcestershire" is how a
      shopping list stops getting written - but it means the wrong spelling is
-     also on it the moment it is typed. Until now the only way to correct one
-     was to delete it and type it again, which loses the quantity, loses that it
-     was ordered on the 3rd, and adds the misspelling to the suggestions on the
-     way past. Everything about the entry survives this except the word. */
-  function extraEditor(extra, row) {
+     also on it the moment it is typed, and in the suggestions a moment after
+     that. This is how either gets taken back. */
+  function nameEditor(current, onSave, onCancel) {
     var wrap = el("span", "extras-edit");
 
     var field = document.createElement("input");
     field.type = "text";
     field.className = "extras-edit-input";
-    field.value = extra.item;
+    field.value = current;
     field.maxLength = 80;
     field.autocomplete = "off";
     field.enterKeyHint = "done";
-    field.setAttribute("aria-label", "Correct " + extra.item);
-
-    function close() { extraEditing = ""; renderExtras(); }
+    field.setAttribute("aria-label", "Correct " + current);
 
     function commit() {
       var text = field.value.trim();
-      if (!text || text === extra.item) return close();
-      extraEditing = "";
-      renameExtra(extra, text);
+      /* Nothing typed, or nothing changed, is not a correction - it is a tap
+         somebody is backing out of. Same as Cancel, and no round trip. */
+      if (!text || text === current) return onCancel();
+      onSave(text);
     }
 
     field.onkeydown = function (e) {
       if (e.key === "Enter") { e.preventDefault(); commit(); }
       /* Escape puts the row back as it was. The one gesture everybody already
          knows for "I didn't mean to open this". */
-      if (e.key === "Escape") { e.preventDefault(); close(); }
+      if (e.key === "Escape") { e.preventDefault(); onCancel(); }
     };
 
     var save = el("button", "btn small", "Save");
@@ -2400,18 +2407,29 @@
 
     var cancel = el("button", "btn ghost small", "Cancel");
     cancel.type = "button";
-    cancel.onmousedown = function (e) { e.preventDefault(); close(); };
+    cancel.onmousedown = function (e) { e.preventDefault(); onCancel(); };
     cancel.onclick = function (e) { e.preventDefault(); };
 
     wrap.appendChild(field);
     wrap.appendChild(save);
     wrap.appendChild(cancel);
-    row.appendChild(wrap);
 
     /* Selected, not just focused: the usual reason to be here is that the whole
        word is wrong, and the usual second reason is one letter in the middle -
        which a tap fixes from a selection just as easily as from a caret. */
     setTimeout(function () { field.focus(); field.select(); }, 0);
+    return wrap;
+  }
+
+  /* The shopping row's version. Everything about the entry survives it except
+     the word: the quantity, the unit, and the fact that it was ordered on the
+     3rd and still hasn't come. */
+  function extraEditor(extra, row) {
+    function close() { extraEditing = ""; renderExtras(); }
+    row.appendChild(nameEditor(extra.item, function (text) {
+      extraEditing = "";
+      renameExtra(extra, text);
+    }, close));
     return row;
   }
 
@@ -2440,7 +2458,7 @@
     /* A button rather than a span, so it is reachable by keyboard and announced
        as something that can be pressed. It looks like the text it replaced -
        see .extras-name. */
-    var name = el("button", "extras-name", extra.item);
+    var name = el("button", "extras-name tap-name", extra.item);
     name.type = "button";
     name.disabled = !!state.offline;
     name.title = "Tap to correct the spelling";
@@ -4460,7 +4478,8 @@
      nothing here touches the list, and something still to be bought stays on
      it whatever the box stops offering. */
 
-  var historyState = { loaded: false, loading: false, rows: [], busy: {} };
+  var historyState = { loaded: false, loading: false, rows: [], busy: {},
+                       editing: "" };
 
   function historyError(message) {
     var box = $("history-error");
@@ -4487,6 +4506,9 @@
       historyState.rows = (res && res.history) || [];
       historyState.loaded = true;
       historyState.loading = false;
+      /* Fresh rows, so any half-typed correction is against a list that has
+         just been replaced under it. */
+      historyState.editing = "";
       historyError("");
       renderHistory();
     }).catch(function (err) {
@@ -4547,7 +4569,35 @@
 
     rows.forEach(function (row) {
       var item = el("li", "history-row");
-      item.appendChild(el("span", "history-name", row.item));
+
+      /* Being corrected. The same field, the same two buttons and the same
+         keys as a row on the shopping list - that is the whole point of the
+         gesture being here as well. The count and the × stand down while it is
+         open: a name mid-correction is not a name to be counting or throwing
+         away. */
+      if (historyState.editing === row.key) {
+        item.appendChild(nameEditor(row.item, function (text) {
+          historyState.editing = "";
+          renameName(row, text);
+        }, function () {
+          historyState.editing = "";
+          renderHistory();
+        }));
+        list.appendChild(item);
+        return;
+      }
+
+      var name = el("button", "history-name tap-name", row.item);
+      name.type = "button";
+      name.disabled = !!historyState.busy[row.key];
+      name.title = "Tap to correct the spelling";
+      name.setAttribute("aria-label", row.item + " - tap to correct");
+      name.onclick = function () {
+        historyState.editing = row.key;
+        renderHistory();
+      };
+      item.appendChild(name);
+
       var meta = historyMeta(row);
       if (meta) item.appendChild(el("span", "history-meta", meta));
 
@@ -4565,6 +4615,43 @@
        only place the cap is ever mentioned. */
     note.textContent = plural(historyState.rows.length, "name") + " remembered" +
       (term ? ", " + rows.length + " shown" : "") + ".";
+  }
+
+  /* Correcting a remembered name. The same gesture as correcting a line on the
+     shopping list, reached from the other end: there the wrong word is on
+     something you are about to buy, here it is on something the box keeps
+     offering back. Either way what is wanted is the word fixed, so the server
+     fixes it in both places - see rename_known() - and the answer carries the
+     shopping list as well as the names, because this can have rewritten a row
+     on a tab that is already drawn behind this one. */
+  function renameName(row, text) {
+    historyState.busy[row.key] = true;
+    renderHistory();
+    api("POST", "/api/extras/history/rename", { key: row.key, item: text })
+      .then(function (res) {
+        delete historyState.busy[row.key];
+        historyState.rows = (res && res.history) || [];
+        if (res && res.knownExtras) {
+          state.knownExtras = res.knownExtras;
+          renderExtraSuggestions();
+        }
+        /* Straight into the list on this device rather than waiting for the
+           next fetch of it. Somebody who fixes a name here and steps back to
+           the Shopping tab should not find the old spelling still sitting
+           there - that reads as the correction not having taken. */
+        if (res && res.extras) {
+          state.extras = res.extras;
+          extraEditing = "";
+          renderExtras();
+        }
+        historyError("");
+        renderHistory();
+        toast("Renamed");
+      }).catch(function (err) {
+        delete historyState.busy[row.key];
+        historyError(err.message);
+        renderHistory();
+      });
   }
 
   /* One row, one tap, gone. No confirm: the worst case is that the box stops
@@ -5012,7 +5099,13 @@
       if ($("history-card").open) loadHistory(historyState.loaded);
     });
 
-    $("history-search").oninput = function () { renderHistory(); };
+    /* Narrowing the list closes anything open in it: the row being corrected
+       is very likely the one the search is about to filter away, and a field
+       that vanishes mid-word is worse than one that was put away. */
+    $("history-search").oninput = function () {
+      historyState.editing = "";
+      renderHistory();
+    };
 
     $("backup-download").onclick = downloadBackup;
 

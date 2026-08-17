@@ -2027,15 +2027,15 @@ summary.settings-head h2 { margin: 0; flex: 1; min-width: 0; }
 .extras-row:last-child { border-bottom: 0; }
 .extras-empty { padding: .2rem 0; list-style: none; }
 
-/* The name is a button, because tapping it opens it for editing. Styled to
-   look like the text it replaced rather than like a control: a shopping list
-   of twelve buttons is a shopping list nobody can read at a glance, and the
-   affordance here is worth less than the legibility. Anyone who needs the
-   correction will try tapping the wrong word - that is what you do with a
-   wrong word on a phone. */
-.extras-name {
-  flex: 1;
-  min-width: 0;
+/* A name you can tap to correct. On the shopping list, and on the remembered
+   names in Settings - the same gesture on the same words, so the same class.
+
+   Styled to look like the text it replaced rather than like a control: a
+   shopping list of twelve buttons is a shopping list nobody can read at a
+   glance, and the affordance here is worth less than the legibility. Anyone
+   who needs the correction will try tapping the wrong word - that is what you
+   do with a wrong word on a phone. */
+.tap-name {
   appearance: none;
   background: none;
   border: 0;
@@ -2051,12 +2051,16 @@ summary.settings-head h2 { margin: 0; flex: 1; min-width: 0; }
 /* A wash rather than an underline: an ordered row is already struck through,
    and an element only gets one text-decoration - the underline would have
    taken the line-through's place and quietly un-ordered the row. */
-.extras-name:hover { background: var(--accent-wash); }
-.extras-name:focus-visible {
+.tap-name:hover { background: var(--accent-wash); }
+.tap-name:focus-visible {
   outline: 2px solid var(--accent, #3d8361);
   outline-offset: 1px;
 }
-.extras-name:disabled { cursor: default; background: none; }
+.tap-name:disabled { cursor: default; background: none; }
+
+/* Where the two live. The shopping row and the remembered name both give the
+   width to the name and let the numbers beside it keep their own. */
+.extras-name { flex: 1; min-width: 0; }
 
 /* Being edited. The row gives everything else up for the width - the stepper
    and the age go, because a field you can only see six letters of is not a
@@ -2232,7 +2236,7 @@ summary.settings-head h2 { margin: 0; flex: 1; min-width: 0; }
      On paper it is a word: no wash, no padding, nothing that says press me to
      somebody holding a sheet of A4. A row caught mid-correction prints as the
      word it currently says rather than as an empty box. */
-  .extras-name { padding: 0; margin: 0; background: none !important; }
+  .tap-name { padding: 0; margin: 0; background: none !important; }
   .extras-edit { display: none !important; }
   .extras-row { break-inside: avoid; padding: .3rem 0; border-bottom: 1px dotted #bbb; }
   .extras-row::before {

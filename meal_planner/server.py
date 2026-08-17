@@ -686,12 +686,110 @@ def extras_history(data):
     return out
 
 
+def rename_known(data, key, new_name):
+    """Correct a remembered name from the Settings tab.
+
+    The same job the row on the shopping list does, reached from the other end:
+    there the wrong word is on something you are about to buy, here it is on
+    something the box keeps offering. Either way what is wanted is the word
+    fixed, so this fixes it in both places - the memory, and any line currently
+    on the list still going by the old spelling. A correction you have to make
+    twice is a correction that gets made once and forgotten.
+
+    Returns None if there is no such remembered name, otherwise the tidied
+    name it ended up as."""
+    names = data.get("extraNames")
+    if not isinstance(names, dict):
+        return None
+    slot = str(key) if key in names else extra_key(key)
+    if not slot or slot not in names:
+        return None
+    entry = names[slot]
+    if not isinstance(entry, dict):
+        return None
+
+    # Whatever gets typed in, only the name is taken. Unlike the row on the
+    # shopping list there is no quantity here to set - a remembered name is a
+    # bare name by design, because the number belongs to the shop you are going
+    # to today and not to the thing itself.
+    _, _, name = parse_extra(new_name)
+    name = clean_str(name, MAX_EXTRA)
+    if not name:
+        return None
+    was = clean_str(entry.get("item"), MAX_EXTRA) or slot
+    new_slot = extra_key(name)
+    if not new_slot:
+        return None
+
+    if new_slot == slot:
+        # Same key: a change of case, or a plural. Nothing to move, but the
+        # spelling on the record still becomes the one just typed.
+        entry["item"] = title_case(name)
+    else:
+        carried = int(entry.get("used") or 0)
+        del names[slot]
+        existing = names.get(new_slot)
+        if isinstance(existing, dict):
+            # Corrected onto something already remembered. The two were always
+            # one thing and two ways of spelling it, so the counts add up
+            # rather than one of them being thrown away.
+            existing["item"] = title_case(name)
+            existing["used"] = int(existing.get("used") or 0) + carried
+            existing["at"] = max(existing.get("at") or "", entry.get("at") or "")
+        else:
+            names[new_slot] = {"item": title_case(name), "used": carried,
+                               "at": entry.get("at") or date.today().isoformat()}
+
+    # And the lines on the list that still say it. Only ones whose name really
+    # is the old one - this is a spelling correction, not a find and replace.
+    old_slot = extra_key(was)
+    touched = False
+    for line in data.get("extras") or []:
+        if isinstance(line, dict) and extra_key(line.get("item")) == old_slot:
+            line["item"] = name
+            touched = True
+    # Correcting "Coke Xero" on a list that also says "Coke Zero" leaves two
+    # rows saying the same thing. Same fold as the row on the shopping list
+    # does: same state and same unit only, because two tins and 500g of one
+    # word are two different asks and adding them would invent a number.
+    if touched:
+        merge_duplicate_extras(data, extra_key(name))
+    return title_case(name)
+
+
+def merge_duplicate_extras(data, slot):
+    """Collapse lines that have ended up saying the same thing. The first one
+    in list order survives and the rest add themselves into it, so a row keeps
+    the place on the page it already had."""
+    stored = data.get("extras")
+    if not isinstance(stored, list) or not slot:
+        return
+    first = {}
+    kept = []
+    for line in stored:
+        if not isinstance(line, dict) or extra_key(line.get("item")) != slot:
+            kept.append(line)
+            continue
+        # Ordered and still-needed are two different states of affairs - one is
+        # in a van, the other is on a list - so they never fold together.
+        bucket = (line.get("state") or "need", line.get("unit") or "each")
+        winner = first.get(bucket)
+        if winner is None:
+            first[bucket] = line
+            kept.append(line)
+            continue
+        winner["qty"] = float(winner.get("qty") or 1) + float(line.get("qty") or 1)
+    data["extras"] = kept
+
+
 def forget_extras(data, keys):
     """Drop remembered names. The one-off that will never be bought again, and
     the misspelling that has been suggesting itself ever since.
 
     Only touches the memory, never the list: something still to be bought is
-    still to be bought, whatever the box has stopped offering."""
+    still to be bought, whatever the box has stopped offering. Correcting one
+    does reach the list - see rename_known() - because a word being wrong is a
+    different matter from a word being unwanted."""
     names = data.get("extraNames")
     if not isinstance(names, dict):
         return 0
@@ -2963,6 +3061,36 @@ class Handler(BaseHTTPRequestHandler):
                 return self._error(400, "Type what it should say")
             return self._json({"ok": True, "extras": updated["extras"],
                                "knownExtras": updated["knownExtras"]})
+
+        # Correcting a remembered name from the Settings tab. The same job the
+        # row on the shopping list does, reached from the other end - so it
+        # fixes the word in both places. See rename_known().
+        if path == "/api/extras/history/rename" and method == "POST":
+            body = body or {}
+            key = str(body.get("key") or "")
+            typed = clean_str(body.get("item"), MAX_EXTRA)
+            if not key:
+                return self._error(400, "No such remembered name")
+            if not typed:
+                return self._error(400, "Type what it should say")
+
+            def rename_name(data):
+                if rename_known(data, key, typed) is None:
+                    return None
+                return {"history": extras_history(data),
+                        "knownExtras": known_extras(data),
+                        # The list comes back too: correcting a name here can
+                        # rewrite a line on the shopping tab, and a phone with
+                        # that tab already drawn would otherwise go on showing
+                        # the spelling that has just been fixed.
+                        "extras": extras_list(data)}
+
+            after = mutate(rename_name)
+            if after is None:
+                return self._error(404, "No such remembered name")
+            return self._json({"ok": True, "history": after["history"],
+                               "knownExtras": after["knownExtras"],
+                               "extras": after["extras"]})
 
         # Names the box should stop offering. The one-off bought in March, and
         # the spelling that was wrong the day it was typed.

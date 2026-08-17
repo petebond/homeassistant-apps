@@ -280,6 +280,108 @@ def test_rename_refusals():
           [e["item"] for e in list_after["extras"]], ["Foil"])
 
 
+def test_history_rename_fixes_both_places():
+    """Correcting a remembered name from Settings is the same job the shopping
+    row does, reached from the other end - so it fixes the word in both places.
+    A correction you have to make twice is one that gets made once."""
+    entry = add("2 Coke Xero")
+    _, before = call("GET", "/api/extras/history")
+    key = before["history"][0]["key"]
+
+    code, res = call("POST", "/api/extras/history/rename",
+                     {"key": key, "item": "Coke Zero"})
+    check("rename ok", code, 200)
+    check("the remembered name is corrected",
+          [r["item"] for r in res["history"]], ["Coke Zero"])
+    check("and so is the suggestion", res["knownExtras"], ["Coke Zero"])
+    # The half that would otherwise have to be done again on the other tab.
+    check("and the line on the list",
+          [e["item"] for e in res["extras"]], ["Coke Zero"])
+    check("which keeps everything else",
+          (res["extras"][0]["qty"], res["extras"][0]["id"]), (2.0, entry["id"]))
+    # The count follows the correction rather than resetting.
+    check("count kept", res["history"][0]["used"], 1)
+
+
+def test_history_rename_merges():
+    """Corrected onto something already remembered, the counts add up - the two
+    were always one thing and two ways of spelling it. And a list that now says
+    the same thing twice folds into one row."""
+    add("2 Coke Zero")
+    add("3 Coke Xero")
+    add("Coke Xero")            # asked for twice under the wrong spelling
+    _, before = call("GET", "/api/extras/history")
+    key = [r["key"] for r in before["history"] if r["item"] == "Coke Xero"][0]
+
+    _, res = call("POST", "/api/extras/history/rename",
+                  {"key": key, "item": "Coke Zero"})
+    check("one remembered name afterwards", len(res["history"]), 1)
+    check("with both counts", res["history"][0]["used"], 3)
+    check("one row on the list", len(res["extras"]), 1)
+    # 2 + 3, and the third add folded into the second at the time.
+    check("quantities added", res["extras"][0]["qty"], 6.0)
+
+
+def test_history_rename_does_not_merge_across_a_delivery():
+    ordered = add("2 Mlk")
+    call("POST", "/api/extras/state", {"ids": [ordered["id"]], "state": "ordered"})
+    add("1 Milk")
+    _, before = call("GET", "/api/extras/history")
+    key = [r["key"] for r in before["history"] if r["item"] == "Mlk"][0]
+
+    _, res = call("POST", "/api/extras/history/rename",
+                  {"key": key, "item": "Milk"})
+    check("both rows survive", len(res["extras"]), 2)
+    check("states intact", sorted(e["state"] for e in res["extras"]),
+          ["need", "ordered"])
+    check("both now spelled right",
+          sorted(e["item"] for e in res["extras"]), ["Milk", "Milk"])
+
+
+def test_history_rename_leaves_other_names_alone():
+    add("Foil")
+    add("Mlk")
+    _, before = call("GET", "/api/extras/history")
+    key = [r["key"] for r in before["history"] if r["item"] == "Mlk"][0]
+    _, res = call("POST", "/api/extras/history/rename",
+                  {"key": key, "item": "Milk"})
+    # A spelling correction, not a find and replace.
+    check("the untouched line is untouched",
+          sorted(e["item"] for e in res["extras"]), ["Foil", "Milk"])
+    check("and its name is still remembered",
+          "Foil" in [r["item"] for r in res["history"]], True)
+
+
+def test_history_rename_case_only():
+    """Same normalised key - a change of case, or a plural. Nothing to move,
+    but the spelling on the record still becomes the one just typed."""
+    add("bbq sauce")
+    _, before = call("GET", "/api/extras/history")
+    key = before["history"][0]["key"]
+    _, res = call("POST", "/api/extras/history/rename",
+                  {"key": key, "item": "Barbecue sauce"})
+    check("renamed", [r["item"] for r in res["history"]], ["Barbecue Sauce"])
+    check("one entry still", len(res["history"]), 1)
+    check("count survives", res["history"][0]["used"], 1)
+
+
+def test_history_rename_refusals():
+    code, _ = call("POST", "/api/extras/history/rename",
+                   {"key": "nope", "item": "Foil"})
+    check("no such remembered name", code, 404)
+    add("Foil")
+    _, before = call("GET", "/api/extras/history")
+    key = before["history"][0]["key"]
+    code, _ = call("POST", "/api/extras/history/rename",
+                   {"key": key, "item": "   "})
+    check("nothing typed", code, 400)
+    code, _ = call("POST", "/api/extras/history/rename", {"item": "Foil"})
+    check("no key at all", code, 400)
+    _, after = call("GET", "/api/extras/history")
+    check("and nothing changed",
+          [r["item"] for r in after["history"]], ["Foil"])
+
+
 def test_forget_endpoint():
     add("Birthday Candles")
     add("Foil")
@@ -325,7 +427,14 @@ for test in [test_rename_keeps_everything_else, test_rename_moves_the_suggestion
              test_rename_merges_onto_a_line_already_there,
              test_rename_does_not_merge_across_a_delivery,
              test_rename_leaves_a_name_another_line_uses,
-             test_rename_refusals, test_forget_endpoint]:
+             test_rename_refusals,
+             test_history_rename_fixes_both_places,
+             test_history_rename_merges,
+             test_history_rename_does_not_merge_across_a_delivery,
+             test_history_rename_leaves_other_names_alone,
+             test_history_rename_case_only,
+             test_history_rename_refusals,
+             test_forget_endpoint]:
     reset()
     test()
 

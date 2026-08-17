@@ -96,11 +96,14 @@ doesn't drop to the bottom of the list the day somebody fixes a letter in it. A
 name another line on the list still goes by is left alone.
 
 Settings → **Shopping list management** is the drawer for everything else the
-box has learned: every remembered name, how often it has been asked for, when it
-was last asked for, and an × to stop it being suggested. That is the place for
-the candle bought for one birthday and the brand tried once. It only changes
-what gets offered — something still to be bought stays on the list whatever the
-box stops suggesting.
+box has learned: every remembered name, how often it has been asked for, and
+when it was last asked for. Tap one to correct it — the same gesture as on the
+list — or press the × to stop it being suggested. That is the place for the
+candle bought for one birthday and the brand tried once.
+
+Correcting a name there fixes it on the shopping list too, so a typo doesn't
+have to be put right twice. The × doesn't: something still to be bought stays on
+the list whatever the box stops suggesting.
 
 ## Where the data lives
 

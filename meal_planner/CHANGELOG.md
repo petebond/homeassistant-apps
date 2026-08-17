@@ -1,5 +1,25 @@
 # Changelog
 
+## 1.21.1
+
+**New: tap a remembered name in Settings to correct it too.** Shopping list
+management had an × to throw a name away but no way to fix one, which made it
+the only place in the app where a wrong word could be seen and not put right.
+It is now the same gesture as on the shopping list — tap the name, a field with
+Save and Cancel, Enter to commit and Escape to back out. One editor behind both,
+so the two can't drift apart.
+
+A correction made here reaches the shopping list as well. Fix "Bin Bgas" in
+Settings and the line on the Shopping tab says "Bin Bags" when you get back to
+it — the alternative was fixing the same typo twice in two places, which is how
+one of them stays wrong. Corrected onto a name already remembered, the counts
+add up and the two lines fold into one row, the same as correcting it from the
+list does.
+
+The × is unchanged and still only touches the suggestions. Correcting a word and
+being done with a word are different things: one is a spelling, the other is a
+decision that the candle bought for that birthday is never being bought again.
+
 ## 1.21.0
 
 **Changed: Settings is a list of sections, shut until you open one.** The tab

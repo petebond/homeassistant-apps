@@ -11,6 +11,10 @@
 
    The rename is a row that turns into a field and back. What it posts, what it
    posts when nothing was changed (nothing), and that Escape leaves no trace.
+   The same gesture reaches the same words from two places - the shopping row
+   and the remembered name in Settings - so both ends are driven here, along
+   with the thing only the Settings end does: a correction made there has to
+   reach the line already drawn on the shopping tab.
 
    And the history section fetches on open rather than on boot - which is the
    whole reason it is worth collapsing - so the test has to prove the request
@@ -39,15 +43,19 @@ const DATA = {
   today, thisWeek: monday,
 };
 
-/* Two lines on the standing list, one of them spelled wrong. */
+/* Three lines on the standing list, two of them spelled wrong - one to correct
+   from the shopping tab, one to correct from Settings, so neither test has to
+   undo the other's work. */
 let extras = [
   { id: 'x1', item: 'Coke Xero', qty: 2, unit: 'each', state: 'need', orderedAt: '' },
   { id: 'x2', item: 'Foil', qty: 1, unit: 'each', state: 'need', orderedAt: '' },
+  { id: 'x3', item: 'Bin Bgas', qty: 1, unit: 'each', state: 'need', orderedAt: '' },
 ];
-let knownExtras = ['Coke Xero', 'Foil', 'Birthday Candles'];
+let knownExtras = ['Coke Xero', 'Foil', 'Bin Bgas', 'Birthday Candles'];
 let history = [
   { key: 'coke xero', item: 'Coke Xero', used: 1, at: '2026-08-01' },
   { key: 'foil', item: 'Foil', used: 12, at: '2026-08-10' },
+  { key: 'bin bga', item: 'Bin Bgas', used: 2, at: '2026-08-09' },
   { key: 'birthday candle', item: 'Birthday Candles', used: 1, at: '2026-03-02' },
 ];
 
@@ -70,7 +78,22 @@ window.fetch = (url, opts) => {
   if (method !== 'GET') posted.push([url, JSON.parse((opts && opts.body) || '{}')]);
 
   let body = DATA;
+  /* Longest path first: "/api/extras/history/rename" starts with
+     "/api/extras/history", so a prefix test in the other order answers the
+     rename with the plain list and the test passes while nothing was saved. */
   if (url.indexOf('/api/shopping') === 0) body = SHOPPING();
+  else if (url.indexOf('/api/extras/history/rename') === 0) {
+    /* What the server does: the remembered name is corrected, and so is any
+       line on the list still going by the old spelling. */
+    const sent = JSON.parse(opts.body);
+    const was = (history.find(r => r.key === sent.key) || {}).item;
+    history = history.map(r => r.key === sent.key
+      ? { key: sent.item.toLowerCase(), item: sent.item, used: r.used, at: today }
+      : r);
+    extras = extras.map(e => e.item === was ? Object.assign({}, e, { item: sent.item }) : e);
+    knownExtras = history.map(r => r.item);
+    body = { ok: true, history, knownExtras, extras };
+  }
   else if (url.indexOf('/api/extras/history') === 0) body = { history };
   else if (url.indexOf('/api/extras/rename') === 0) {
     /* What the server does: the word changes, everything else survives, and
@@ -182,13 +205,13 @@ const tick = ms => new Promise(r => setTimeout(r, ms));
      fetched.some(([, url]) => url.indexOf('/api/extras/history') === 0));
 
   let rows = [...doc.querySelectorAll('#history-list .history-row')];
-  ok('a row per remembered name (got ' + rows.length + ')', rows.length === 3);
+  ok('a row per remembered name (got ' + rows.length + ')', rows.length === 4);
   ok('the name is shown',
      rows[0].querySelector('.history-name').textContent === 'Coke Xero');
   ok('with how often and how long ago',
      /×1/.test(rows[0].querySelector('.history-meta').textContent));
   ok('and the count is reported',
-     /3 names remembered/.test($('history-note').textContent));
+     /4 names remembered/.test($('history-note').textContent));
 
   // ---- the search box narrows it
 
@@ -201,8 +224,65 @@ const tick = ms => new Promise(r => setTimeout(r, ms));
   ok('the note says how many are shown',
      /1 shown/.test($('history-note').textContent));
 
+  // ---- a remembered name is corrected the same way a list row is
+
+  $('history-search').value = '';
+  $('history-search').dispatchEvent(new window.Event('input', { bubbles: true }));
+
+  const histRow = name => [...doc.querySelectorAll('#history-list .history-row')]
+    .find(r => r.querySelector('.history-name')
+      && r.querySelector('.history-name').textContent === name);
+
+  let hName = histRow('Bin Bgas').querySelector('.history-name');
+  ok('the remembered name is a button',
+     hName.tagName.toLowerCase() === 'button');
+  /* The same class as the shopping row's name, which is what makes the two
+     gestures look and behave alike rather than merely similar. */
+  ok('and shares the shopping list\'s styling',
+     hName.classList.contains('tap-name'));
+
+  // Escape backs out of this one too.
+  posted.length = 0;
+  click(hName);
+  let hField = doc.querySelector('#history-list .extras-edit input');
+  ok('tapping it opens a field', !!hField);
+  ok('with the remembered spelling in it', hField && hField.value === 'Bin Bgas');
+  hField.value = 'Nonsense';
+  key(hField, 'Escape');
+  await tick(50);
+  ok('Escape posts nothing here either', posted.length === 0);
+  ok('and the name is unchanged', !!histRow('Bin Bgas'));
+
+  // The correction itself.
+  click(histRow('Bin Bgas').querySelector('.history-name'));
+  hField = doc.querySelector('#history-list .extras-edit input');
+  hField.value = 'Bin Bags';
+  key(hField, 'Enter');
+  await tick(150);
+  ok('Enter posts the rename', posted.length === 1);
+  ok('to the history rename endpoint',
+     posted[0] && posted[0][0] === '/api/extras/history/rename');
+  ok('carrying the stored key and the new wording',
+     posted[0] && JSON.stringify(posted[0][1]) ===
+       JSON.stringify({ key: 'bin bga', item: 'Bin Bags' }));
+  ok('the remembered name now reads the corrected way', !!histRow('Bin Bags'));
+  ok('and the field has closed',
+     !doc.querySelector('#history-list .extras-edit'));
+
+  /* The half Pete asked for: a correction made here reaches the shopping list
+     too, so stepping back to that tab does not show the spelling you have just
+     fixed. */
+  const listNames = () => [...doc.querySelectorAll('#extras-list .extras-name')]
+    .map(b => b.textContent);
+  ok('and the line on the shopping list followed it (got ' +
+     JSON.stringify(listNames()) + ')', listNames().indexOf('Bin Bags') >= 0);
+  ok('with the old spelling gone from it', listNames().indexOf('Bin Bgas') < 0);
+
   // ---- the x removes it from the suggestions, by key
 
+  $('history-search').value = 'candle';
+  $('history-search').dispatchEvent(new window.Event('input', { bubbles: true }));
+  rows = [...doc.querySelectorAll('#history-list .history-row')];
   posted.length = 0;
   click(rows[0].querySelector('.history-drop'));
   await tick(150);
@@ -216,7 +296,7 @@ const tick = ms => new Promise(r => setTimeout(r, ms));
   $('history-search').value = '';
   $('history-search').dispatchEvent(new window.Event('input', { bubbles: true }));
   rows = [...doc.querySelectorAll('#history-list .history-row')];
-  ok('the row is gone afterwards (got ' + rows.length + ')', rows.length === 2);
+  ok('the row is gone afterwards (got ' + rows.length + ')', rows.length === 3);
 
   // The suggestions under the "Also needed" box follow immediately: the reason
   // anybody is on this screen is that a name keeps coming up.

@@ -1608,6 +1608,98 @@ select:focus, input:focus, textarea:focus { outline: 2px solid var(--green); out
 .settings-card { margin-top: 1.4rem; }
 .settings-card h2 { margin: 0 0 .3rem; font-size: 1.05rem; }
 
+/* ---------- the collapsed heading on every settings card ---------- */
+
+/* One row: an icon, the name of the section, and a chevron ranged right. The
+   whole row is the target rather than just the words, because a summary that
+   only responds where the text happens to end is a summary that feels broken
+   on a phone.
+
+   Negative margins pull it out to the card's own edges and the padding puts it
+   back, so the tap target is the full width of the card and the text still
+   lines up with the content underneath when it opens. */
+.settings-head {
+  display: flex;
+  align-items: center;
+  gap: .7rem;
+  margin: -1rem;
+  padding: 1rem;
+  cursor: pointer;
+  /* The default disclosure triangle sits before the icon and says the same
+     thing as the chevron at the other end, badly. Both spellings needed:
+     Safari still wants the pseudo-element. */
+  list-style: none;
+  border-radius: var(--radius);
+}
+.settings-head::-webkit-details-marker { display: none; }
+/* The card selectors that set a heading margin appear both above this and (for
+   the backup card) well below it, and all three carry the same specificity -
+   so this one has to out-rank them rather than rely on being last. Left at one
+   class, the backup card's heading picks up a trailing margin inside its own
+   summary and sits a hair higher than the other five. */
+summary.settings-head h2 { margin: 0; flex: 1; min-width: 0; }
+
+/* Keyboard focus has to be visible on the row, not on invisible text: this is
+   the only way to reach these sections without a pointer. */
+.settings-head:focus-visible {
+  outline: 2px solid var(--accent, #3d8361);
+  outline-offset: -2px;
+}
+
+/* Muted until the section is open, when it takes the accent along with the
+   chevron. A column of six full-strength icons is a column of six things
+   asking to be looked at; what they are for is to be told apart at a glance
+   once you are already scanning the headings. */
+.settings-ico {
+  flex: none;
+  width: 1.35rem;
+  height: 1.35rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  color: var(--muted);
+}
+
+/* Drawn rather than typed: an arrow glyph is a different size in every font on
+   every platform, and half of them centre it wrong. */
+.settings-head::after {
+  content: "";
+  flex: none;
+  width: .55rem;
+  height: .55rem;
+  margin-right: .2rem;
+  border-right: 2px solid var(--muted);
+  border-bottom: 2px solid var(--muted);
+  transform: rotate(45deg) translate(-2px, -2px);
+  transition: transform .18s ease;
+}
+.settings-card[open] > .settings-head::after,
+.backup-card[open] > .settings-head::after {
+  transform: rotate(-135deg) translate(-2px, -2px);
+}
+.settings-card[open] > .settings-head .settings-ico,
+.backup-card[open] > .settings-head .settings-ico { color: var(--accent); }
+
+/* The open card's heading keeps a rule under it, so the controls below read as
+   belonging to it rather than floating in the card. */
+.settings-card[open] > .settings-head,
+.backup-card[open] > .settings-head {
+  margin-bottom: 0;
+  border-bottom: 1px solid var(--line);
+  border-radius: var(--radius) var(--radius) 0 0;
+}
+/* Padding rather than margin, and the margin explicitly off: the generic
+   ".card summary + *" rule above would otherwise add its own gap on top of
+   this one. A shut card needs no such rule - the heading's negative margins
+   already cancel the card's padding exactly, top and bottom. */
+.settings-body { margin-top: 0; padding-top: .9rem; }
+
+@media (prefers-reduced-motion: reduce) {
+  .settings-head::after { transition: none; }
+}
+
 /* Air between a card's form and whatever it produces. Without this the Add
    person button sits directly on top of the first name in the household, and
    the two read as one control - press Add, and the row underneath looks like
@@ -1715,6 +1807,70 @@ select:focus, input:focus, textarea:focus { outline: 2px solid var(--green); out
 .display-time { font-size: .82rem; color: var(--muted); }
 .display-time input { width: auto; margin-left: .3rem; }
 .display-when .display-slider { flex: 1 1 10rem; margin-top: 0; }
+
+/* ---------- the remembered shopping names ---------- */
+
+/* A search box first, because this list is two hundred names long in a house
+   that has been using the app a while, and the thing you have come here to
+   remove is one you already know the spelling of - you saw it in the
+   suggestions. Scrolling is the fallback, not the plan. */
+.history-tools { margin: .9rem 0 .2rem; }
+.history-tools input { width: 100%; }
+
+.history-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  /* Capped and scrolled rather than running to two hundred rows: this sits
+     inside a card on a settings page, and a section that opens into something
+     longer than the phone has swallowed the page. */
+  max-height: 22rem;
+  overflow-y: auto;
+}
+.history-row {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  padding: .45rem 0;
+  border-bottom: 1px solid var(--line);
+}
+.history-row:last-child { border-bottom: 0; }
+.history-name { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+
+/* How often, and how long ago. The two facts that answer "is this the one-off
+   or the staple?" without having to remember March. */
+.history-meta {
+  flex: none;
+  font-size: .78rem;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* The × is the whole control, so it is a proper 2.2rem target rather than the
+   size of the glyph in it. Muted until it is reached for: a column of red
+   crosses reads as a list of errors. */
+.history-drop {
+  flex: none;
+  width: 2.2rem;
+  height: 2.2rem;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+}
+.history-drop:hover,
+.history-drop:focus-visible {
+  color: var(--danger);
+  background: var(--danger-wash);
+  border-color: var(--line);
+}
+.history-drop:disabled { opacity: .4; cursor: default; }
+
+.history-empty { padding: .5rem 0; list-style: none; }
+#history-note:empty { display: none; }
 
 /* ---------- backup and restore ---------- */
 
@@ -1869,8 +2025,45 @@ select:focus, input:focus, textarea:focus { outline: 2px solid var(--green); out
   border-bottom: 1px solid var(--line);
 }
 .extras-row:last-child { border-bottom: 0; }
-.extras-name { flex: 1; min-width: 0; }
 .extras-empty { padding: .2rem 0; list-style: none; }
+
+/* The name is a button, because tapping it opens it for editing. Styled to
+   look like the text it replaced rather than like a control: a shopping list
+   of twelve buttons is a shopping list nobody can read at a glance, and the
+   affordance here is worth less than the legibility. Anyone who needs the
+   correction will try tapping the wrong word - that is what you do with a
+   wrong word on a phone. */
+.extras-name {
+  flex: 1;
+  min-width: 0;
+  appearance: none;
+  background: none;
+  border: 0;
+  padding: .25rem .35rem;
+  margin: -.25rem -.35rem;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  border-radius: 5px;
+  overflow-wrap: anywhere;
+}
+/* A wash rather than an underline: an ordered row is already struck through,
+   and an element only gets one text-decoration - the underline would have
+   taken the line-through's place and quietly un-ordered the row. */
+.extras-name:hover { background: var(--accent-wash); }
+.extras-name:focus-visible {
+  outline: 2px solid var(--accent, #3d8361);
+  outline-offset: 1px;
+}
+.extras-name:disabled { cursor: default; background: none; }
+
+/* Being edited. The row gives everything else up for the width - the stepper
+   and the age go, because a field you can only see six letters of is not a
+   field you can correct a spelling in. */
+.extras-edit { display: flex; align-items: center; gap: .4rem; flex: 1; min-width: 0; }
+.extras-edit input { flex: 1; min-width: 0; }
+.extras-edit .btn { flex: none; }
 
 /* Big enough to hit with a thumb while the other hand has a trolley in it.
    iOS shrinks a bare checkbox to about half this. */
@@ -2035,6 +2228,12 @@ select:focus, input:focus, textarea:focus { outline: 2px solid var(--green); out
      press is just ink. Ordered things stay on, struck through, so the list
      you carry still says what's coming. */
   .extras-tick, .step-btn { display: none !important; }
+  /* The name is a button on screen, because tapping it corrects the spelling.
+     On paper it is a word: no wash, no padding, nothing that says press me to
+     somebody holding a sheet of A4. A row caught mid-correction prints as the
+     word it currently says rather than as an empty box. */
+  .extras-name { padding: 0; margin: 0; background: none !important; }
+  .extras-edit { display: none !important; }
   .extras-row { break-inside: avoid; padding: .3rem 0; border-bottom: 1px dotted #bbb; }
   .extras-row::before {
     content: "";
@@ -2096,7 +2295,10 @@ html[data-offline="1"] .extras-add,
 html[data-offline="1"] .extras-tick,
 html[data-offline="1"] .extras-stepper,
 html[data-offline="1"] .person-list .icon-btn,
-html[data-offline="1"] .settings-card,
+/* The body of a settings card, not the whole card: the heading has to stay
+   live so a section can still be opened and read while the network is away.
+   Reading what the house has set is not a write. */
+html[data-offline="1"] .settings-body,
 html[data-offline="1"] .meal-list .icon-btn {
   opacity: .45;
   pointer-events: none;

@@ -2136,7 +2136,10 @@
     updateShareBtn();
     /* Not emptied: the extras belong to no week, so they stay on screen while
        the new week's food is still in flight. Re-rendered only because the
-       card was just cleared along with everything else. */
+       card was just cleared along with everything else. A row left open for
+       editing is closed - stepping to another week is a clear enough change of
+       subject that a half-typed correction hanging about would be a surprise. */
+    extraEditing = "";
     renderExtras();
     extrasError("");
 
@@ -2346,6 +2349,72 @@
     });
   }
 
+  /* Which row is open for editing, if any. One at a time: two half-corrected
+     lines is a way to lose track of which one you meant. */
+  var extraEditing = "";
+
+  /* The row turned into a field. Tapping the name gets you here.
+
+     A line goes onto this list the moment it is typed, which is the right
+     trade - stopping to check the spelling of "Worcestershire" is how a
+     shopping list stops getting written - but it means the wrong spelling is
+     also on it the moment it is typed. Until now the only way to correct one
+     was to delete it and type it again, which loses the quantity, loses that it
+     was ordered on the 3rd, and adds the misspelling to the suggestions on the
+     way past. Everything about the entry survives this except the word. */
+  function extraEditor(extra, row) {
+    var wrap = el("span", "extras-edit");
+
+    var field = document.createElement("input");
+    field.type = "text";
+    field.className = "extras-edit-input";
+    field.value = extra.item;
+    field.maxLength = 80;
+    field.autocomplete = "off";
+    field.enterKeyHint = "done";
+    field.setAttribute("aria-label", "Correct " + extra.item);
+
+    function close() { extraEditing = ""; renderExtras(); }
+
+    function commit() {
+      var text = field.value.trim();
+      if (!text || text === extra.item) return close();
+      extraEditing = "";
+      renameExtra(extra, text);
+    }
+
+    field.onkeydown = function (e) {
+      if (e.key === "Enter") { e.preventDefault(); commit(); }
+      /* Escape puts the row back as it was. The one gesture everybody already
+         knows for "I didn't mean to open this". */
+      if (e.key === "Escape") { e.preventDefault(); close(); }
+    };
+
+    var save = el("button", "btn small", "Save");
+    save.type = "button";
+    /* mousedown, not click: a click fires after the field has already lost
+       focus, and on the phones that scroll the keyboard away on blur the button
+       has moved out from under the thumb by then. */
+    save.onmousedown = function (e) { e.preventDefault(); commit(); };
+    save.onclick = function (e) { e.preventDefault(); };
+
+    var cancel = el("button", "btn ghost small", "Cancel");
+    cancel.type = "button";
+    cancel.onmousedown = function (e) { e.preventDefault(); close(); };
+    cancel.onclick = function (e) { e.preventDefault(); };
+
+    wrap.appendChild(field);
+    wrap.appendChild(save);
+    wrap.appendChild(cancel);
+    row.appendChild(wrap);
+
+    /* Selected, not just focused: the usual reason to be here is that the whole
+       word is wrong, and the usual second reason is one letter in the middle -
+       which a tap fixes from a selection just as easily as from a caret. */
+    setTimeout(function () { field.focus(); field.select(); }, 0);
+    return row;
+  }
+
   /* One row. The tick box is the whole interaction - it is how you act on one
      thing and how you act on twelve, so there is no separate select mode to
      find and nothing to long-press. */
@@ -2366,7 +2435,24 @@
     };
     row.appendChild(box);
 
-    var name = el("span", "extras-name", extra.item);
+    if (extraEditing === extra.id) return extraEditor(extra, row);
+
+    /* A button rather than a span, so it is reachable by keyboard and announced
+       as something that can be pressed. It looks like the text it replaced -
+       see .extras-name. */
+    var name = el("button", "extras-name", extra.item);
+    name.type = "button";
+    name.disabled = !!state.offline;
+    name.title = "Tap to correct the spelling";
+    name.setAttribute("aria-label", extra.item + " - tap to correct");
+    name.onclick = function () {
+      extraEditing = extra.id;
+      /* Ticking and editing are two different intentions, and a bar offering to
+         mark things bought over a row you are mid-way through spelling is the
+         wrong thing to be looking at. */
+      clearExtraSel();
+      renderExtras();
+    };
     row.appendChild(name);
 
     var qty = extraQty(extra);
@@ -2538,6 +2624,7 @@
   function applyExtras(extras) {
     state.extras = extras || [];
     clearExtraSel();
+    extraEditing = "";
     extrasError("");
     renderExtras();
   }
@@ -2561,6 +2648,37 @@
         renderExtras();
       })
       .catch(function (err) { extrasError(err.message); });
+  }
+
+  /* Correcting what a line says. The server keeps the quantity, the unit and
+     whether it is on order; all that changes is the word - and the suggestions,
+     which is the half of this that isn't obvious. A misspelling typed once is
+     also a misspelling remembered forever, offering itself back every time
+     somebody starts typing those letters, so the corrected spelling inherits
+     what the wrong one had been counted for and the wrong one goes.
+
+     The list comes back whole, like every other write here, because a rename
+     can merge two lines into one - correct "Coke Xero" on a list that already
+     says "Coke Zero" and there is one row afterwards, not two. */
+  function renameExtra(extra, text) {
+    return api("POST", "/api/extras/rename", { id: extra.id, item: text })
+      .then(function (res) {
+        applyExtras(res.extras);
+        if (res.knownExtras) state.knownExtras = res.knownExtras;
+        renderExtraSuggestions();
+        /* A rename retires a name, so anything the Settings tab has already
+           fetched is now a list with a word in it that no longer exists. */
+        historyState.loaded = false;
+        /* Worth saying out loud: the row changing is the visible half, and the
+           suggestion list quietly correcting itself is the half you would
+           otherwise only find out about weeks later. */
+        toast("Renamed. The old spelling won't be suggested again.");
+      })
+      .catch(function (err) {
+        extraEditing = "";
+        extrasError(err.message);
+        renderExtras();
+      });
   }
 
   function doneExtras(ids) {
@@ -4328,6 +4446,154 @@
     return n + " " + (n === 1 ? one : (many || one + "s"));
   }
 
+  /* ---- what the "Also needed" box has learned -----------------------------
+
+     The box remembers every name ever typed into it, which is what makes "bak"
+     find baking paper months later and what makes the kitchen display usable
+     at all - there is no keyboard on it worth the name, so the suggestions are
+     most of how anything gets added.
+
+     The cost of remembering everything is remembering everything: a candle
+     bought for one birthday, a brand tried once, and every spelling anybody
+     ever got wrong, all still offering themselves years later. This is the
+     drawer where those get thrown out. It is only about what gets suggested -
+     nothing here touches the list, and something still to be bought stays on
+     it whatever the box stops offering. */
+
+  var historyState = { loaded: false, loading: false, rows: [], busy: {} };
+
+  function historyError(message) {
+    var box = $("history-error");
+    if (!box) return;
+    box.textContent = message || "";
+    box.hidden = !message;
+  }
+
+  /* Fetched when the section is opened, not when the app starts. Two hundred
+     names with counts on them is a real payload to put on a page whose first
+     job is to show this week's dinners, and almost nobody opens this. The
+     collapsed section pays for itself here. */
+  function loadHistory(force) {
+    if (historyState.loading) return;
+    if (historyState.loaded && !force) return renderHistory();
+    if (state.offline) {
+      historyState.rows = [];
+      renderHistory();
+      return;
+    }
+    historyState.loading = true;
+    renderHistory();
+    api("GET", "/api/extras/history").then(function (res) {
+      historyState.rows = (res && res.history) || [];
+      historyState.loaded = true;
+      historyState.loading = false;
+      historyError("");
+      renderHistory();
+    }).catch(function (err) {
+      historyState.loading = false;
+      historyError(err.message);
+      renderHistory();
+    });
+  }
+
+  /* "asked for 12 times · last in March". Enough to tell the staple from the
+     one-off without having to remember which of the two it was. */
+  function historyMeta(row) {
+    var bits = [];
+    var used = row.used || 0;
+    if (used > 0) bits.push("×" + used);
+    if (row.at) {
+      var when = toDate(row.at);
+      if (!isNaN(when.getTime())) {
+        bits.push(when.toLocaleDateString(undefined,
+          { month: "short", year: "numeric" }));
+      }
+    }
+    return bits.join(" · ");
+  }
+
+  function renderHistory() {
+    var list = $("history-list");
+    var note = $("history-note");
+    if (!list) return;
+    clear(list);
+
+    if (state.offline) {
+      note.textContent = "The remembered names live with the app at home, so " +
+        "this needs you to be on the home network.";
+      return;
+    }
+    if (historyState.loading && !historyState.rows.length) {
+      note.textContent = "Looking…";
+      return;
+    }
+
+    var term = ($("history-search").value || "").trim().toLowerCase();
+    var rows = historyState.rows.filter(function (row) {
+      return !term || row.item.toLowerCase().indexOf(term) >= 0;
+    });
+
+    if (!historyState.rows.length) {
+      list.appendChild(el("li", "history-empty muted small",
+        "Nothing remembered yet. Names appear here once they have been typed " +
+        "into the “Also needed” box on the Shopping tab."));
+      note.textContent = "";
+      return;
+    }
+    if (!rows.length) {
+      list.appendChild(el("li", "history-empty muted small",
+        "No remembered name matches “" + term + "”."));
+    }
+
+    rows.forEach(function (row) {
+      var item = el("li", "history-row");
+      item.appendChild(el("span", "history-name", row.item));
+      var meta = historyMeta(row);
+      if (meta) item.appendChild(el("span", "history-meta", meta));
+
+      var drop = el("button", "history-drop", "×");
+      drop.type = "button";
+      drop.disabled = !!historyState.busy[row.key];
+      drop.title = "Stop suggesting " + row.item;
+      drop.setAttribute("aria-label", "Stop suggesting " + row.item);
+      drop.onclick = function () { forgetName(row); };
+      item.appendChild(drop);
+      list.appendChild(item);
+    });
+
+    /* The count is the honest answer to "have I got them all?", and it is the
+       only place the cap is ever mentioned. */
+    note.textContent = plural(historyState.rows.length, "name") + " remembered" +
+      (term ? ", " + rows.length + " shown" : "") + ".";
+  }
+
+  /* One row, one tap, gone. No confirm: the worst case is that the box stops
+     offering a word until the next time somebody types it, at which point it
+     is remembered again. That is not a thing to interrupt somebody for. */
+  function forgetName(row) {
+    historyState.busy[row.key] = true;
+    renderHistory();
+    api("POST", "/api/extras/forget", { keys: [row.key] }).then(function (res) {
+      delete historyState.busy[row.key];
+      historyState.rows = (res && res.history) || [];
+      /* The suggestions on this device follow immediately rather than at the
+         next shopping-list fetch: the reason anybody is on this screen is that
+         a wrong name keeps coming up, and having it still come up afterwards
+         reads as the button not working. */
+      if (res && res.knownExtras) {
+        state.knownExtras = res.knownExtras;
+        renderExtraSuggestions();
+      }
+      historyError("");
+      renderHistory();
+      toast("Won't be suggested again");
+    }).catch(function (err) {
+      delete historyState.busy[row.key];
+      historyError(err.message);
+      renderHistory();
+    });
+  }
+
   function renderBackup() {
     var info = state.backup;
     var summary = $("backup-summary");
@@ -4735,6 +5001,18 @@
         renderBell();
       });
     };
+
+    /* The rows are fetched the first time the section is opened and kept for
+       the rest of the sitting. Re-fetched on every re-open would be a request
+       per curious tap; never re-fetched would go stale against the other phone
+       in the house - so it is refreshed whenever it is opened after the first
+       time, which costs one small request at the moment somebody has plainly
+       asked to look at it. */
+    $("history-card").addEventListener("toggle", function () {
+      if ($("history-card").open) loadHistory(historyState.loaded);
+    });
+
+    $("history-search").oninput = function () { renderHistory(); };
 
     $("backup-download").onclick = downloadBackup;
 

@@ -80,10 +80,27 @@ Quantities come off the front of what you type — "3 cucumbers", "500g mince",
 word is only read as a unit if the shopping list already knows it, so "2 chicken
 breasts" keeps its chicken.
 
+Tap a line to correct what it says. "Coke Xero" becomes "Coke Zero" without
+deleting it and typing it again: the quantity, the unit and the fact that it was
+ordered on the 3rd all survive. Corrected onto something already on the list,
+the two fold into one row with the quantities added.
+
 The box remembers every name ever typed into it and suggests as you type, so
 "bak" finds baking paper again months later. Ticking something off doesn't
 forget it; the suggestions are ordered by what gets bought most, and they hold
 bare names, so the number you needed last time doesn't come back with them.
+
+Correcting a line corrects the suggestion too — the misspelling is retired and
+the corrected spelling inherits what it had been counted for, so a weekly staple
+doesn't drop to the bottom of the list the day somebody fixes a letter in it. A
+name another line on the list still goes by is left alone.
+
+Settings → **Shopping list management** is the drawer for everything else the
+box has learned: every remembered name, how often it has been asked for, when it
+was last asked for, and an × to stop it being suggested. That is the place for
+the candle bought for one birthday and the brand tried once. It only changes
+what gets offered — something still to be bought stays on the list whatever the
+box stops suggesting.
 
 ## Where the data lives
 
@@ -107,7 +124,11 @@ is copied in. Updates never overwrite live data.
 
 ### Taking a copy out, and putting one back
 
-The bottom of the **Settings** tab has **Backup & restore**. One button
+Every section of the **Settings** tab is a heading you open — the tab is a list
+of what can be changed rather than four screens of controls. They arrive shut
+each time the app is loaded.
+
+The bottom of the tab has **Backup & restore**. One button
 downloads all of the above as a single zip; the other puts one back. This is
 what makes reinstalling the app safe: download a backup, uninstall, install
 again from the repository, restore.

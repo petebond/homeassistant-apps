@@ -657,6 +657,98 @@ def known_extras(data):
             for v in usable[:MAX_KNOWN_EXTRAS]]
 
 
+def extras_history(data):
+    """The same remembered names as known_extras, but with the workings shown:
+    the key they are stored under, how many times they have been asked for, and
+    when they were last asked for.
+
+    Only the Settings tab wants this, and only when somebody opens the section.
+    Deliberately not folded into /api/data or the shopping list: two hundred
+    names with counts on them would ride along on every poll the kitchen display
+    makes, to answer a question nobody on that screen is asking."""
+    names = data.get("extraNames")
+    if not isinstance(names, dict):
+        return []
+    out = []
+    for key, value in names.items():
+        if not isinstance(value, dict):
+            continue
+        name = title_case(clean_str(value.get("item"), MAX_EXTRA))
+        if not name:
+            continue
+        out.append({"key": str(key), "item": name,
+                    "used": int(value.get("used") or 0),
+                    "at": clean_str(value.get("at"), 32)})
+    # Same order as the suggestions themselves, so the thing you are hunting for
+    # in this list is where you last saw it offered.
+    out.sort(key=lambda v: v["at"], reverse=True)
+    out.sort(key=lambda v: -v["used"])
+    return out
+
+
+def forget_extras(data, keys):
+    """Drop remembered names. The one-off that will never be bought again, and
+    the misspelling that has been suggesting itself ever since.
+
+    Only touches the memory, never the list: something still to be bought is
+    still to be bought, whatever the box has stopped offering."""
+    names = data.get("extraNames")
+    if not isinstance(names, dict):
+        return 0
+    gone = 0
+    for key in keys:
+        # By stored key, but fall back to matching on the normalised name, so a
+        # row drawn before a migration re-keyed the file still removes itself.
+        if key in names:
+            del names[key]
+            gone += 1
+            continue
+        slot = extra_key(key)
+        if slot and slot in names:
+            del names[slot]
+            gone += 1
+    return gone
+
+
+def rename_remembered(data, old_name, new_name, still_used):
+    """Move a remembered name onto its corrected spelling.
+
+    Correcting "Coke Xero" on the list is only half the job: the misspelling is
+    also sitting in the suggestions, ready to be picked again by the person who
+    typed it wrong in the first place. So the old key is retired and whatever it
+    had been counted for is credited to the new one - the house has asked for
+    this thing that many times, it just spelled it badly.
+
+    Not retired if another line on the list still goes by the old name: then it
+    is a name in use, not a mistake, and the Settings tab is the place to decide
+    that. Nothing is retired when the two names normalise to the same key
+    either, which is every correction of case or a plural."""
+    names = data.setdefault("extraNames", {})
+    if not isinstance(names, dict):
+        names = data["extraNames"] = {}
+    old_slot, new_slot = extra_key(old_name), extra_key(new_name)
+    if not new_slot:
+        return
+    carried = 0
+    if old_slot and old_slot != new_slot and old_slot not in still_used:
+        was = names.pop(old_slot, None)
+        if isinstance(was, dict):
+            carried = int(was.get("used") or 0)
+
+    entry = names.get(new_slot)
+    if not isinstance(entry, dict):
+        # First time under this spelling. It inherits the count rather than
+        # starting at one, or a name asked for all year would drop to the bottom
+        # of the suggestions the day somebody fixed a letter in it.
+        names[new_slot] = {"item": title_case(new_name),
+                           "used": max(carried, 1),
+                           "at": date.today().isoformat()}
+        return
+    entry["item"] = title_case(new_name)
+    entry["used"] = int(entry.get("used") or 0) + carried
+    entry["at"] = date.today().isoformat()
+
+
 def clean_extra(entry):
     """One stored record, made safe to send. Never raises on a file written by
     hand: anything unreadable in a field falls back to the harmless value."""
@@ -2116,6 +2208,15 @@ class Handler(BaseHTTPRequestHandler):
             self._json(display.load())
             return
 
+        # Every name the box has ever been taught, with its counts. Fetched by
+        # the Settings tab when that section is opened and not before - see
+        # extras_history() for why it doesn't ride along with everything else.
+        if path == "/api/extras/history":
+            with _lock:
+                data = load_data()
+            self._json({"history": extras_history(data)})
+            return
+
         # ---- backup ----
         #
         # What the Household tab shows before anyone presses anything: how much
@@ -2789,6 +2890,95 @@ class Handler(BaseHTTPRequestHandler):
             if updated is None:
                 return self._error(404, "No such item on the list")
             return self._json({"ok": True, "extras": updated})
+
+        # Fixing what a line says without taking it off the list and putting it
+        # back. Everything else about the entry survives: how many, what unit,
+        # whether it is on order and when it was ordered. A misspelling is not a
+        # reason to lose the fact that a delivery is nine days late.
+        if path == "/api/extras/rename" and method == "POST":
+            body = body or {}
+            extra_id = str(body.get("id") or "")
+            typed = clean_str(body.get("item"), MAX_EXTRA)
+            if not typed:
+                return self._error(400, "Type what it should say")
+
+            def rename(data):
+                entry = find_extra(data, extra_id)
+                if not entry:
+                    return None
+                was = clean_str(entry.get("item"), MAX_EXTRA)
+                # Parsed the same way the box parses it, but the number is only
+                # taken if one was actually typed. Correcting a spelling leaves
+                # the quantity where the stepper left it; typing "2 tins
+                # tomatoes" over it plainly means to set both, and either way no
+                # digit ends up stranded in the name.
+                qty, unit, name = parse_extra(typed)
+                gave_qty = name != typed
+                if not name:
+                    return "empty"
+                if gave_qty:
+                    entry["qty"], entry["unit"] = qty, unit
+                entry["item"] = name
+
+                # Renamed onto something already on the list, in the same state
+                # and the same unit? Then there was only ever one thing here and
+                # two ways of spelling it. Fold them together, the way typing it
+                # twice into the box would have.
+                slot = extra_key(name)
+                stored = data.get("extras") or []
+                for other in stored:
+                    if not isinstance(other, dict) or other is entry:
+                        continue
+                    if other.get("id") == entry.get("id"):
+                        continue
+                    if other.get("state") != entry.get("state"):
+                        continue
+                    if extra_key(other.get("item")) != slot:
+                        continue
+                    if (other.get("unit") or "each") != (entry.get("unit") or "each"):
+                        continue
+                    other["qty"] = float(other.get("qty") or 1) + \
+                        float(entry.get("qty") or 1)
+                    data["extras"] = [e for e in stored
+                                      if not (isinstance(e, dict)
+                                              and e.get("id") == extra_id)]
+                    break
+
+                # What the list still calls things, so a name another line is
+                # using isn't retired out from under it.
+                still = {extra_key(e.get("item"))
+                         for e in (data.get("extras") or [])
+                         if isinstance(e, dict)}
+                rename_remembered(data, was, name, still)
+                # The suggestions come back with the list: a rename is the one
+                # edit that can retire a name, and a box still offering the
+                # spelling you just corrected is the bug this was meant to fix.
+                return {"extras": extras_list(data),
+                        "knownExtras": known_extras(data)}
+
+            updated = mutate(rename)
+            if updated is None:
+                return self._error(404, "No such item on the list")
+            if updated == "empty":
+                return self._error(400, "Type what it should say")
+            return self._json({"ok": True, "extras": updated["extras"],
+                               "knownExtras": updated["knownExtras"]})
+
+        # Names the box should stop offering. The one-off bought in March, and
+        # the spelling that was wrong the day it was typed.
+        if path == "/api/extras/forget" and method == "POST":
+            keys = [str(k) for k in ((body or {}).get("keys") or []) if str(k)]
+            if not keys:
+                return self._error(400, "Nothing was selected")
+
+            def forget(data):
+                forget_extras(data, keys)
+                return {"history": extras_history(data),
+                        "knownExtras": known_extras(data)}
+
+            after = mutate(forget)
+            return self._json({"ok": True, "history": after["history"],
+                               "knownExtras": after["knownExtras"]})
 
         # Copy a whole week's plan onto another week.
         if path == "/api/week/copy" and method == "POST":

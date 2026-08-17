@@ -14,6 +14,7 @@ is mocked inside the app itself, so a change that breaks the wiring between
     node tests/browser/test_drag_handle.js
     node tests/browser/test_kitchen_shopping.js
     node tests/browser/test_kitchen_strip.js
+    node tests/browser/test_settings_and_rename.js
 
 Each exits non-zero and names what failed.
 
@@ -24,6 +25,12 @@ Each exits non-zero and names what failed.
 | `test_drag_handle.js` | the grip, a pointer drag from `pointerdown` to `pointerup`, the guest slot staying last, Escape, and the arrow keys |
 | `test_kitchen_shopping.js` | the shopping panel on `/kitchen`: the corner count, what an ordered row won't do, what the stepper and the tiles post, the paging, and the three things that must not happen to a display somebody is touching |
 | `test_kitchen_strip.js` | the strip along the bottom of `/kitchen`: how many days it asks for, and which meal names the one-line clamp claims — a selector that counts backwards from the end of a column, read out of the stylesheet rather than copied into the test |
+| `test_settings_and_rename.js` | every Settings card being a `<details>` that arrives shut, the Home-Assistant-only ones staying hidden as one, the remembered names not being fetched until that section is opened, and correcting a line on the shopping list: what Enter posts, what Escape doesn't, and the suggestions being re-drawn from the answer |
+
+Note that jsdom does not run the browser's own "clicking a summary toggles the
+details" behaviour, so `test_settings_and_rename.js` sets `.open` and fires
+`toggle` itself. It is testing what app.js does when a section opens, not
+whether `<details>` works.
 
 ## Four things to know before adding to these
 

@@ -1,5 +1,63 @@
 # Changelog
 
+## 1.21.0
+
+**Changed: Settings is a list of sections, shut until you open one.** The tab
+had grown to six cards and about four screens of phone, and all but one of them
+is something you set once and never look at again — so what greets you now is
+the list of what can be changed rather than the first item on it, opened at full
+height. Each heading takes an icon and a chevron, and the whole row is the
+target. They arrive shut every time the app is loaded; while it stays open, a
+section you opened stays open.
+
+Nothing moved and nothing was renamed. The two sections that only exist under
+Home Assistant — the kitchen display picker and the dinner bell — are still
+absent everywhere else rather than sitting there shut. Offline, the headings
+still open: the controls inside are dead like everything else that writes to the
+file, but reading what the house has set is not a write, and a section that
+can't be opened is a section that can't be read.
+
+**New: tap a line on the shopping list to correct what it says.** "Coke Xero"
+becomes "Coke Zero" without deleting the line and typing it again. The quantity
+survives, so does the unit, and so does the fact that it was ordered on the 3rd
+and still hasn't come — a spelling mistake is not a reason to lose a delivery
+that is nine days late.
+
+Corrected onto something already on the list, the two fold into one row with the
+quantities added, because there was only ever one thing there and two ways of
+spelling it. An ordered line and a still-needed one are left as two: one is in a
+van and the other is on a list, and folding those together would lose which is
+which.
+
+Typing a bare name leaves the quantity where the stepper left it. Typing "750g
+beef mince" over it sets both, the same way the box reads a number when you add
+something.
+
+**New: Shopping list management, in Settings.** The "Also needed" box remembers
+everything ever typed into it — that is what makes "bak" find baking paper seven
+weeks later, and what makes the kitchen display usable at all, since the
+suggestions are most of how anything gets added on a screen with no keyboard.
+
+The cost of remembering everything is remembering everything: a candle bought
+for one birthday, a brand tried once, and every spelling anybody ever got wrong,
+all still offering themselves years later. The new section lists them with how
+often each has been asked for and when it was last asked for, a search box for
+finding one in a list that gets long, and an × to stop it being suggested.
+
+It only touches what gets offered. Something still to be bought stays on the
+list whatever the box stops suggesting.
+
+**Changed: correcting a line also corrects the suggestion.** This is the half
+that isn't obvious. A misspelling typed once is a misspelling remembered
+forever, offered back every time somebody starts typing those letters — which is
+how it gets typed wrong the second time. So a rename retires the old spelling
+and credits the corrected one with everything the wrong one had been counted
+for: a weekly staple doesn't drop to the bottom of the suggestions the day
+somebody fixes a letter in it.
+
+A name another line on the list still goes by is left alone. That is a name in
+use, not a mistake, and Shopping list management is where that gets decided.
+
 ## 1.20.0
 
 **Changed: the kitchen display looks five days ahead, not six.** The strip

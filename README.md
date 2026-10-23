@@ -90,7 +90,7 @@ when the power goes out. Prepare says when it needs reprinting.
 **Reminders in Home Assistant** — the app installs its own integration (sensors,
 a shopping To-do list, services) and blueprints for expiry, reprinting and power cuts.
 
-Version 0.1 is deliberately plain: function first.
+Light and dark modes, in the Be Ready campaign's poster style.
 
 → [Full documentation](prepare/README.md) · [Changelog](prepare/CHANGELOG.md)
 

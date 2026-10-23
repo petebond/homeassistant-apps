@@ -1,9 +1,11 @@
 {% extends "base.html" %}
 {% block title %}Edit medication{% endblock %}
 {% block content %}
+<p><a href="{{ b }}/meds">‹ Medication</a></p>
 <h1>Edit: {{ med.name }}</h1>
-<form method="post" action="{{ b }}/meds/{{ med.id }}">
+<form method="post" action="{{ b }}/meds/{{ med.id }}" class="formbox">
 {% include "_med_form.html" %}
-<button>Save</button> <a href="{{ b }}/meds">Cancel</a>
+<div class="acts"><button class="primary">Save</button> <a class="button ghost" href="{{ b }}/meds">Cancel</a></div>
 </form>
+<form method="post" action="{{ b }}/meds/{{ med.id }}/delete" onsubmit="return confirm('Delete this medication?')"><button class="ghost danger small">Delete</button></form>
 {% endblock %}

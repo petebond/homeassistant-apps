@@ -2,29 +2,37 @@
 {% block title %}Family plans{% endblock %}
 {% block content %}
 <h1>Family plans</h1>
-<fieldset><legend>In any emergency</legend>
-<ul>{% for a in general %}<li>{{ a }}</li>{% endfor %}</ul>
-<p>Meeting point near home: <b>{{ s.meeting_near or '(not set)' }}</b> · away from the area: <b>{{ s.meeting_far or '(not set)' }}</b> · <a href="{{ b }}/household">edit</a></p>
-</fieldset>
-
 {% set due_ids = v.plans_due | map(attribute="id") | list %}
-<p>Jump to: {% for p in plans %}<a href="#plan-{{ p.id }}">{{ p.scenario }}</a>{% if not loop.last %} · {% endif %}{% endfor %}</p>
+<section class="always">
+  <p class="kicker">In any emergency</p>
+  <ol class="steps">{% for a in general %}<li>{{ a }}</li>{% endfor %}</ol>
+  <div class="meet">
+    <div><span class="lab">Meet near home</span><b>{{ s.meeting_near or 'Not set' }}</b></div>
+    <div><span class="lab">Meet away</span><b>{{ s.meeting_far or 'Not set' }}</b></div>
+  </div>
+  {% if not s.meeting_near or not s.meeting_far %}<p class="muted" style="color:inherit;opacity:.8;margin:10px 0 0"><a href="{{ b }}/household">Set the meeting points</a></p>{% endif %}
+</section>
+
+<nav class="chips" aria-label="Scenarios">{% for p in plans %}<a href="#plan-{{ p.id }}">{{ p.scenario }}</a>{% endfor %}</nav>
 
 {% for p in plans %}
-<fieldset id="plan-{{ p.id }}"><legend><b>{{ p.scenario }}</b></legend>
-<ol>{% for line in p.steps.splitlines() if line.strip() %}<li>{{ line }}</li>{% endfor %}</ol>
-{% if p.meeting_point %}<p><b>Meet at:</b> {{ p.meeting_point }}</p>{% endif %}
-{% if p.roles %}<p><b>Who does what:</b><br><span style="white-space:pre-line">{{ p.roles }}</span></p>{% endif %}
-{% if p.grab_bag %}<p><b>Take:</b> {{ p.grab_bag }}</p>{% endif %}
-{% if p.notes %}<p><b>Notes:</b> {{ p.notes }}</p>{% endif %}
-{% if p.info_url %}<p class="muted">More: <a href="{{ p.info_url }}">{{ p.info_url }}</a></p>{% endif %}
-<p class="muted {% if p.id in due_ids %}warn{% endif %}">Last reviewed: {{ p.last_reviewed or 'never' }}</p>
-<a href="{{ b }}/plans/{{ p.id }}">Edit</a>
-<form class="inline" method="post" action="{{ b }}/plans/{{ p.id }}/reviewed"><button>Mark reviewed today</button></form>
-</fieldset>
+<article class="plan{% if p.id in due_ids %} due{% endif %}" id="plan-{{ p.id }}">
+  <header><h2>{{ p.scenario }}</h2>{% if p.id in due_ids %}<span class="tag red">Review due</span>{% else %}<span class="tag green">Reviewed {{ p.last_reviewed | nicedate }}</span>{% endif %}</header>
+  <ol class="steps">{% for line in p.steps.splitlines() if line.strip() %}<li>{{ line }}</li>{% endfor %}</ol>
+  <p style="margin-top:12px"><span class="lab">Meet at</span><b>{{ p.meeting_point or s.meeting_near or 'Not set' }}</b></p>
+  {% if p.roles %}<h3>Who does what</h3><p class="who">{{ p.roles }}</p>{% endif %}
+  {% if p.grab_bag %}<h3>Take</h3><p>{{ p.grab_bag }}</p>{% endif %}
+  {% if p.notes %}<h3>Notes</h3><p class="who">{{ p.notes }}</p>{% endif %}
+  {% if p.info_url %}<p class="muted">More: <a href="{{ p.info_url }}">{{ p.info_url | replace('https://', '') }}</a></p>{% endif %}
+  <div class="acts noprint">
+    <a class="button" href="{{ b }}/plans/{{ p.id }}">Edit</a>
+    <form class="inline" method="post" action="{{ b }}/plans/{{ p.id }}/reviewed"><button class="ghost">Mark reviewed</button></form>
+  </div>
+</article>
 {% endfor %}
 
-<fieldset><legend>Add a scenario</legend>
-<form method="post" action="{{ b }}/plans"><input name="scenario" placeholder="e.g. Heatwave" required> <button>Add</button></form>
-</fieldset>
+<details class="formbox noprint">
+<summary>Add a scenario</summary>
+<form method="post" action="{{ b }}/plans"><label for="sc">Scenario</label><input id="sc" name="scenario" placeholder="e.g. Heatwave" required class="wide"><p></p><button class="primary">Add</button></form>
+</details>
 {% endblock %}

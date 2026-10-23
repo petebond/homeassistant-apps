@@ -211,3 +211,29 @@ def summary() -> dict:
         "kit_check_due": v["kit_due"],
         "plans_review_due": [x["scenario"] for x in v["plans_due"]],
     }
+
+
+def sections(r: dict | None = None) -> list[dict]:
+    """Readiness per Be Ready checklist section, for the dashboard cards.
+
+    A section's score is the average of its scored categories. Sections with
+    nothing that applies to this household (no infant, no pet) are left out."""
+    r = r or readiness()
+    out = []
+    for g in db.checklist_groups():
+        cats = [c for c in r["categories"] if c.get("grp") == g["key"] and c["in_score"] and c["applies"]]
+        if not cats:
+            continue
+        score = sum(c["score"] for c in cats) / len(cats)
+        missing = [c for c in cats if c["score"] < 1]
+        if not missing:
+            note = "All there"
+        elif len(cats) == 1:
+            c = cats[0]
+            note = f"{c['held']:g} of {c['required']:g} {c['unit']}"
+        else:
+            names = [c["name"].split(",")[0].split(":")[0] for c in missing]
+            names = [n if i == 0 or n[:2].isupper() else n[0].lower() + n[1:] for i, n in enumerate(names)]
+            note = "Missing: " + ", ".join(names)
+        out.append({**g, "score": score, "pct": round(score * 100), "note": note})
+    return out

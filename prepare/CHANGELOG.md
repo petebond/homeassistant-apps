@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.2.0 - 2026-10-23
+
+A proper look, based on the UK Be Ready campaign's poster style.
+
+- Light and dark modes from the start. A switch in the masthead picks light,
+  dark or automatic (follows the device); each phone remembers its own choice,
+  and the page never flashes white before going dark.
+- Condensed capital headings in the campaign's two blues, a navy masthead,
+  solid status tags and line icons for each checklist section. The heading font
+  (Barlow Condensed, SIL Open Font Licence) is bundled, so it works offline.
+- Dashboard: a big readiness figure, days covered, and a card per checklist
+  section with its own progress bar that opens that section of the inventory.
+- Family plans: an "In any emergency" panel with the meeting points, then a
+  card per scenario with numbered steps and a reviewed or review-due label.
+- Forms grouped into panels; editable tables turn into stacked cards on phones.
+- Colour contrast checked against WCAG AA in both modes; visible focus outline.
+- The printed pack stays plain black on white whatever the screen setting.
+- New app icon. No crown, GOV.UK wordmark or GDS Transport: it's based on the
+  campaign, not presented as an official service.
+
 ## 0.1.2 - 2026-10-23
 
 - Inventory filters by the Be Ready checklist sections: Food, Water, Hygiene,

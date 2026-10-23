@@ -1,16 +1,18 @@
 {% extends "base.html" %}
 {% block title %}Edit plan{% endblock %}
 {% block content %}
+<p><a href="{{ b }}/plans#plan-{{ plan.id }}">‹ Family plans</a></p>
 <h1>Edit plan: {{ plan.scenario }}</h1>
-<form method="post" action="{{ b }}/plans/{{ plan.id }}">
-<label>Scenario <input name="scenario" value="{{ plan.scenario }}" size="40" required></label>
-<label>Steps, in order (one per line)<br><textarea name="steps" rows="8">{{ plan.steps }}</textarea></label>
-<label>Meeting point for this scenario (blank = household default)<br><input name="meeting_point" value="{{ plan.meeting_point }}" size="40"></label>
-<label>Who does what (one per line, e.g. "Pete: turn off gas")<br><textarea name="roles">{{ plan.roles }}</textarea></label>
-<label>What to take<br><input name="grab_bag" value="{{ plan.grab_bag }}" size="60"></label>
-<label>Notes<br><textarea name="notes">{{ plan.notes }}</textarea></label>
-<label>More information link<br><input name="info_url" value="{{ plan.info_url }}" size="60"></label>
-<button>Save (also marks reviewed)</button> <a href="{{ b }}/plans">Cancel</a>
+<form method="post" action="{{ b }}/plans/{{ plan.id }}" class="formbox">
+<label for="p-sc">Scenario</label><input id="p-sc" name="scenario" value="{{ plan.scenario }}" class="wide" required>
+<label for="p-steps">Steps, in order <span class="hint">one per line</span></label><textarea id="p-steps" name="steps" rows="8">{{ plan.steps }}</textarea>
+<label for="p-meet">Meeting point <span class="hint">blank = the household's "near home" point</span></label><input id="p-meet" name="meeting_point" value="{{ plan.meeting_point }}" class="wide">
+<label for="p-roles">Who does what <span class="hint">one per line, e.g. "Pete: turn off the gas"</span></label><textarea id="p-roles" name="roles">{{ plan.roles }}</textarea>
+<label for="p-take">What to take</label><input id="p-take" name="grab_bag" value="{{ plan.grab_bag }}" class="wide">
+<label for="p-notes">Notes</label><textarea id="p-notes" name="notes">{{ plan.notes }}</textarea>
+<label for="p-url">More information link</label><input id="p-url" name="info_url" value="{{ plan.info_url }}" class="wide">
+<div class="acts"><button class="primary">Save</button> <a class="button ghost" href="{{ b }}/plans#plan-{{ plan.id }}">Cancel</a></div>
+<p class="muted" style="margin-top:10px">Saving also marks the plan as reviewed today.</p>
 </form>
-<form method="post" action="{{ b }}/plans/{{ plan.id }}/delete" onsubmit="return confirm('Delete this plan?')"><button>Delete plan</button></form>
+<form method="post" action="{{ b }}/plans/{{ plan.id }}/delete" onsubmit="return confirm('Delete this plan?')"><button class="ghost danger small">Delete plan</button></form>
 {% endblock %}

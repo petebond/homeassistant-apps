@@ -1,61 +1,68 @@
 {% extends "base.html" %}
-{% from "_macros.html" import cat_select, expiry_class, days_text, pct, score_class %}
+{% from "_macros.html" import cat_select, date_tag, bar_class, num %}
+{% from "_icons.html" import icon %}
 {% block title %}Dashboard{% endblock %}
 {% block content %}
-<h1>How ready are we?</h1>
-{% if not r.counts.has_members %}<div class="banner bad">No household members yet - targets assume 1 person. <a href="{{ b }}/household">Add your household</a>.</div>{% endif %}
-<table>
-<tr><th>Readiness</th><th>Days covered (water &amp; food)</th><th>People / pets</th><th>Printed pack</th></tr>
-<tr>
-<td class="{{ score_class(r.score / 100) }} big">{{ r.score }}%</td>
-<td class="{% if r.days_covered >= r.target_days %}ok{% else %}bad{% endif %} big">{{ r.days_covered }} / {{ r.target_days | int }}</td>
-<td>{{ r.counts.people }} people, {{ r.counts.pets }} pets</td>
-<td class="{% if pack.out_of_date %}warn{% else %}ok{% endif %}">{% if pack.last_printed %}{{ pack.last_printed[:10] }}{% else %}never{% endif %}{% if pack.out_of_date %}<br>OUT OF DATE{% endif %}</td>
-</tr>
-</table>
+{% if not r.counts.has_members %}<div class="notice bad"><strong>Who lives here?</strong> Targets assume one person until you <a href="{{ b }}/household">add your household</a>.</div>{% endif %}
 
-<h2>Quick add</h2>
-<form method="post" action="{{ b }}/items">
-<input type="hidden" name="next" value="/">
-<input name="name" placeholder="What (e.g. Baked beans 400g)" required size="24">
-<input name="quantity" type="number" step="any" value="1" style="width:5em" title="Quantity">
-{{ cat_select(r.categories) }}
-<input name="best_before" type="date" title="Best before">
-<input name="location" placeholder="Where" size="10">
-<button>Add</button>
-</form>
+<section class="hero">
+  <p class="kicker">How ready are we?</p>
+  <h1 class="headline"><span class="hl1">{{ r.score }}%</span> <span class="hl2">ready</span></h1>
+  <div class="meter" role="img" aria-label="{{ r.score }} percent ready"><span style="width:{{ r.score }}%"></span></div>
+  <dl class="stats">
+    <div><dt>Days covered</dt><dd class="{{ 'good' if r.days_covered >= r.target_days }}">{{ num(r.days_covered) }} <small>of {{ r.target_days | int }}</small></dd></div>
+    <div><dt>Use soon</dt><dd>{{ e.soon | length }}</dd></div>
+    <div><dt>Expired</dt><dd class="{{ 'bad' if e.expired }}">{{ e.expired | length }}</dd></div>
+  </dl>
+</section>
 
 <h2>To do</h2>
-<ul>
-{% for c in r.shortfall %}<li class="bad">Buy: {{ c.name }} - need {{ c.short | round(1) }} more {{ c.unit }}</li>{% endfor %}
-{% for i in e.expired %}<li class="bad">Expired: {{ i.name }} ({{ i.best_before }}) - <a href="{{ b }}/items#item-{{ i.id }}">sort it</a></li>{% endfor %}
-{% for x in m.expired %}<li class="bad">Medication expired: {{ x.name }} ({{ x.expiry }})</li>{% endfor %}
-{% for x in m.expiring %}<li class="warn">Medication expires soon: {{ x.name }} ({{ x.expiry }})</li>{% endfor %}
-{% for x in m.repeats %}<li class="warn">Request repeat prescription: {{ x.name }} (due {{ x.repeat_due }})</li>{% endfor %}
-{% if v.kit_due %}<li class="warn">Kit check due (every {{ v.months }} months){% if v.kit_last_checked %} - last {{ v.kit_last_checked }}{% endif %}. <a href="{{ b }}/kit">Check kit</a></li>{% endif %}
-{% for p in v.plans_due %}<li class="warn">Review plan: <a href="{{ b }}/plans#plan-{{ p.id }}">{{ p.scenario }}</a></li>{% endfor %}
-{% if pack.out_of_date %}<li class="warn"><a href="{{ b }}/print">Reprint the pack</a></li>{% endif %}
+<ul class="todo">
+{% for c in r.shortfall %}<li><span class="tag red">Buy</span><span><a href="{{ b }}/items?cat={{ c.key }}">{{ c.name }}</a> — {{ num(c.short) }} more {{ c.unit }}</span></li>{% endfor %}
+{% for i in e.expired %}<li><span class="tag red">Replace</span><span><a href="{{ b }}/items#item-{{ i.id }}">{{ i.name }}</a> (expired {{ i.best_before | nicedate }})</span></li>{% endfor %}
+{% for x in m.expired %}<li><span class="tag red">Replace</span><span><a href="{{ b }}/meds">{{ x.name }}</a> — medication expired {{ x.expiry | nicedate }}</span></li>{% endfor %}
+{% for x in m.expiring %}<li><span class="tag amber">Soon</span><span><a href="{{ b }}/meds">{{ x.name }}</a> — medication expires soon, {{ x.expiry | nicedate }}</span></li>{% endfor %}
+{% for x in m.repeats %}<li><span class="tag amber">Request</span><span><a href="{{ b }}/meds">{{ x.name }}</a> — request repeat prescription, due {{ x.repeat_due | nicedate }}</span></li>{% endfor %}
+{% if v.kit_due %}<li><span class="tag blue">Check</span><span><a href="{{ b }}/kit">Kit check</a> — every {{ v.months }} months{% if v.kit_last_checked %}, last {{ v.kit_last_checked | nicedate }}{% endif %}</span></li>{% endif %}
+{% for p in v.plans_due %}<li><span class="tag blue">Review</span><span><a href="{{ b }}/plans#plan-{{ p.id }}">{{ p.scenario }}</a> plan</span></li>{% endfor %}
+{% if pack.out_of_date %}<li><span class="tag amber">Print</span><span><a href="{{ b }}/print">Reprint the emergency pack</a></span></li>{% endif %}
 </ul>
 
-<h2>Use first (eat it and replace it)</h2>
-<div class="wrap"><table>
-<tr><th>Item</th><th>Qty</th><th>Best before</th><th>Left</th><th>Where</th><th></th></tr>
-{% for i in first %}
-<tr class="{{ expiry_class(i.days_left, e.window) }}">
-<td>{{ i.name }}</td><td>{{ i.quantity | round(2) }} {{ i.unit }}</td><td>{{ i.best_before }}</td><td>{{ days_text(i.days_left) }}</td><td>{{ i.location }}</td>
-<td>
-<form class="inline" method="post" action="{{ b }}/items/{{ i.id }}/used"><input type="hidden" name="next" value="/"><button>Used</button></form>
-<form class="inline" method="post" action="{{ b }}/items/{{ i.id }}/discard"><input type="hidden" name="next" value="/"><button>Binned</button></form>
-</td></tr>
-{% else %}<tr><td colspan="6">Nothing with a date yet.</td></tr>{% endfor %}
-</table></div>
-<p class="muted">Last 12 months: {{ waste.used }} items used, {{ waste.discarded }} thrown away.</p>
-
-<h2>Kit by category</h2>
-<div class="wrap"><table>
-<tr><th>Category</th><th>Have</th><th>Need</th><th>Score</th></tr>
-{% for c in r.categories if c.in_score %}
-<tr class="{{ score_class(c.score) }}"><td>{{ c.name }}</td><td>{{ c.held | round(1) }} {{ c.unit }}{% if c.expired_qty %} <span class="muted">(+{{ c.expired_qty }} expired)</span>{% endif %}</td><td>{% if c.applies %}{{ c.required | round(1) }}{% else %}n/a{% endif %}</td><td>{{ pct(c.score) }}</td></tr>
+<h2>Kit by section</h2>
+<div class="cards">
+{% for s in sections %}
+  <a class="card" href="{{ b }}/items?group={{ s.key }}"><span class="cic">{{ icon(s.key) }}</span><span class="cname">{{ s.short }}</span><span class="cbar"><span class="{{ bar_class(s.score) }}" style="width:{{ s.pct }}%"></span></span><span class="cnote">{{ s.note }}</span></a>
 {% endfor %}
-</table></div>
+</div>
+
+<h2>Use first</h2>
+{% if first %}
+<ul class="rows">
+{% for i in first %}
+  <li><span class="rmain"><a class="rname" href="{{ b }}/items/{{ i.id }}">{{ i.name }}</a>{% if i.location %}<span class="rsub">{{ i.location }}</span>{% endif %}</span><span class="rqty">{{ num(i.quantity) }} {{ i.unit }}</span>{{ date_tag(i.best_before, i.days_left, e.window) }}
+    <span class="racts noprint">
+      <form class="inline" method="post" action="{{ b }}/items/{{ i.id }}/used"><input type="hidden" name="next" value="/"><button class="ghost small">Used</button></form>
+      <form class="inline" method="post" action="{{ b }}/items/{{ i.id }}/discard"><input type="hidden" name="next" value="/"><button class="ghost small danger">Binned</button></form>
+    </span></li>
+{% endfor %}
+</ul>
+<p class="muted">Last 12 months: {{ waste.used }} used, {{ waste.discarded }} thrown away.</p>
+{% else %}<p class="muted">Nothing with a date yet. Add stock on the <a href="{{ b }}/items">Inventory</a>.</p>{% endif %}
+
+<details class="formbox noprint">
+<summary>Quick add</summary>
+<form method="post" action="{{ b }}/items">
+<input type="hidden" name="next" value="/">
+<label for="qa-name">What</label><input id="qa-name" name="name" placeholder="e.g. Baked beans 400g" required class="wide">
+<div class="row2">
+<div><label for="qa-qty">Quantity</label><input id="qa-qty" name="quantity" type="number" step="any" value="1" inputmode="decimal" class="wide"></div>
+<div><label for="qa-bb">Best before</label><input id="qa-bb" name="best_before" type="date" class="wide"></div>
+</div>
+<label for="qa-cat">Category</label>{{ cat_select(r.categories, id='qa-cat') }}
+<label for="qa-loc">Where</label><input id="qa-loc" name="location" class="wide">
+<p></p><button class="primary">Add</button>
+</form>
+</details>
+
+<p class="foot">Call <strong>999</strong> if someone is in immediate danger. Power cut: <strong>105</strong>.</p>
 {% endblock %}

@@ -1,54 +1,53 @@
 {% extends "base.html" %}
-{% from "_macros.html" import cat_select, expiry_class, days_text %}
+{% from "_macros.html" import cat_select, date_tag, num %}
+{% from "_icons.html" import icon %}
 {% block title %}Inventory{% endblock %}
 {% block content %}
 <h1>Inventory</h1>
 {% set q = "&show=all" if show == "all" else "" %}
-<p class="filters">
-<a class="btn{% if not group and not cat %} on{% endif %}" href="{{ b }}/items?{{ q }}">All ({{ total }})</a>
-{% for g in groups %}<a class="btn{% if group == g.key %} on{% endif %}{% if not counts[g.key] %} empty{% endif %}" href="{{ b }}/items?group={{ g.key }}{{ q }}">{{ g.name }} ({{ counts[g.key] }})</a>
-{% endfor %}<a class="btn{% if group == 'other' %} on{% endif %}{% if not counts['other'] %} empty{% endif %}" href="{{ b }}/items?group=other{{ q }}">Other / car kit ({{ counts['other'] }})</a>
-</p>
-{% if group == 'medical' %}<p class="banner">Medicines with doses and owners are on the <a href="{{ b }}/meds">Medication</a> page. This list is the first aid kit and other medical supplies.</p>{% endif %}
-<fieldset><legend>Add item</legend>
-<form method="post" action="{{ b }}/items">
-<input type="hidden" name="next" value="/items{% if group %}?group={{ group }}{% elif cat %}?cat={{ cat }}{% endif %}">
-<label>What <input name="name" required size="30" placeholder="e.g. Bottled water 2L"></label>
-<label>Category {{ cat_select(cats, default_cat) }}</label>
-<label>Quantity <input name="quantity" type="number" step="any" value="1" style="width:6em"> unit <input name="unit" size="8" placeholder="(category unit)"></label>
-<label>Best before <input name="best_before" type="date"> <span class="muted">leave blank if it doesn't expire</span></label>
-<label>Where <input name="location" size="20" placeholder="e.g. Garage shelf"></label>
-<label><input type="checkbox" name="perishable" value="1"> Perishable</label>
-<label>Notes <input name="notes" size="30"></label>
-<button>Add</button>
-</form>
-<p class="muted">Tip: water and food count towards the target in the category unit (litres, meals). Six 2L bottles with the same date = one row, quantity 12. Different dates = separate rows. A tin that feeds one person one meal = 1 meal.</p>
-</fieldset>
+<nav class="chips" aria-label="Checklist sections">
+<a href="{{ b }}/items?{{ q }}"{% if not group and not cat %} aria-current="true"{% endif %}>All <b>{{ total }}</b></a>
+{% for g in groups %}<a href="{{ b }}/items?group={{ g.key }}{{ q }}"{% if group == g.key %} aria-current="true"{% endif %}{% if not counts[g.key] %} class="empty"{% endif %}>{{ g.short }} <b>{{ counts[g.key] }}</b></a>
+{% endfor %}<a href="{{ b }}/items?group=other{{ q }}"{% if group == 'other' %} aria-current="true"{% endif %}{% if not counts['other'] %} class="empty"{% endif %}>Other / car kit <b>{{ counts['other'] }}</b></a>
+</nav>
 
-<form method="get" action="{{ b }}/items">
-Show: <select name="show"><option value="active"{% if show != 'all' %} selected{% endif %}>In stock</option><option value="all"{% if show == 'all' %} selected{% endif %}>Everything (incl. used/binned)</option></select>
-Category: <select name="cat"><option value="">{{ 'All in this section' if group else 'All' }}</option>{% for c in cats %}<option value="{{ c.key }}"{% if c.key == cat %} selected{% endif %}>{{ c.name }}</option>{% endfor %}</select>
-{% if group %}<input type="hidden" name="group" value="{{ group }}">{% endif %}<button>Filter</button>
-</form>
+{% if sec %}
+<div class="sechead"><span class="cic">{{ icon(sec.key) }}</span><div><h2>{{ sec.name }}</h2><p class="muted">{{ sec.note }}</p></div></div>
+<div class="meter small"><span style="width:{{ sec.pct }}%"></span></div>
+{% elif group == 'other' %}<h2>Other / car kit</h2>
+{% elif cat %}<h2>{{ cmap[cat].name if cat in cmap else cat }}</h2>{% endif %}
+{% if group == 'medical' %}<p class="muted">Medicines with doses and owners are on the <a href="{{ b }}/meds">Medication</a> page. This list is the first aid kit and other medical supplies.</p>{% endif %}
 
-<div class="wrap"><table>
-<tr><th>Item</th><th>Category</th><th>Qty</th><th>Best before</th><th>Left</th><th>Where</th><th>Status</th><th>Actions</th></tr>
+<ul class="rows">
 {% for i in items %}
-<tr id="item-{{ i.id }}" class="{% if i.status == 'active' %}{{ expiry_class(i.days_left, warning) }}{% else %}muted{% endif %}">
-<td><a href="{{ b }}/items/{{ i.id }}">{{ i.name }}</a>{% if i.perishable %} (P){% endif %}{% if i.notes %}<br><span class="muted">{{ i.notes }}</span>{% endif %}</td>
-<td>{{ cmap[i.category].name if i.category in cmap else i.category }}</td>
-<td>{{ i.quantity | round(2) }} {{ i.unit }}</td>
-<td>{{ i.best_before or '-' }}</td>
-<td>{{ days_text(i.days_left) }}</td>
-<td>{{ i.location }}</td>
-<td>{{ i.status }}</td>
-<td>{% if i.status == 'active' %}
-<form class="inline" method="post" action="{{ b }}/items/{{ i.id }}/used"><input name="qty" type="number" step="any" placeholder="all" style="width:4em" title="How many used (blank = all)"><button>Used</button></form>
-<form class="inline" method="post" action="{{ b }}/items/{{ i.id }}/discard"><button>Binned</button></form>
-{% endif %}
-<form class="inline" method="post" action="{{ b }}/items/{{ i.id }}/delete" onsubmit="return confirm('Delete permanently? (Use Used/Binned instead to keep history)')"><button>Delete</button></form>
-</td></tr>
-{% else %}<tr><td colspan="8">No items.</td></tr>{% endfor %}
-</table></div>
-<p class="muted">Red = expired (doesn't count towards readiness). Yellow = within {{ warning }} days. "Used" = eaten/used; "Binned" = thrown away (counts as waste).</p>
+  <li id="item-{{ i.id }}"{% if i.status != 'active' %} class="gone"{% endif %}>
+    <span class="rmain"><a class="rname" href="{{ b }}/items/{{ i.id }}">{{ i.name }}</a><span class="rsub">{% if not group or group == 'other' %}{{ cmap[i.category].name if i.category in cmap else i.category }}{% if i.location %} · {% endif %}{% endif %}{{ i.location }}{% if i.notes %} · {{ i.notes }}{% endif %}{% if i.status != 'active' %} · {{ i.status }}{% endif %}</span></span>
+    <span class="rqty">{{ num(i.quantity) }} {{ i.unit }}</span>
+    {% if i.status == 'active' %}{{ date_tag(i.best_before, i.days_left, warning) }}
+    <span class="racts">
+      <form class="inline" method="post" action="{{ b }}/items/{{ i.id }}/used"><input type="hidden" name="next" value="{{ here }}"><input name="qty" type="number" step="any" inputmode="decimal" placeholder="all" aria-label="How much used (blank = all)" style="width:4.2em"> <button class="ghost small">Used</button></form>
+      <form class="inline" method="post" action="{{ b }}/items/{{ i.id }}/discard"><input type="hidden" name="next" value="{{ here }}"><button class="ghost small danger">Binned</button></form>
+    </span>{% endif %}
+  </li>
+{% else %}<li><span class="muted">Nothing here yet.</span></li>{% endfor %}
+</ul>
+<p class="muted">Red = expired, doesn't count towards readiness. Amber = within {{ warning }} days. <b>Used</b> = eaten or used up; <b>Binned</b> = thrown away. Six 2L bottles with the same date are one row, quantity 12.</p>
+
+<details class="formbox" {% if not items %}open{% endif %} id="add">
+<summary>Add {{ sec.short | lower if sec else 'an item' }}</summary>
+<form method="post" action="{{ b }}/items">
+<input type="hidden" name="next" value="{{ here }}">
+{% set item = none %}{% include "_item_form.html" %}
+<p></p><button class="primary">Add</button>
+</form>
+</details>
+
+<form method="get" action="{{ b }}/items" class="noprint">
+{% if group %}<input type="hidden" name="group" value="{{ group }}">{% endif %}
+<div class="row2">
+<div><label for="show">Show</label><select id="show" name="show"><option value="active"{% if show != 'all' %} selected{% endif %}>In stock</option><option value="all"{% if show == 'all' %} selected{% endif %}>Everything, incl. used and binned</option></select></div>
+<div><label for="cat">Category</label><select id="cat" name="cat"><option value="">{{ 'All in this section' if group else 'All' }}</option>{% for c in cats %}<option value="{{ c.key }}"{% if c.key == cat %} selected{% endif %}>{{ c.name }}</option>{% endfor %}</select></div>
+</div>
+<p></p><button class="ghost">Filter</button>
+</form>
 {% endblock %}

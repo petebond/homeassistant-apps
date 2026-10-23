@@ -1,32 +1,33 @@
 {% extends "base.html" %}
-{% from "_macros.html" import pct, score_class %}
+{% from "_macros.html" import pct, bar_class, num %}
 {% block title %}Kit & targets{% endblock %}
 {% block content %}
 <h1>Kit &amp; targets</h1>
-<p>Target: <b>{{ r.target_days | int }} days</b> for <b>{{ r.counts.people_for_targets }} {{ 'person' if r.counts.people_for_targets == 1 else 'people' }}</b>{% if r.counts.infants %}, {{ r.counts.infants }} infant(s){% endif %}{% if r.counts.pets %}, {{ r.counts.pets }} pet(s){% endif %}. Change days in <a href="{{ b }}/settings">Settings</a>, people in <a href="{{ b }}/household">Household</a>.</p>
+<p class="lede">Aiming for <b>{{ r.target_days | int }} days</b> for <b>{{ r.counts.people_for_targets }} {{ 'person' if r.counts.people_for_targets == 1 else 'people' }}</b>{% if r.counts.infants %}, {{ r.counts.infants }} infant{{ 's' if r.counts.infants > 1 }}{% endif %}{% if r.counts.pets %}, {{ r.counts.pets }} pet{{ 's' if r.counts.pets > 1 }}{% endif %}. Change the days in <a href="{{ b }}/settings">Settings</a> and the people in <a href="{{ b }}/household">Household</a>.</p>
 
-<fieldset><legend>Six-monthly kit check</legend>
-<p class="{% if v.kit_due %}warn{% endif %}">Last checked: {{ v.kit_last_checked or 'never' }}{% if v.kit_due_date %} · next due {{ v.kit_due_date }}{% endif %}</p>
-<p class="muted">Go through the kit: check dates, test the torch and radio, charge the power bank, swap anything expired. Then:</p>
-<form method="post" action="{{ b }}/kit/checked"><button>Kit checked today</button></form>
-</fieldset>
+<section class="panel">
+<h2 style="margin-top:0">Kit check</h2>
+<p>Every {{ v.months }} months: check dates, test the torch and radio, charge the power bank, swap anything expired.</p>
+<p>{% if v.kit_last_checked %}Last checked: <b>{{ v.kit_last_checked | nicedate }}</b>{% else %}<b>Never checked.</b>{% endif %}{% if v.kit_due_date %} · next due {{ v.kit_due_date | nicedate }}{% endif %} {% if v.kit_due %}<span class="tag amber">Due</span>{% endif %}</p>
+<form method="post" action="{{ b }}/kit/checked"><button class="primary">Kit checked today</button></form>
+</section>
 
 <form method="post" action="{{ b }}/kit">
-<div class="wrap"><table>
-<tr><th>Category</th><th>Rule</th><th>Amount</th><th>Need</th><th>Have</th><th>Score</th><th>Counts?</th></tr>
+<div class="tablewrap"><table class="stack">
+<thead><tr><th>Category</th><th>Target</th><th>Need</th><th>Have</th><th>Score</th><th>Counts</th></tr></thead>
+<tbody>
 {% for c in r.categories %}
-<tr class="{% if c.in_score %}{{ score_class(c.score) }}{% else %}muted{% endif %}">
-<td><a href="{{ b }}/items?cat={{ c.key }}">{{ c.name }}</a>{% if c.guidance %}<br><span class="muted">{{ c.guidance }}</span>{% endif %}</td>
-<td>{{ {'person_day':'per person per day','person':'per person','infant_day':'per infant per day','pet_day':'per pet per day','household':'per household'}[c.basis] }}</td>
-<td><input name="amount_{{ c.key }}" type="number" step="any" value="{{ c.amount }}" style="width:5em"> {{ c.unit }}</td>
-<td>{% if c.applies %}{{ c.required | round(1) }}{% else %}n/a{% endif %}</td>
-<td>{{ c.held | round(1) }}</td>
-<td>{{ pct(c.score) }}</td>
-<td><input type="checkbox" name="score_{{ c.key }}" value="1"{% if c.in_score %} checked{% endif %}></td>
+<tr{% if not c.in_score %} class="muted"{% endif %}>
+<td data-label="Category"><a href="{{ b }}/items?cat={{ c.key }}"><b>{{ c.name }}</b></a>{% if c.guidance %}<span class="rsub">{{ c.guidance }}</span>{% endif %}</td>
+<td data-label="Target" style="white-space:nowrap"><input name="amount_{{ c.key }}" type="number" step="any" value="{{ '%g' % c.amount }}" style="width:4.5em" aria-label="Amount for {{ c.name }}"><span class="rsub">{{ c.unit }} {{ {'person_day':'per person per day','person':'per person','infant_day':'per infant per day','pet_day':'per pet per day','household':'per household'}[c.basis] }}</span></td>
+<td data-label="Need">{% if c.applies %}{{ num(c.required) }}{% else %}n/a{% endif %}</td>
+<td data-label="Have">{{ num(c.held) }}</td>
+<td data-label="Score">{{ pct(c.score) }}<div class="cbar" style="margin-top:4px;width:60px"><span class="{{ bar_class(c.score) }}" style="width:{{ ((c.score or 0) * 100) | round }}%"></span></div></td>
+<td data-label="Counts"><input type="checkbox" name="score_{{ c.key }}" value="1"{% if c.in_score %} checked{% endif %} aria-label="Count {{ c.name }} towards readiness"></td>
 </tr>
 {% endfor %}
-</table></div>
-<button>Save targets</button>
+</tbody></table></div>
+<button class="primary">Save targets</button>
 </form>
-<p class="muted">Defaults come from the UK Government Be Ready guidance. Score = have / need, capped at 100%; expired items don't count.</p>
+<p class="muted" style="margin-top:12px">Defaults come from the UK Government Be Ready guidance. Score = have ÷ need, capped at 100%. Expired items don't count.</p>
 {% endblock %}

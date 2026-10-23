@@ -64,7 +64,7 @@ ok(c.post("/meds", data={"name": "Paracetamol", "strength": "500mg", "dose": "2 
 ok(c.post("/meds", data={"name": "Inhaler", "owner_id": "2", "dose": "2 puffs", "repeat_due": d(3), "expiry": d(300)}), "Inhaler")
 ok(c.get("/meds/2"), "Edit: Inhaler")
 ok(c.post("/meds/2", data={"name": "Inhaler (blue)", "owner_id": "2", "dose": "2 puffs", "repeat_due": d(3)}), "Inhaler (blue)")
-ok(c.get("/"), "Request repeat prescription", "Medication expires soon")
+ok(c.get("/"), "request repeat prescription", "medication expires soon")
 
 # contacts
 ok(c.post("/contacts", data={"name": "Gran", "role": "family", "phone": "01747 000000"}), "Gran")
@@ -78,13 +78,13 @@ ok(c.post("/plans/1/reviewed"))
 
 # kit + settings
 ok(c.post("/kit", data={"amount_water": "4", "score_water": "1", "amount_car": "1"}))
-ok(c.post("/kit/checked"), "Last checked: " + date.today().isoformat())
+ok(c.post("/kit/checked"), "Last checked: <b>%d %s</b>" % (date.today().day, date.today().strftime("%b")))
 ok(c.post("/settings", data={"warning_days": "14", "target_days": "3", "review_months": "6"}))
 assert c.get("/api/summary").json()["warning_days"] == 14
 
 # print
 assert c.get("/api/summary").json()["pack_out_of_date"] is True
-ok(c.get("/print"), "EMERGENCY PACK: Bondy household", "Granny", "Inhaler (blue)", "Heatwave", "Village hall")
+ok(c.get("/print"), "Emergency pack: Bondy household", "Granny", "Inhaler (blue)", "Heatwave", "Village hall")
 ok(c.post("/print/mark"))
 s = c.get("/api/summary").json()
 assert s["pack_out_of_date"] is False, s
@@ -102,8 +102,10 @@ print(c.get("/api/summary").json())
 
 # checklist section filters
 import re
-t = ok(c.get("/items"), "Food (", "Water (", "Hygiene (", "Light and warmth (", "Communication and information (",
-       "Money and documents (", "Medical and health (", "Baby products (", "Pet products (")
+t = ok(c.get("/items"), ">Food <b>", ">Water <b>", ">Hygiene <b>", ">Light &amp; warmth <b>", ">Comms &amp; info <b>",
+       ">Money &amp; docs <b>", ">Medical <b>", ">Baby <b>", ">Pets <b>")
+d = ok(c.get("/"), "Kit by section", 'href="/items?group=water"')
+assert "Communication and information" in ok(c.get("/items?group=comms")).text
 water = ok(c.get("/items?group=water")).text
 assert "Water 2L" in water and "Rice" not in water
 assert "Medication</a> page" in ok(c.get("/items?group=medical")).text

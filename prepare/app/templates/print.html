@@ -1,20 +1,20 @@
 {% extends "base.html" %}
 {% block title %}Printed pack{% endblock %}
 {% block content %}
-<div class="noprint banner">
+<div class="noprint formbox">
 <b>Printed pack.</b> Print this on A4 (black and white is fine) and keep it with the grab bag. Then record that you've printed it so Prepare can remind you when it goes out of date.<br>
-<button onclick="window.print()">Print</button>
-<form class="inline" method="post" action="{{ b }}/print/mark"><button>I've printed it</button></form>
-Last printed: {{ pack.last_printed or 'never' }}
+<div class="acts" style="margin:12px 0"><button class="primary" onclick="window.print()">Print</button>
+<form class="inline" method="post" action="{{ b }}/print/mark"><button class="ghost">I've printed it</button></form></div>
+<span class="muted">Last printed: {{ pack.last_printed[:10] | nicedate if pack.last_printed else 'never' }}</span>
 </div>
 
 <div class="page">
-<h1>EMERGENCY PACK{% if s.household_name %}: {{ s.household_name }}{% endif %}</h1>
-<p>Printed {{ today }}. If this is more than 6 months old, check the details are still right.</p>
+<h1>Emergency pack{% if s.household_name %}: {{ s.household_name }}{% endif %}</h1>
+<p>Printed {{ today | nicedate }}. If this is more than 6 months old, check the details are still right.</p>
 {% if s.address %}<p><b>Address:</b> <span style="white-space:pre-line">{{ s.address }}</span></p>{% endif %}
 <h2>In any emergency</h2>
-<ol>{% for a in general %}<li>{{ a }}</li>{% endfor %}</ol>
-<table>
+<ol class="steps">{% for a in general %}<li>{{ a }}</li>{% endfor %}</ol>
+<div class="tablewrap"><table>
 <tr><th>Emergency services</th><td><b>999</b></td></tr>
 <tr><th>Power cut</th><td><b>105</b> (England, Scotland, Wales) · 03457 643643 (Northern Ireland)</td></tr>
 <tr><th>Non-emergency police / NHS</th><td>101 / 111</td></tr>
@@ -22,35 +22,35 @@ Last printed: {{ pack.last_printed or 'never' }}
 <tr><th>Meeting point away from the area</th><td>{{ s.meeting_far or '________________________' }}</td></tr>
 <tr><th>Radio stations (FM)</th><td style="white-space:pre-line">{{ s.radio_stations or '________________________' }}</td></tr>
 <tr><th>Grab bag</th><td style="white-space:pre-line">{{ s.grab_bag or '________________________' }}</td></tr>
-</table>
+</table></div>
 </div>
 
 <div class="page">
 <h2>Contacts</h2>
-<table>
+<div class="tablewrap"><table>
 <tr><th>Name</th><th>Role</th><th>Phone</th><th>Other</th><th>Notes</th></tr>
 {% for c in contacts %}<tr><td>{{ c.name }}</td><td>{{ c.role }}</td><td><b>{{ c.phone }}</b></td><td>{{ c.phone2 }}</td><td>{{ c.notes }}</td></tr>{% endfor %}
 {% for _ in range(4) %}<tr><td>&nbsp;</td><td></td><td></td><td></td><td></td></tr>{% endfor %}
-</table>
+</table></div>
 
 <h2>Household</h2>
-<table>
+<div class="tablewrap"><table>
 <tr><th>Name</th><th>Type</th><th>Dietary needs</th><th>Notes</th></tr>
 {% for m in members %}<tr><td>{{ m.name }}</td><td>{{ m.type }}</td><td>{{ m.dietary }}</td><td>{{ m.notes }}</td></tr>{% endfor %}
-</table>
+</table></div>
 
 <h2>Medication</h2>
-<table>
+<div class="tablewrap"><table>
 <tr><th>For</th><th>Medicine</th><th>Dose</th><th>Expiry</th><th>Repeat due</th><th>Notes</th></tr>
-{% for x in meds %}<tr><td>{{ pmap.get(x.owner_id, 'Household') if x.owner_id else 'Household' }}</td><td>{{ x.name }} {{ x.strength }}</td><td>{{ x.dose }}</td><td>{{ x.expiry or '' }}</td><td>{{ x.repeat_due or '' }}</td><td>{{ x.notes }}</td></tr>{% else %}<tr><td colspan="6">None recorded.</td></tr>{% endfor %}
-</table>
+{% for x in meds %}<tr><td>{{ pmap.get(x.owner_id, 'Household') if x.owner_id else 'Household' }}</td><td>{{ x.name }} {{ x.strength }}</td><td>{{ x.dose }}</td><td>{{ x.expiry | nicedate }}</td><td>{{ x.repeat_due | nicedate }}</td><td>{{ x.notes }}</td></tr>{% else %}<tr><td colspan="6">None recorded.</td></tr>{% endfor %}
+</table></div>
 </div>
 
 <div class="page">
 <h2>Family plans</h2>
 {% for p in plans %}
 <h3>{{ p.scenario }}</h3>
-<ol>{% for line in p.steps.splitlines() if line.strip() %}<li>{{ line }}</li>{% endfor %}</ol>
+<ol class="steps">{% for line in p.steps.splitlines() if line.strip() %}<li>{{ line }}</li>{% endfor %}</ol>
 <p><b>Meet at:</b> {{ p.meeting_point or s.meeting_near or '________________' }}</p>
 {% if p.roles %}<p><b>Who does what:</b><br><span style="white-space:pre-line">{{ p.roles }}</span></p>{% endif %}
 {% if p.grab_bag %}<p><b>Take:</b> {{ p.grab_bag }}</p>{% endif %}
@@ -60,27 +60,27 @@ Last printed: {{ pack.last_printed or 'never' }}
 
 <div class="page">
 <h2>Household details</h2>
-<table>
+<div class="tablewrap"><table>
 {% for key, label, kind in fields if key not in ('household_name', 'address', 'meeting_near', 'meeting_far', 'radio_stations', 'grab_bag') %}
 <tr><th style="width:35%">{{ label }}</th><td style="white-space:pre-line">{{ s[key] }}</td></tr>
 {% endfor %}
-</table>
+</table></div>
 
 <h2>Kit checklist ({{ r.target_days | int }} days, {{ r.counts.people_for_targets }} people)</h2>
-<table>
+<div class="tablewrap"><table>
 <tr><th>&#9744;</th><th>Item</th><th>Need</th><th>Have (when printed)</th></tr>
 {% for c in r.categories if c.applies or not c.in_score %}{% if c.key != 'other' %}
 <tr><td>&#9744;</td><td>{{ c.name }}{% if c.guidance %}<br><small>{{ c.guidance }}</small>{% endif %}</td><td>{% if c.applies %}{{ c.required | round(1) }} {{ c.unit }}{% else %}optional{% endif %}</td><td>{{ c.held | round(1) }} {{ c.unit }}</td></tr>
 {% endif %}{% endfor %}
-</table>
+</table></div>
 </div>
 
 <div>
 <h2>Stock list with dates</h2>
-<table>
+<div class="tablewrap"><table>
 <tr><th>Category</th><th>Item</th><th>Qty</th><th>Best before</th><th>Where</th></tr>
-{% for i in items %}<tr><td>{{ cmap[i.category].name if i.category in cmap else i.category }}</td><td>{{ i.name }}</td><td>{{ i.quantity | round(2) }} {{ i.unit }}</td><td>{{ i.best_before or '-' }}{% if i.days_left is not none and i.days_left < 0 %} EXPIRED{% endif %}</td><td>{{ i.location }}</td></tr>{% else %}<tr><td colspan="5">No stock recorded.</td></tr>{% endfor %}
-</table>
+{% for i in items %}<tr><td>{{ cmap[i.category].name if i.category in cmap else i.category }}</td><td>{{ i.name }}</td><td>{{ i.quantity | round(2) }} {{ i.unit }}</td><td>{{ (i.best_before | nicedate) or '-' }}{% if i.days_left is not none and i.days_left < 0 %} EXPIRED{% endif %}</td><td>{{ i.location }}</td></tr>{% else %}<tr><td colspan="5">No stock recorded.</td></tr>{% endfor %}
+</table></div>
 <p><small>Guidance: UK Government, beready.campaign.gov.uk (Open Government Licence v3.0).</small></p>
 </div>
 {% endblock %}

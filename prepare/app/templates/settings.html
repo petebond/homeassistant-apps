@@ -2,24 +2,26 @@
 {% block title %}Settings{% endblock %}
 {% block content %}
 <h1>Settings</h1>
-<form method="post" action="{{ b }}/settings">
-<label>Warning window for best-before and expiry dates (days) <input name="warning_days" type="number" min="0" value="{{ s.warning_days }}" style="width:5em"></label>
-<label>Days of supplies to aim for <input name="target_days" type="number" min="1" step="any" value="{{ s.target_days }}" style="width:5em"> <span class="muted">guidance: 3</span></label>
-<label>Review kit and plans every (months) <input name="review_months" type="number" min="1" value="{{ s.review_months }}" style="width:5em"> <span class="muted">guidance: check kit every 6 months</span></label>
-<label>Warn about repeat prescriptions (days before due) <input name="repeat_warning_days" type="number" min="0" value="{{ s.repeat_warning_days }}" style="width:5em"></label>
-<button>Save</button>
+<form method="post" action="{{ b }}/settings" class="formbox">
+<label for="s-w">Warning window for dates <span class="hint">days before a best-before or expiry date to flag it</span></label><input id="s-w" name="warning_days" type="number" min="0" value="{{ s.warning_days }}" style="width:6em">
+<label for="s-t">Days of supplies to aim for <span class="hint">the guidance says 3</span></label><input id="s-t" name="target_days" type="number" min="1" step="any" value="{{ s.target_days }}" style="width:6em">
+<label for="s-r">Review kit and plans every <span class="hint">months; the guidance says check the kit every 6</span></label><input id="s-r" name="review_months" type="number" min="1" value="{{ s.review_months }}" style="width:6em">
+<label for="s-p">Repeat prescription warning <span class="hint">days before it's due</span></label><input id="s-p" name="repeat_warning_days" type="number" min="0" value="{{ s.repeat_warning_days }}" style="width:6em">
+<p></p><button class="primary">Save</button>
 </form>
+
+<h2>Appearance</h2>
+<p>Light, dark or automatic (matches the device) is set with the switch at the top of every page. Each phone and browser remembers its own choice.</p>
 
 <h2>Access</h2>
 <ul>
-<li>Plain view: <code>http://homeassistant.local:8999</code> - works on anything on the home network.</li>
-<li>Phone app (PWA, works offline): <code>https://homeassistant.local:8998</code> - turn on <i>Serve https as well</i> in the App's Configuration, then follow <a href="{{ b }}/setup">Phone setup</a> on each phone.</li>
-<li>Data: <code>/data/prepare.db</code> inside the App, included in Home Assistant backups.</li>
+<li>Plain view: <code>http://homeassistant.local:8999</code> — works on anything on the home network.</li>
+<li>Phone app, works offline: <code>https://homeassistant.local:8998</code> — turn on <i>Serve https as well</i> in the app's Configuration, then follow <a href="{{ b }}/setup">Phone setup</a> on each phone.</li>
+<li>Data: <code>/data/prepare.db</code> inside the app, included in Home Assistant backups.</li>
 </ul>
 
 <h2>Recent activity</h2>
-<div class="wrap"><table>
-<tr><th>When</th><th>What</th><th>Detail</th></tr>
-{% for e in events %}<tr><td>{{ e.ts }}</td><td>{{ e.action }}</td><td>{{ e.detail }}</td></tr>{% else %}<tr><td colspan="3">Nothing yet.</td></tr>{% endfor %}
-</table></div>
+<ul class="rows">
+{% for e in events %}<li><span class="rmain"><span class="rname">{{ e.action | replace('_', ' ') | capitalize }}</span><span class="rsub">{{ e.detail }}</span></span><span class="rqty">{{ e.ts[:10] | nicedate }} {{ e.ts[11:16] }}</span></li>{% else %}<li><span class="muted">Nothing yet.</span></li>{% endfor %}
+</ul>
 {% endblock %}

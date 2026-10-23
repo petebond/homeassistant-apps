@@ -1,9 +1,10 @@
 // Prepare service worker: network first, fall back to the last saved copy.
 // Core pages are saved on install and refreshed every time they load online,
 // so the phone always has the latest plan, contacts and pack for a power cut.
-const CACHE = "prepare-v1";
+const CACHE = "prepare-v2";
 const CORE = ["/", "/print", "/plans", "/contacts", "/meds", "/items", "/kit", "/household",
-              "/offline", "/static/style.css", "/manifest.webmanifest", "/static/icon-192.png"];
+              "/offline", "/static/style.css", "/manifest.webmanifest", "/static/icon-192.png",
+              "/static/fonts/barlow-condensed-latin-700-normal.woff2", "/static/fonts/barlow-condensed-latin-800-normal.woff2"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE).then((c) => c.addAll(CORE)).then(() => self.skipWaiting()));

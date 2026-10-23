@@ -1,25 +1,20 @@
 {% extends "base.html" %}
-{% from "_macros.html" import expiry_class, days_text %}
+{% from "_macros.html" import date_tag %}
 {% block title %}Medication{% endblock %}
 {% block content %}
 <h1>Medication</h1>
-<p class="muted">Optional. Personal medication belongs to one person; household medication (e.g. paracetamol, ibuprofen) is shared. Everything here is printed in the pack with doses, as the guidance advises.</p>
-<div class="wrap"><table>
-<tr><th>For</th><th>Medicine</th><th>Dose</th><th>Held</th><th>Expiry</th><th>Repeat due</th><th></th></tr>
+<p class="lede">Optional. Personal medication belongs to one person; household medication, like paracetamol or ibuprofen, is shared. Everything here is printed in the pack with its dose.</p>
+<ul class="rows">
 {% for m in meds %}
-<tr class="{{ expiry_class(m.days_left) }}">
-<td>{{ pmap.get(m.owner_id, 'Household') if m.owner_id else 'Household' }}</td>
-<td><a href="{{ b }}/meds/{{ m.id }}">{{ m.name }}</a> {{ m.strength }}{% if m.notes %}<br><span class="muted">{{ m.notes }}</span>{% endif %}</td>
-<td>{{ m.dose }}</td><td>{{ m.quantity }}</td>
-<td>{{ m.expiry or '-' }} {% if m.days_left is not none %}({{ days_text(m.days_left) }}){% endif %}</td>
-<td class="{% if m.repeat_days is not none and m.repeat_days <= 7 %}warn{% endif %}">{{ m.repeat_due or '-' }}</td>
-<td><form class="inline" method="post" action="{{ b }}/meds/{{ m.id }}/delete" onsubmit="return confirm('Delete?')"><button>Delete</button></form></td>
-</tr>
-{% else %}<tr><td colspan="7">No medication recorded.</td></tr>{% endfor %}
-</table></div>
-<fieldset><legend>Add medication</legend>
+  <li><span class="rmain"><a class="rname" href="{{ b }}/meds/{{ m.id }}">{{ m.name }} {{ m.strength }}</a><span class="rsub">{{ pmap.get(m.owner_id, 'Household') if m.owner_id else 'Household' }}{% if m.dose %} · {{ m.dose }}{% endif %}{% if m.quantity %} · {{ m.quantity }}{% endif %}</span>{% if m.repeat_due %}<span class="rsub">Repeat due {{ m.repeat_due | nicedate }}{% if m.repeat_days is not none and m.repeat_days <= 7 %} — <b>request now</b>{% endif %}</span>{% endif %}</span>
+    {{ date_tag(m.expiry, m.days_left) }}</li>
+{% else %}<li><span class="muted">No medication recorded.</span></li>{% endfor %}
+</ul>
+<details class="formbox" {% if not meds %}open{% endif %}>
+<summary>Add medication</summary>
 <form method="post" action="{{ b }}/meds">
 {% set med = none %}{% include "_med_form.html" %}
-<button>Add</button>
-</form></fieldset>
+<p></p><button class="primary">Add</button>
+</form>
+</details>
 {% endblock %}

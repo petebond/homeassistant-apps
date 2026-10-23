@@ -2,16 +2,12 @@
 {% from "_macros.html" import cat_select %}
 {% block title %}Edit item{% endblock %}
 {% block content %}
+<p><a href="{{ b }}/items">‹ Inventory</a></p>
 <h1>Edit: {{ item.name }}</h1>
-<form method="post" action="{{ b }}/items/{{ item.id }}">
-<label>What <input name="name" value="{{ item.name }}" required size="30"></label>
-<label>Category {{ cat_select(cats, item.category) }}</label>
-<label>Quantity <input name="quantity" type="number" step="any" value="{{ item.quantity }}" style="width:6em"> unit <input name="unit" size="8" value="{{ item.unit }}"></label>
-<label>Best before <input name="best_before" type="date" value="{{ item.best_before or '' }}"></label>
-<label>Where <input name="location" size="20" value="{{ item.location }}"></label>
-<label><input type="checkbox" name="perishable" value="1"{% if item.perishable %} checked{% endif %}> Perishable</label>
-<label>Notes <input name="notes" size="30" value="{{ item.notes }}"></label>
-<button>Save</button> <a href="{{ b }}/items">Cancel</a>
+<form method="post" action="{{ b }}/items/{{ item.id }}" class="formbox">
+{% set default_cat = item.category %}{% include "_item_form.html" %}
+<div class="acts"><button class="primary">Save</button> <a class="button ghost" href="{{ b }}/items">Cancel</a></div>
 </form>
-<p class="muted">Added {{ item.added }} · status {{ item.status }}</p>
+<form method="post" action="{{ b }}/items/{{ item.id }}/delete" onsubmit="return confirm('Delete permanently? Use Used or Binned instead to keep the history.')"><button class="ghost danger small">Delete permanently</button></form>
+<p class="muted">Added {{ item.added[:10] | nicedate }} · {{ item.status }}</p>
 {% endblock %}

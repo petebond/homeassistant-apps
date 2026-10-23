@@ -1,17 +1,21 @@
-{% macro cat_select(cats, selected='', name='category') -%}
-<select name="{{ name }}">
+{% macro cat_select(cats, selected='', name='category', id='') -%}
+<select name="{{ name }}"{% if id %} id="{{ id }}"{% endif %}>
 {% for c in cats %}<option value="{{ c.key }}"{% if c.key == selected %} selected{% endif %}>{{ c.name }} ({{ c.unit }})</option>{% endfor %}
 </select>
 {%- endmacro %}
 
-{% macro expiry_class(days, warning=30) -%}
-{%- if days is none -%}{%- elif days < 0 -%}bad{%- elif days <= warning -%}warn{%- endif -%}
-{%- endmacro %}
-
-{% macro days_text(days) -%}
-{%- if days is none -%}-{%- elif days < 0 -%}EXPIRED {{ -days }}d ago{%- elif days == 0 -%}today{%- else -%}{{ days }}d{%- endif -%}
+{# A best-before or expiry date as a coloured tag. #}
+{% macro date_tag(date, days, warning=30) -%}
+{%- if days is none -%}<span class="tag grey">No date</span>
+{%- elif days < 0 -%}<span class="tag red">Expired</span>
+{%- elif days == 0 -%}<span class="tag red">Today</span>
+{%- elif days <= warning -%}<span class="tag amber">{{ days }} day{{ '' if days == 1 else 's' }}</span>
+{%- else -%}<span class="tag green">{{ date | monthyear }}</span>
+{%- endif -%}
 {%- endmacro %}
 
 {% macro pct(score) -%}{% if score is none %}n/a{% else %}{{ (score * 100) | round | int }}%{% endif %}{%- endmacro %}
 
-{% macro score_class(score) -%}{% if score is none %}{% elif score >= 1 %}ok{% elif score >= 0.5 %}warn{% else %}bad{% endif %}{%- endmacro %}
+{% macro bar_class(score) -%}{% if score is none %}{% elif score >= 1 %}full{% elif score < 0.5 %}low{% endif %}{%- endmacro %}
+
+{% macro num(x) -%}{{ '%g' % (x | round(1)) }}{%- endmacro %}

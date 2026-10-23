@@ -21,11 +21,30 @@ from . import db, installer, logic, tls
 
 log = logging.getLogger("prepare")
 HERE = Path(__file__).parent
-VERSION = "0.1.2"
+VERSION = "0.2.0"
 
 app = FastAPI(title="Prepare", version=VERSION, docs_url="/api/docs", redoc_url=None)
 app.mount("/static", StaticFiles(directory=HERE / "static"), name="static")
 templates = Jinja2Templates(directory=HERE / "templates")
+MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+
+
+def _nicedate(value) -> str:
+    """'2026-10-23' -> '23 Oct', with the year added when it isn't this year."""
+    d = logic.parse_date(value) if value else None
+    if not d:
+        return ""
+    out = f"{d.day} {MONTHS[d.month - 1]}"
+    return out if d.year == logic.today().year else f"{out} {d.year}"
+
+
+def _monthyear(value) -> str:
+    d = logic.parse_date(value) if value else None
+    return f"{MONTHS[d.month - 1]} {d.year}" if d else ""
+
+
+templates.env.filters["nicedate"] = _nicedate
+templates.env.filters["monthyear"] = _monthyear
 
 MEMBER_TYPES = ["adult", "child", "infant", "pet"]
 CONTACT_ROLES = ["family", "neighbour", "friend", "school / childcare", "GP / medical", "utility", "work", "other"]
@@ -53,6 +72,7 @@ def render(request: Request, name: str, **ctx) -> HTMLResponse:
         today=logic.today().isoformat(),
         version=VERSION,
         pack=logic.pack_status(),
+        household_name=db.settings().get("household_name", ""),
     )
     return templates.TemplateResponse(request, name, ctx)
 
@@ -89,9 +109,10 @@ def members() -> list[dict]:
 
 @app.get("/", response_class=HTMLResponse)
 def dashboard(request: Request):
+    r = logic.readiness()
     return render(
-        request, "dashboard.html",
-        r=logic.readiness(), e=logic.expiring_items(), m=logic.medication_alerts(),
+        request, "dashboard.html", sections=logic.sections(r),
+        r=r, e=logic.expiring_items(), m=logic.medication_alerts(),
         v=logic.reviews(), first=logic.use_first(10), waste=logic.waste_stats(),
     )
 
@@ -127,8 +148,13 @@ def items_page(request: Request, show: str = "active", cat: str = "", group: str
     counts = {k: sum(1 for i in active if i["category"] in keys) for k, keys in in_group.items()}
     cmap = {c["key"]: c for c in cats}
     default_cat = cat or (in_group.get(group) or [""])[0]
+    sec = next((x for x in logic.sections() if x["key"] == group), None)
+    if sec is None and group in group_keys:  # e.g. Baby with no infant in the household
+        g = next(g for g in groups if g["key"] == group)
+        sec = {**g, "pct": 0, "note": "Not counted for this household"}
+    here = "/items" + (f"?group={group}" if group else f"?cat={cat}" if cat else "")
     return render(request, "items.html", items=items, cats=cats, cmap=cmap, show=show, cat=cat, group=group,
-                  groups=groups, counts=counts, total=len(active), default_cat=default_cat,
+                  groups=groups, counts=counts, total=len(active), default_cat=default_cat, sec=sec, here=here,
                   warning=int(db.settings().get("warning_days") or 30))
 
 
@@ -450,8 +476,8 @@ def manifest(request: Request):
         "start_url": f"{b}/",
         "scope": f"{b}/",
         "display": "standalone",
-        "background_color": "#ffffff",
-        "theme_color": "#c81e1e",
+        "background_color": "#182889",
+        "theme_color": "#182889",
         "icons": [
             {"src": f"{b}/static/icon-192.png", "sizes": "192x192", "type": "image/png"},
             {"src": f"{b}/static/icon-512.png", "sizes": "512x512", "type": "image/png"},

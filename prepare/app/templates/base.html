@@ -1,43 +1,72 @@
 <!doctype html>
-<html lang="en">
+<html lang="en-GB">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<script>
+  // Apply the saved appearance before anything paints, so dark mode never flashes white.
+  try { var t = localStorage.getItem("prepare-theme"); if (t === "light" || t === "dark") document.documentElement.dataset.theme = t; } catch (e) {}
+</script>
 <title>{% block title %}Prepare{% endblock %} - Prepare</title>
 <link rel="manifest" href="{{ b }}/manifest.webmanifest">
 <link rel="icon" href="{{ b }}/static/icon-192.png">
 <link rel="apple-touch-icon" href="{{ b }}/static/icon-192.png">
-<meta name="theme-color" content="#c81e1e">
-<link rel="stylesheet" href="{{ b }}/static/style.css">
+<meta name="theme-color" content="#182889" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#060920" media="(prefers-color-scheme: dark)">
+<link rel="preload" href="{{ b }}/static/fonts/barlow-condensed-latin-800-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="{{ b }}/static/style.css?v={{ version }}">
 </head>
 <body>
-<nav>
-<b>PREPARE</b> |
-<a href="{{ b }}/">Dashboard</a>
-<a href="{{ b }}/items">Inventory</a>
-<a href="{{ b }}/meds">Medication</a>
-<a href="{{ b }}/kit">Kit &amp; targets</a>
-<a href="{{ b }}/plans">Family plans</a>
-<a href="{{ b }}/contacts">Contacts</a>
-<a href="{{ b }}/household">Household</a>
-<a href="{{ b }}/print">PRINT PACK</a>
-<a href="{{ b }}/settings">Settings</a>
-<a href="{{ b }}/setup">Phone setup</a>
+<a class="skip" href="#main">Skip to content</a>
+{% set p = request.url.path %}
+<header class="site">
+  <div class="wrap">
+    <span class="mark" aria-hidden="true"></span>
+    <a class="wordbox" href="{{ b }}/"><span class="word">Prepare</span>{% if household_name %}<span class="hh">{{ household_name }}</span>{% endif %}</a>
+    <div class="modes noprint" role="group" aria-label="Appearance">
+      <button type="button" data-mode="light" aria-pressed="false" title="Light"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg><span class="skip">Light</span></button>
+      <button type="button" data-mode="auto" aria-pressed="false" title="Match this device">A<span class="skip">utomatic</span></button>
+      <button type="button" data-mode="dark" aria-pressed="false" title="Dark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg><span class="skip">Dark</span></button>
+    </div>
+  </div>
+</header>
+<div class="strip"></div>
+<nav class="tabs" aria-label="Sections">
+  <div class="wrap">
+  {% for path, label in [("/", "Dashboard"), ("/items", "Inventory"), ("/plans", "Plans"), ("/meds", "Medication"), ("/contacts", "Contacts"), ("/household", "Household"), ("/kit", "Kit & targets"), ("/settings", "Settings"), ("/setup", "Phone setup"), ("/print", "Print")] %}
+    <a href="{{ b }}{{ path }}"{% if (path == "/" and p == "/") or (path != "/" and p.startswith(path)) %} aria-current="page"{% endif %}>{{ label }}</a>
+  {% endfor %}
+  </div>
 </nav>
-<div id="offline-banner" class="banner warn" style="display:none">OFFLINE - showing the last saved copy. Changes can't be saved until you're back on the home network.</div>
-{% if pack.out_of_date %}<div class="banner warn noprint">Printed pack is out of date{% if pack.last_printed %} (last printed {{ pack.last_printed[:10] }}){% else %} (never printed){% endif %}. <a href="{{ b }}/print">Print it now</a>.</div>{% endif %}
+<div class="wrap">
+<main id="main">
+<div class="notice offline">You're offline. This is the copy saved on this phone; changes can't be saved until you're back on the home network.</div>
+{% if pack.out_of_date and p != "/print" %}<div class="notice noprint"><strong>Printed pack is out of date.</strong> {% if pack.last_printed %}Things have changed since {{ pack.last_printed[:10] | nicedate }}.{% else %}It has never been printed.{% endif %} <a href="{{ b }}/print">Print it now</a></div>{% endif %}
 {% block content %}{% endblock %}
-<p class="muted noprint">Prepare v{{ version }} · Guidance: <a href="https://beready.campaign.gov.uk/">beready.campaign.gov.uk</a> (OGL v3.0)</p>
+</main>
+</div>
+<footer class="sitefoot noprint"><div class="wrap">Prepare v{{ version }} · Based on the UK Government <a href="https://beready.campaign.gov.uk/">Be Ready</a> guidance (Open Government Licence v3.0). Not an official government service.</div></footer>
 <script>
 (function () {
-  var base = "{{ b }}";
-  if (!navigator.onLine) document.getElementById("offline-banner").style.display = "block";
-  window.addEventListener("offline", function () { document.getElementById("offline-banner").style.display = "block"; });
-  window.addEventListener("online", function () { document.getElementById("offline-banner").style.display = "none"; });
-  // PWA: only on HTTPS (port 8998) and not inside the HA sidebar (Ingress).
+  var root = document.documentElement, base = "{{ b }}";
+  function show(mode) {
+    document.querySelectorAll(".modes button").forEach(function (btn) { btn.setAttribute("aria-pressed", btn.dataset.mode === mode ? "true" : "false"); });
+  }
+  var saved = root.dataset.theme || "auto";
+  show(saved);
+  document.querySelectorAll(".modes button").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var mode = btn.dataset.mode;
+      if (mode === "auto") delete root.dataset.theme; else root.dataset.theme = mode;
+      try { if (mode === "auto") localStorage.removeItem("prepare-theme"); else localStorage.setItem("prepare-theme", mode); } catch (e) {}
+      show(mode);
+    });
+  });
+  function net() { document.body.classList.toggle("is-offline", !navigator.onLine); }
+  net(); window.addEventListener("online", net); window.addEventListener("offline", net);
+  // PWA: only on https (port 8998) and not inside the Home Assistant sidebar (ingress).
   if ("serviceWorker" in navigator && window.isSecureContext && base === "") {
     navigator.serviceWorker.register("/sw.js", { scope: "/" });
-    // Opening the dashboard online refreshes the saved copies of every core page.
     if (navigator.onLine && location.pathname === "/") {
       navigator.serviceWorker.ready.then(function (r) { if (r.active) r.active.postMessage("refresh"); });
     }

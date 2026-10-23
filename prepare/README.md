@@ -3,7 +3,8 @@
 Get the household ready for emergencies, and keep it ready, following the UK
 Government [Be Ready](https://beready.campaign.gov.uk/) guidance.
 
-> Version 0.1 is deliberately plain HTML: function and content first, looks later.
+> The look follows the Be Ready campaign's poster style, in light and dark. Use the
+> switch at the top of any page; *A* follows the device's own setting.
 
 ## Using it
 
@@ -87,7 +88,8 @@ pytest                        # integration tests
 
 ## Licence
 
-MIT, as the rest of this repository. Seed content in `app/seed/` is derived from UK
+MIT, as the rest of this repository. The heading font, Barlow Condensed, is under the
+SIL Open Font Licence (`app/static/fonts/OFL-Barlow.txt`). Seed content in `app/seed/` is derived from UK
 Government guidance and contains public sector information licensed under the
 [Open Government Licence v3.0](https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/).
 This is not an official government service.

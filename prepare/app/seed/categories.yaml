@@ -16,15 +16,15 @@
 source_checked: "2026-10-23"
 # The main sections of the Be Ready checklist. Inventory filters by these.
 groups:
-  - {key: food, name: Food}
-  - {key: water, name: Water}
-  - {key: hygiene, name: Hygiene}
-  - {key: light_warmth, name: Light and warmth}
-  - {key: comms, name: Communication and information}
-  - {key: money_docs, name: Money and documents}
-  - {key: medical, name: Medical and health}
-  - {key: baby, name: Baby products}
-  - {key: pet, name: Pet products}
+  - {key: food, name: Food, short: "Food"}
+  - {key: water, name: Water, short: "Water"}
+  - {key: hygiene, name: Hygiene, short: "Hygiene"}
+  - {key: light_warmth, name: Light and warmth, short: "Light & warmth"}
+  - {key: comms, name: Communication and information, short: "Comms & info"}
+  - {key: money_docs, name: Money and documents, short: "Money & docs"}
+  - {key: medical, name: Medical and health, short: "Medical"}
+  - {key: baby, name: Baby products, short: "Baby"}
+  - {key: pet, name: Pet products, short: "Pets"}
 
 categories:
   - key: water

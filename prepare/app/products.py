@@ -51,6 +51,13 @@ UK_OWN_LABELS = sorted([
 DESCRIPTORS = re.compile(r"\b(italian|premium|classic|original|traditional|everyday|value|select|quality|plum|whole)\b(?=.*\w)", re.I)
 PACKED_IN = re.compile(r"\s+in\s+(?:a\s+|an\s+)?(?:rich\s+|thick\s+|light\s+|natural\s+)?(tomato\s+juice|tomato\s+sauce|juice|natural\s+juice|water|spring\s+water|brine|"
                        r"sunflower\s+oil|olive\s+oil|oil|syrup|light\s+syrup|own\s+juice)\b.*$", re.I)
+# Names UK shoppers use that the pack often doesn't: a tin of "Beanz in tomato sauce"
+# is baked beans. Checked against the whole product name first.
+UK_TYPES = [
+    (re.compile(r"\bbean[sz]\b.*\btomato sauce\b|\bbaked bean", re.I), "Baked beans"),
+]
+# Open Food Facts category words that make a type vaguer, not more specific.
+VAGUE_TAG_WORDS = {"canned", "tinned", "common", "prepared", "products", "foods", "food", "based", "plant", "dried", "preserved"}
 SPELLINGS = {r"\bbeanz\b": "beans", r"\btomatos\b": "tomatoes"}
 SIZE_RE = re.compile(r"\b\d+(?:[.,]\d+)?\s*(?:x\s*\d+(?:[.,]\d+)?\s*)?(?:kg|g|gr|grams?|ml|cl|l|ltr|litres?|liters?|oz|pk|pack|cans?|tins?)\b\.?", re.I)
 MULTI_RE = re.compile(r"(\d+)\s*[x×]\s*(\d+(?:[.,]\d+)?)\s*(kg|g|ml|cl|l|ltr|litres?|liters?)\b", re.I)
@@ -143,8 +150,18 @@ def known_generics() -> list[str]:
     return out
 
 
+def match_known(name: str) -> str:
+    for g in known_generics():
+        if g.lower() == name.lower():
+            return g
+    return name
+
+
 def suggest_generic(name: str, brands: str = "", category_tags: list[str] | None = None, generic_name: str = "") -> str:
     """What this product is, without the brand or size: 'Napolina Chopped Tomatoes 400g' -> 'Chopped tomatoes'."""
+    for pattern, uk_type in UK_TYPES:
+        if pattern.search(name or ""):
+            return match_known(uk_type)
     text = " " + (name or "") + " "
     for brand in [b.strip() for b in (brands or "").split(",") if b.strip()] + UK_OWN_LABELS:
         text = re.sub(r"(?i)(?<![\w'])" + re.escape(brand) + r"(?![\w'])", " ", text)
@@ -168,7 +185,7 @@ def suggest_generic(name: str, brands: str = "", category_tags: list[str] | None
     words = set(cleaned.lower().split())
     for tag in reversed([t for t in (category_tags or []) if t.startswith("en:")][-4:]):
         human = tag[3:].replace("-", " ")
-        if words and words < set(human.split()) and len(human.split()) <= 4:
+        if words and words < set(human.split()) and len(human.split()) <= 4 and not (set(human.split()) & VAGUE_TAG_WORDS):
             cleaned = human
             break
     if not cleaned and category_tags:

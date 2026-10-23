@@ -102,11 +102,16 @@ def test_pick_brand(brands, name, expected):
 
 
 def test_real_heinz_record(monkeypatch):
-    """Name, brand and size as Open Food Facts returned them for 5000157024671 (23 Oct 2026); categories illustrative."""
+    """Name, brand, size and most specific category as Open Food Facts returned them for 5000157024671 (23 Oct 2026)."""
     monkeypatch.setattr(products, "fetch", lambda url, v: {"status": 1, "product": {
         "product_name": "Beanz in a rich tomato sauce", "brands": "H J Heinz Foods UK Ltd", "quantity": "415g",
-        "categories_tags": ["en:plant-based-foods", "en:legumes", "en:canned-foods", "en:baked-beans"]}})
+        "categories_tags": ["en:plant-based-foods", "en:legumes", "en:canned-foods", "en:canned-common-beans"]}})
     db.execute("DELETE FROM products WHERE barcode='5000157024671'")
     r = products.lookup("5000157024671")
     assert r["brand"] == "Heinz" and r["name"] == "Heinz Beanz in a rich tomato sauce 415g", r
     assert r["generic"] == "Baked beans", r
+
+
+def test_vague_category_does_not_override():
+    assert products.suggest_generic("Butter Beans", "Tesco", ["en:canned-foods", "en:canned-common-beans"]) == "Butter beans"
+    assert products.suggest_generic("Beans", "", ["en:legumes", "en:canned-common-beans"]) == "Beans"

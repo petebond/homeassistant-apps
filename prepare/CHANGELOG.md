@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.2 - 2026-10-23
+
+- Beans in tomato sauce are "Baked beans", whatever the tin calls them.
+- Vague Open Food Facts categories ("canned common beans") no longer replace a
+  clearer name taken from the pack.
+
 ## 0.3.1 - 2026-10-23
 
 - Brands: Open Food Facts sometimes lists the maker's company ("H J Heinz Foods

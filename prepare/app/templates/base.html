@@ -33,7 +33,7 @@
 <div class="strip"></div>
 <nav class="tabs" aria-label="Sections">
   <div class="wrap">
-  {% for path, label in [("/", "Dashboard"), ("/items", "Inventory"), ("/plans", "Plans"), ("/meds", "Medication"), ("/contacts", "Contacts"), ("/household", "Household"), ("/kit", "Kit & targets"), ("/settings", "Settings"), ("/setup", "Phone setup"), ("/print", "Print")] %}
+  {% for path, label in [("/", "Dashboard"), ("/items", "Inventory"), ("/scan", "Scan"), ("/plans", "Plans"), ("/meds", "Medication"), ("/contacts", "Contacts"), ("/household", "Household"), ("/kit", "Kit & targets"), ("/settings", "Settings"), ("/setup", "Phone setup"), ("/print", "Print")] %}
     <a href="{{ b }}{{ path }}"{% if (path == "/" and p == "/") or (path != "/" and p.startswith(path)) %} aria-current="page"{% endif %}>{{ label }}</a>
   {% endfor %}
   </div>

@@ -1,0 +1,254 @@
+"""Barcode lookup, the local product cache, and grouping products into "types".
+
+Lookups go to Open Food Facts' UK site first (English names, UK products), then
+its sister databases for things that aren't food: Open Beauty Facts (toiletries,
+hand gel, wipes) and Open Pet Food Facts. Whatever is found - or typed in by hand
+when nothing is - is kept in the local `products` table, so a second scan of the
+same barcode is instant, works offline, and keeps the household's corrections.
+
+Product data from those databases is (c) Open Food Facts contributors, ODbL.
+Their API asks for a User-Agent naming the app, and allows about 15 product
+reads a minute per address, so the cache matters when unpacking a big shop.
+"""
+from __future__ import annotations
+
+import json
+import logging
+import re
+import urllib.error
+import urllib.request
+
+from . import db
+
+log = logging.getLogger("prepare.products")
+
+USER_AGENT = "Prepare/{version} (Home Assistant app; https://github.com/petebond/homeassistant-apps)"
+FIELDS = ("code,product_name,product_name_en,generic_name,generic_name_en,brands,quantity,"
+          "product_quantity,product_quantity_unit,categories_tags,image_front_small_url")
+SOURCES = [
+    ("off", "Open Food Facts", "https://uk.openfoodfacts.org/api/v2/product/{code}?fields=" + FIELDS),
+    ("obf", "Open Beauty Facts", "https://uk.openbeautyfacts.org/api/v2/product/{code}?fields=" + FIELDS),
+    ("opff", "Open Pet Food Facts", "https://uk.openpetfoodfacts.org/api/v2/product/{code}?fields=" + FIELDS),
+]
+SOURCE_NAMES = {k: n for k, n, _ in SOURCES} | {"manual": "added by hand", "local": "saved on this app"}
+
+# UK supermarket own-label names and their sub-brands. Stripped from product names
+# so "Tesco Chopped Tomatoes" and "Napolina Chopped Tomatoes" both come out as
+# "Chopped tomatoes". Longest first, so "Tesco Finest" goes before "Tesco".
+UK_OWN_LABELS = sorted([
+    "tesco finest", "tesco everyday value", "tesco", "stockwell & co", "stockwell and co", "hearty food co",
+    "sainsbury's taste the difference", "taste the difference", "sainsbury's", "sainsburys", "by sainsbury's",
+    "asda extra special", "asda just essentials", "just essentials", "asda", "extra special",
+    "morrisons the best", "morrisons savers", "morrisons", "the best",
+    "waitrose essential", "waitrose duchy organic", "waitrose", "essential waitrose", "no.1",
+    "m&s", "marks & spencer", "marks and spencer", "co-op irresistible", "co-op", "coop", "co op",
+    "aldi", "everyday essentials", "specially selected", "lidl", "deluxe", "iceland", "ocado",
+    "cook with m&s", "collection", "finest", "organic", "british",
+], key=len, reverse=True)
+
+# Words that describe the same thing differently, and packing liquids that don't change
+# what it is for an emergency store: "Chopped Tomatoes in Tomato Juice" is chopped tomatoes.
+DESCRIPTORS = re.compile(r"\b(italian|premium|classic|original|traditional|everyday|value|select|quality|plum|whole)\b(?=.*\w)", re.I)
+PACKED_IN = re.compile(r"\s+in\s+(rich\s+)?(tomato\s+juice|tomato\s+sauce|juice|natural\s+juice|water|spring\s+water|brine|"
+                       r"sunflower\s+oil|olive\s+oil|oil|syrup|light\s+syrup|own\s+juice)\b.*$", re.I)
+SPELLINGS = {r"\bbeanz\b": "beans", r"\btomatos\b": "tomatoes"}
+SIZE_RE = re.compile(r"\b\d+(?:[.,]\d+)?\s*(?:x\s*\d+(?:[.,]\d+)?\s*)?(?:kg|g|gr|grams?|ml|cl|l|ltr|litres?|liters?|oz|pk|pack|cans?|tins?)\b\.?", re.I)
+MULTI_RE = re.compile(r"(\d+)\s*[x×]\s*(\d+(?:[.,]\d+)?)\s*(kg|g|ml|cl|l|ltr|litres?|liters?)\b", re.I)
+SINGLE_RE = re.compile(r"(\d+(?:[.,]\d+)?)\s*(kg|g|ml|cl|l|ltr|litres?|liters?)\b", re.I)
+
+
+# ---------------------------------------------------------------- barcodes
+
+def _check_digit_ok(code: str) -> bool:
+    digits = [int(c) for c in code]
+    body, check = digits[:-1], digits[-1]
+    total = sum(d * (3 if i % 2 == 0 else 1) for i, d in enumerate(reversed(body)))
+    return (10 - total % 10) % 10 == check
+
+
+def normalise_barcode(raw: str) -> str | None:
+    """Digits only; UPC-A (12) becomes EAN-13 with a leading 0. None if the check digit is wrong."""
+    code = re.sub(r"\D", "", raw or "")
+    if len(code) == 12:
+        code = "0" + code
+    if len(code) not in (8, 13, 14):
+        return code if 6 <= len(code) <= 14 else None  # odd lengths: allow, but can't verify
+    return code if _check_digit_ok(code) else None
+
+
+# ---------------------------------------------------------------- quantities
+
+def _to_litres(n: float, unit: str) -> float | None:
+    unit = unit.lower()
+    if unit in ("l", "ltr", "litre", "litres", "liter", "liters"):
+        return n
+    if unit == "ml":
+        return n / 1000
+    if unit == "cl":
+        return n / 100
+    return None
+
+
+def parse_quantity(text: str) -> dict:
+    """'6 x 500ml' -> {'count': 6, 'each': 500, 'unit': 'ml', 'litres': 3.0}."""
+    text = (text or "").replace(",", ".")
+    m = MULTI_RE.search(text)
+    if m:
+        count, each, unit = int(m.group(1)), float(m.group(2)), m.group(3)
+    else:
+        m = SINGLE_RE.search(text)
+        if not m:
+            return {"count": 1, "each": None, "unit": "", "litres": None}
+        count, each, unit = 1, float(m.group(1)), m.group(2)
+    litres = _to_litres(each, unit)
+    return {"count": count, "each": each, "unit": unit.lower(), "litres": round(litres * count, 3) if litres is not None else None}
+
+
+# ---------------------------------------------------------------- product types
+
+def _clean(s: str) -> str:
+    return re.sub(r"\s+", " ", s or "").strip(" -,.:;")
+
+
+def known_generics() -> list[str]:
+    """Product types already in use, most used first."""
+    rows = db.rows("SELECT generic, COUNT(*) n FROM items WHERE generic IS NOT NULL AND generic != '' GROUP BY lower(generic) ORDER BY n DESC")
+    rows += db.rows("SELECT generic, 0 n FROM products WHERE generic IS NOT NULL AND generic != ''")
+    seen, out = set(), []
+    for r in rows:
+        k = r["generic"].lower()
+        if k not in seen:
+            seen.add(k)
+            out.append(r["generic"])
+    return out
+
+
+def suggest_generic(name: str, brands: str = "", category_tags: list[str] | None = None, generic_name: str = "") -> str:
+    """What this product is, without the brand or size: 'Napolina Chopped Tomatoes 400g' -> 'Chopped tomatoes'."""
+    text = " " + (name or "") + " "
+    for brand in [b.strip() for b in (brands or "").split(",") if b.strip()] + UK_OWN_LABELS:
+        text = re.sub(r"(?i)(?<![\w'])" + re.escape(brand) + r"(?![\w'])", " ", text)
+    text = SIZE_RE.sub(" ", text)
+    text = re.sub(r"\(.*?\)", " ", text)
+    text = PACKED_IN.sub("", _clean(text))
+    for pattern, repl in SPELLINGS.items():
+        text = re.sub(pattern, repl, text, flags=re.I)
+    cleaned = _clean(DESCRIPTORS.sub(" ", text))
+    # Reuse a type the household already has if this product is one of them,
+    # so every brand of chopped tomatoes lands in the same group.
+    lowered = cleaned.lower()
+    for g in sorted(known_generics(), key=len, reverse=True):
+        gl = g.lower()
+        if gl and (gl == lowered or re.search(r"\b" + re.escape(gl) + r"\b", lowered)):
+            return g
+    if not cleaned and generic_name:
+        cleaned = _clean(generic_name)
+    if not cleaned and category_tags:
+        tag = category_tags[-1].split(":", 1)[-1].replace("-", " ")
+        cleaned = tag
+    return cleaned[:1].upper() + cleaned[1:].lower() if cleaned else ""
+
+
+def guess_category(source: str, tags: list[str], name: str) -> str:
+    t = " ".join(tags or []).lower() + " " + (name or "").lower()
+    if source == "opff" or "pet-food" in t or "dog food" in t or "cat food" in t:
+        return "pet"
+    if any(k in t for k in ("baby-food", "infant", "baby-milk", "follow-on", "nappies", "baby wipes")):
+        return "baby"
+    if any(k in t for k in ("en:waters", "spring-water", "mineral-water", "bottled water", "still water", "spring water")):
+        return "water"
+    if source == "obf" or any(k in t for k in ("soap", "sanitiser", "sanitizer", "toilet", "toothpaste", "shampoo")):
+        if "sanitis" in t or "sanitiz" in t or "hand gel" in t:
+            return "sanitiser"
+        if "wipe" in t:
+            return "wipes"
+        return "bathroom"
+    if any(k in t for k in ("battery", "batteries")):
+        return "batteries"
+    return "food"
+
+
+def pack_amount(category: str, q: dict) -> float:
+    """How much one scanned pack counts for, in the category's unit."""
+    if category == "water" and q.get("litres"):
+        return q["litres"]
+    if category == "food":
+        return float(q.get("count") or 1)  # a 4-pack of tins = 4 meals until the household says otherwise
+    return 1.0
+
+
+# ---------------------------------------------------------------- lookup
+
+def _fetch(url: str, version: str) -> dict | None:
+    req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT.format(version=version), "Accept": "application/json"})
+    with urllib.request.urlopen(req, timeout=8) as resp:
+        return json.loads(resp.read().decode("utf-8"))
+
+
+def _fake_fetch(url: str, version: str) -> dict | None:
+    """Development only: PREPARE_FAKE_LOOKUPS=path/to/fixtures.json answers lookups offline."""
+    import os
+    fixtures = json.loads(open(os.environ["PREPARE_FAKE_LOOKUPS"]).read())
+    for key, data in fixtures.items():
+        if key in url:
+            return data
+    raise urllib.error.HTTPError(url, 404, "not found", {}, None)
+
+
+import os as _os  # noqa: E402
+fetch = _fake_fetch if _os.environ.get("PREPARE_FAKE_LOOKUPS") else _fetch  # tests replace this too
+
+
+def lookup(raw: str, version: str = "0") -> dict:
+    """Everything the scan form needs for one barcode."""
+    code = normalise_barcode(raw)
+    if not code:
+        return {"ok": False, "error": "That doesn't look like a valid barcode. Try again or type it in."}
+    saved = db.row("SELECT * FROM products WHERE barcode=?", (code,))
+    if saved:
+        return {"ok": True, "found": True, "barcode": code, "source": saved["source"], "source_name": SOURCE_NAMES.get(saved["source"], saved["source"]),
+                "saved": True, **{k: saved[k] for k in ("name", "brand", "generic", "category", "pack_amount", "quantity_text", "image_url")}}
+    errors = []
+    for key, label, url in SOURCES:
+        try:
+            data = fetch(url.format(code=code), version)
+        except urllib.error.HTTPError as exc:
+            if exc.code == 404:
+                continue
+            errors.append(f"{label}: busy ({exc.code})" if exc.code in (429, 503) else f"{label}: error {exc.code}")
+            continue
+        except (urllib.error.URLError, TimeoutError, OSError, ValueError) as exc:
+            errors.append(f"{label}: unreachable")
+            log.info("Lookup %s at %s failed: %s", code, label, exc)
+            continue
+        if not data or data.get("status") != 1 or not data.get("product"):
+            continue
+        p = data["product"]
+        name = _clean(p.get("product_name_en") or p.get("product_name") or p.get("generic_name_en") or p.get("generic_name") or "")
+        brand = _clean((p.get("brands") or "").split(",")[0])
+        tags = p.get("categories_tags") or []
+        qtext = _clean(p.get("quantity") or (f"{p.get('product_quantity')} {p.get('product_quantity_unit') or ''}" if p.get("product_quantity") else ""))
+        category = guess_category(key, tags, name)
+        q = parse_quantity(qtext)
+        display = name if not brand or brand.lower() in name.lower() else f"{brand} {name}"
+        return {"ok": True, "found": True, "barcode": code, "source": key, "source_name": label, "saved": False,
+                "name": _clean(f"{display} {qtext}" if qtext and qtext.lower() not in display.lower() else display),
+                "brand": brand, "generic": suggest_generic(name, p.get("brands") or "", tags, p.get("generic_name_en") or p.get("generic_name") or ""),
+                "category": category, "pack_amount": pack_amount(category, q), "quantity_text": qtext,
+                "image_url": p.get("image_front_small_url") or ""}
+    return {"ok": True, "found": False, "barcode": code, "errors": errors,
+            "message": ("Couldn't reach the product databases (" + "; ".join(errors) + "). Fill it in; it'll be remembered.")
+                       if errors else "Not in Open Food Facts yet. Fill it in once and this app will remember it."}
+
+
+def remember(code: str, name: str, brand: str, generic: str, category: str, amount: float, quantity_text: str, source: str, image_url: str = "") -> None:
+    """Save (or correct) what this barcode is, so the next scan needs no typing."""
+    if not code:
+        return
+    db.execute(
+        "INSERT INTO products(barcode, name, brand, generic, category, pack_amount, quantity_text, source, image_url, updated) "
+        "VALUES (?,?,?,?,?,?,?,?,?,?) ON CONFLICT(barcode) DO UPDATE SET name=excluded.name, brand=excluded.brand, "
+        "generic=excluded.generic, category=excluded.category, pack_amount=excluded.pack_amount, "
+        "quantity_text=excluded.quantity_text, updated=excluded.updated",
+        (code, name, brand, generic, category, amount, quantity_text, source or "manual", image_url, db.now_iso()),
+    )

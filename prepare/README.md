@@ -16,6 +16,11 @@ Open **`http://homeassistant.local:8999`** on anything on the home network.
   checklist sections (Food, Water, Hygiene, Light and warmth, and so on). Water counts
   in litres, food in meals. *Used* and *Binned* keep a record, so you can see the rotation
   working and the waste going down.
+- **Scan** - add stock by barcode: live camera on phones (https address), a photo of the
+  barcode, or type the number. Products are looked up on Open Food Facts (UK site first),
+  Open Beauty Facts and Open Pet Food Facts, and remembered in the app.
+- **Product types** - different brands of the same thing group together: Napolina and Tesco
+  chopped tomatoes both count as *Chopped tomatoes*, each batch keeping its own date.
 - **Medication** - optional. Personal (one person) or household (e.g. paracetamol,
   ibuprofen). Expiry and repeat-prescription reminders; printed with doses.
 - **Kit & targets** - the guidance's checklist, scaled to who lives here
@@ -89,7 +94,9 @@ pytest                        # integration tests
 ## Licence
 
 MIT, as the rest of this repository. The heading font, Barlow Condensed, is under the
-SIL Open Font Licence (`app/static/fonts/OFL-Barlow.txt`). Seed content in `app/seed/` is derived from UK
+SIL Open Font Licence (`app/static/fonts/OFL-Barlow.txt`). The barcode reader is ZXing
+(`@zxing/library` 0.21.3, Apache 2.0, `app/static/vendor/`). Product data comes from Open Food
+Facts and its sister databases, © their contributors, under the Open Database Licence. Seed content in `app/seed/` is derived from UK
 Government guidance and contains public sector information licensed under the
 [Open Government Licence v3.0](https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/).
 This is not an official government service.

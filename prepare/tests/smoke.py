@@ -104,7 +104,7 @@ print(c.get("/api/summary").json())
 import re
 t = ok(c.get("/items"), ">Food <b>", ">Water <b>", ">Hygiene <b>", ">Light &amp; warmth <b>", ">Comms &amp; info <b>",
        ">Money &amp; docs <b>", ">Medical <b>", ">Baby <b>", ">Pets <b>")
-d = ok(c.get("/"), "Kit by section", 'href="/items?group=water"')
+dash = ok(c.get("/"), "Kit by section", 'href="/items?group=water"')
 assert "Communication and information" in ok(c.get("/items?group=comms")).text
 water = ok(c.get("/items?group=water")).text
 assert "Water 2L" in water and "Rice" not in water
@@ -113,3 +113,18 @@ r = c.post("/items", data={"name": "Hand gel", "category": "sanitiser", "next": 
 assert r.headers["location"] == "/items?group=hygiene"
 assert "Hand gel" in ok(c.get("/items?group=hygiene")).text
 print("FILTERS OK")
+
+# scanning and product types
+r = c.post("/scan/add", data={"barcode": "8005121000108", "name": "Napolina Chopped Tomatoes 400g", "brand": "Napolina",
+                              "generic": "Chopped tomatoes", "category": "food", "packs": "2", "pack_amount": "1",
+                              "best_before": d(300), "location": "Cupboard"}, follow_redirects=False)
+assert r.status_code == 303 and r.headers["location"].startswith("/scan?added="), r.headers
+ok(c.post("/scan/add", data={"barcode": "5000436589778", "name": "Tesco Chopped Tomatoes", "brand": "Tesco",
+                             "generic": "chopped  TOMATOES", "category": "food", "packs": "1", "pack_amount": "4",
+                             "best_before": d(40), "location": "Cupboard"}), "Added:", "Chopped tomatoes")
+t = ok(c.get("/items?group=food")).text
+assert t.count('class="bundle"') >= 1 and "Napolina, Tesco" in t and "<b>6</b> meals" in t, "bundle"
+assert "Napolina Chopped Tomatoes" in ok(c.get("/items?group=food&view=batches")).text
+assert ok(c.get("/api/lookup/8005121000108")).json()["saved"] is True    # remembered locally
+assert ok(c.get("/api/lookup/8005121000109")).json()["ok"] is False      # bad check digit
+print("SCAN OK")

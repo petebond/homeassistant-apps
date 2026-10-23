@@ -34,6 +34,9 @@ CREATE TABLE IF NOT EXISTS plans (
 CREATE TABLE IF NOT EXISTS contacts (
   id INTEGER PRIMARY KEY, name TEXT NOT NULL, role TEXT DEFAULT '', phone TEXT DEFAULT '',
   phone2 TEXT DEFAULT '', notes TEXT DEFAULT '');
+CREATE TABLE IF NOT EXISTS products (
+  barcode TEXT PRIMARY KEY, name TEXT, brand TEXT, generic TEXT, category TEXT,
+  pack_amount REAL, quantity_text TEXT, source TEXT, image_url TEXT, updated TEXT);
 CREATE TABLE IF NOT EXISTS events (
   id INTEGER PRIMARY KEY, ts TEXT, action TEXT, detail TEXT);
 """
@@ -96,6 +99,12 @@ def init() -> None:
         # 0.1.x databases predate checklist groups: add the column, then fill it from the seed.
         if "grp" not in [r[1] for r in c.execute("PRAGMA table_info(categories)")]:
             c.execute("ALTER TABLE categories ADD COLUMN grp TEXT")
+        # 0.3: scanned products carry a barcode, a brand, and a product type ("generic")
+        # that groups different brands of the same thing.
+        item_cols = [r[1] for r in c.execute("PRAGMA table_info(items)")]
+        for col in ("barcode", "brand", "generic"):
+            if col not in item_cols:
+                c.execute(f"ALTER TABLE items ADD COLUMN {col} TEXT")
         if c.execute("SELECT COUNT(*) FROM categories").fetchone()[0] == 0:
             for i, cat in enumerate(seed["categories"]):
                 c.execute(

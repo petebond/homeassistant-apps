@@ -1,5 +1,30 @@
 # Changelog
 
+## 0.3.0 - 2026-10-23
+
+Barcode scanning, and grouping different brands of the same thing.
+
+- **Scan** page: live camera on the https address (the browser's own barcode
+  reader on Android, the bundled ZXing reader on iPhone), a photo of the barcode
+  on the plain http address, or type the number. Reads EAN-13 and EAN-8, as on
+  UK groceries and own-label packs, plus UPC for imported goods. Check digits are
+  verified, so a misread never becomes a wrong product.
+- Lookups go to Open Food Facts' UK site first, then Open Beauty Facts (hand gel,
+  wipes, toiletries) and Open Pet Food Facts. Results and your corrections are
+  kept in the app, so the second scan of anything is instant and works offline.
+  Unknown barcodes are filled in once and remembered.
+- **Product types** group brands: Napolina and Tesco chopped tomatoes are both
+  "Chopped tomatoes". Suggested from the product name with the brand, UK
+  own-label names (Tesco Finest, Sainsbury's, Asda, Aldi and others), sizes and
+  packing liquids ("in tomato juice") taken out, and matched to types you
+  already use. Editable on every item.
+- Inventory has two views: **By product** (one line per type, totals and the
+  earliest best-before, batches inside) and **Every batch**.
+- Water multipacks count their litres ("6 x 1.5l" = 9 litres); food counts meals
+  per pack, which you set once per barcode.
+- Scanning carries on to the next item with the same storage place, ready for
+  unpacking a shop.
+
 ## 0.2.0 - 2026-10-23
 
 A proper look, based on the UK Be Ready campaign's poster style.

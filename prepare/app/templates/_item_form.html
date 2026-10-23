@@ -1,5 +1,11 @@
 {# Fields shared by the add and edit forms. item = existing row or none. #}
 <label for="f-name">What</label><input id="f-name" name="name" required class="wide" value="{{ item.name if item else '' }}" placeholder="e.g. Bottled water 2L">
+<div class="row2">
+<div><label for="f-type">Product type <span class="hint">groups brands, e.g. Chopped tomatoes</span></label><input id="f-type" name="generic" list="generics" value="{{ item.generic or '' if item else '' }}" class="wide" autocomplete="off"></div>
+<div><label for="f-brand">Brand</label><input id="f-brand" name="brand" value="{{ item.brand or '' if item else '' }}" class="wide"></div>
+</div>
+<datalist id="generics">{% for g in generics %}<option value="{{ g }}">{% endfor %}</datalist>
+<input type="hidden" name="barcode" value="{{ item.barcode or '' if item else '' }}">
 <label for="f-cat">Category</label>{{ cat_select(cats, item.category if item else default_cat, id='f-cat') }}
 <div class="row2">
 <div><label for="f-qty">Quantity <span class="hint">in the category's unit</span></label><input id="f-qty" name="quantity" type="number" step="any" inputmode="decimal" value="{{ ('%g' % item.quantity) if item else 1 }}" class="wide"></div>

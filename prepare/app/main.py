@@ -17,11 +17,11 @@ from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, Redirect
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from . import db, installer, logic, tls
+from . import db, installer, logic, products, tls
 
 log = logging.getLogger("prepare")
 HERE = Path(__file__).parent
-VERSION = "0.2.0"
+VERSION = "0.3.0"
 
 app = FastAPI(title="Prepare", version=VERSION, docs_url="/api/docs", redoc_url=None)
 app.mount("/static", StaticFiles(directory=HERE / "static"), name="static")
@@ -120,7 +120,7 @@ def dashboard(request: Request):
 # ---------- inventory ----------
 
 @app.get("/items", response_class=HTMLResponse)
-def items_page(request: Request, show: str = "active", cat: str = "", group: str = ""):
+def items_page(request: Request, show: str = "active", cat: str = "", group: str = "", view: str = "products"):
     cats = categories()
     groups = db.checklist_groups()
     group_keys = {g["key"] for g in groups}
@@ -152,26 +152,69 @@ def items_page(request: Request, show: str = "active", cat: str = "", group: str
     if sec is None and group in group_keys:  # e.g. Baby with no infant in the household
         g = next(g for g in groups if g["key"] == group)
         sec = {**g, "pct": 0, "note": "Not counted for this household"}
+    view = "batches" if view == "batches" else "products"
     here = "/items" + (f"?group={group}" if group else f"?cat={cat}" if cat else "")
     return render(request, "items.html", items=items, cats=cats, cmap=cmap, show=show, cat=cat, group=group,
                   groups=groups, counts=counts, total=len(active), default_cat=default_cat, sec=sec, here=here,
+                  view=view, bundles=bundle(items), generics=products.known_generics(),
                   warning=int(db.settings().get("warning_days") or 30))
+
+
+def bundle(items: list[dict]) -> list[dict]:
+    """Group batches by product type: every brand of chopped tomatoes under one heading.
+
+    Each batch keeps its own row (and best-before date); the heading adds them up
+    and shows the earliest date, which is the one to act on."""
+    groups: dict[str, dict] = {}
+    for i in items:
+        label = (i.get("generic") or i["name"]).strip()
+        key = f"{label.lower()}|{i['unit']}"
+        g = groups.setdefault(key, {"label": label, "unit": i["unit"], "category": i["category"], "batches": [],
+                                    "quantity": 0.0, "brands": [], "first": None})
+        g["batches"].append(i)
+        if i["status"] == "active":
+            g["quantity"] += i["quantity"] or 0
+        brand = i.get("brand") or ""
+        if brand and brand not in g["brands"]:
+            g["brands"].append(brand)
+        if i["status"] == "active" and i["days_left"] is not None and (g["first"] is None or i["days_left"] < g["first"]["days_left"]):
+            g["first"] = i
+    out = list(groups.values())
+    for g in out:
+        g["brands"].sort(key=str.lower)
+    out.sort(key=lambda g: (g["first"] is None, g["first"]["days_left"] if g["first"] else 0, g["label"].lower()))
+    return out
 
 
 def item_values(f: dict) -> tuple:
     cat = db.row("SELECT unit FROM categories WHERE key=?", (f.get("category"),))
     unit = f.get("unit") or (cat["unit"] if cat else "")
+    generic = (f.get("generic") or "").strip()
     return (f.get("name") or "Unnamed", f.get("category") or "other", num(f.get("quantity"), 1), unit,
             f.get("location", ""), opt_date(f.get("best_before")), 1 if f.get("perishable") else 0,
-            f.get("notes", ""))
+            f.get("notes", ""), (f.get("brand") or "").strip(), match_generic(generic),
+            products.normalise_barcode(f.get("barcode") or "") or None)
+
+
+ITEM_COLS = "name, category, quantity, unit, location, best_before, perishable, notes, brand, generic, barcode"
+
+
+def match_generic(name: str) -> str:
+    """Use the household's existing spelling of a product type, so case and spacing never split a group."""
+    name = " ".join((name or "").split())
+    if not name:
+        return ""
+    for g in products.known_generics():
+        if g.lower() == name.lower():
+            return g
+    return name[:1].upper() + name[1:]
 
 
 @app.post("/items")
 async def item_add(request: Request):
     f = await form(request)
     vals = item_values(f)
-    db.execute("INSERT INTO items(name, category, quantity, unit, location, best_before, perishable, notes, added) "
-               "VALUES (?,?,?,?,?,?,?,?,?)", vals + (db.now_iso(),))
+    db.execute(f"INSERT INTO items({ITEM_COLS}, added) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)", vals + (db.now_iso(),))
     db.log("added", f"{vals[0]} {vals[2]:g} {vals[3]}")
     return back(request, f.get("next") or "/items")
 
@@ -181,15 +224,56 @@ def item_edit_page(request: Request, item_id: int):
     item = db.row("SELECT * FROM items WHERE id=?", (item_id,))
     if not item:
         return back(request, "/items")
-    return render(request, "item_edit.html", item=item, cats=categories())
+    return render(request, "item_edit.html", item=item, cats=categories(), generics=products.known_generics())
 
 
 @app.post("/items/{item_id}")
 async def item_edit(request: Request, item_id: int):
     f = await form(request)
-    db.execute("UPDATE items SET name=?, category=?, quantity=?, unit=?, location=?, best_before=?, perishable=?, notes=? WHERE id=?",
-               item_values(f) + (item_id,))
+    db.execute("UPDATE items SET name=?, category=?, quantity=?, unit=?, location=?, best_before=?, perishable=?, notes=?, "
+               "brand=?, generic=?, barcode=? WHERE id=?", item_values(f) + (item_id,))
     return back(request, "/items")
+
+
+# ---------- scanning ----------
+
+@app.get("/scan", response_class=HTMLResponse)
+def scan_page(request: Request, added: int = 0, loc: str = ""):
+    last = db.row("SELECT * FROM items WHERE id=?", (added,)) if added else None
+    recent = db.rows("SELECT * FROM items WHERE barcode IS NOT NULL AND barcode != '' ORDER BY id DESC LIMIT 6")
+    return render(request, "scan.html", cats=categories(), generics=products.known_generics(), last=last, loc=loc,
+                  recent=recent, cmap={c["key"]: c for c in categories()},
+                  locations=[r["location"] for r in db.rows("SELECT DISTINCT location FROM items WHERE location != '' ORDER BY location")])
+
+
+@app.get("/api/lookup/{code}")
+async def api_lookup(code: str):
+    # Network lookups block, so run them off the event loop.
+    return await asyncio.get_running_loop().run_in_executor(None, products.lookup, code, VERSION)
+
+
+@app.post("/scan/add")
+async def scan_add(request: Request):
+    f = await form(request)
+    code = products.normalise_barcode(f.get("barcode") or "") or ""
+    category = f.get("category") or "food"
+    cat = db.row("SELECT unit FROM categories WHERE key=?", (category,))
+    packs = max(num(f.get("packs"), 1), 0)
+    each = max(num(f.get("pack_amount"), 1), 0)
+    generic = match_generic(f.get("generic") or "")
+    name = (f.get("name") or generic or "Unnamed").strip()
+    brand = (f.get("brand") or "").strip()
+    iid = db.execute(
+        f"INSERT INTO items({ITEM_COLS}, added) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
+        (name, category, round(packs * each, 3), cat["unit"] if cat else "", f.get("location", ""),
+         opt_date(f.get("best_before")), 0, "", brand, generic, code or None, db.now_iso()),
+    )
+    if code:
+        products.remember(code, name, brand, generic, category, each, f.get("quantity_text", ""),
+                          f.get("source") or "manual", f.get("image_url", ""))
+    db.log("added", f"{name} x{packs:g} (scanned)")
+    from urllib.parse import urlencode
+    return back(request, "/scan?" + urlencode({"added": iid, "loc": f.get("location", "")}))
 
 
 def consume(item_id: int, qty: float | None, action: str) -> dict | None:
@@ -506,8 +590,8 @@ def api_items():
 @app.post("/api/items")
 async def api_item_add(request: Request):
     f = await request.json()
-    iid = db.execute("INSERT INTO items(name, category, quantity, unit, location, best_before, perishable, notes, added) "
-                     "VALUES (?,?,?,?,?,?,?,?,?)", item_values({k: str(v) if v is not None else "" for k, v in f.items()}) + (db.now_iso(),))
+    iid = db.execute(f"INSERT INTO items({ITEM_COLS}, added) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
+                     item_values({k: str(v) if v is not None else "" for k, v in f.items()}) + (db.now_iso(),))
     db.log("added", f"{f.get('name')} (via HA)")
     return {"id": iid}
 

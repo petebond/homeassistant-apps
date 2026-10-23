@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% from "_macros.html" import num %}
+{% block title %}Scan{% endblock %}
+{% block content %}
+<h1>Scan</h1>
+
+{% if last %}
+<div class="notice good" role="status"><strong>Added:</strong> {{ last.name }} — {{ num(last.quantity) }} {{ last.unit }}{% if last.best_before %}, best before {{ last.best_before | nicedate }}{% endif %}{% if last.generic %}, under <b>{{ last.generic }}</b>{% endif %}. <a href="{{ b }}/items/{{ last.id }}">Edit</a></div>
+{% endif %}
+
+<section class="scanner noprint" id="scanner">
+  <div class="viewfinder" id="viewfinder" hidden>
+    <video id="video" playsinline muted></video>
+    <div class="aim" aria-hidden="true"></div>
+  </div>
+  <p class="muted" id="scan-status" role="status" aria-live="polite">Point the camera at the barcode. Hold it steady, about a hand's width away.</p>
+  <div class="acts" style="margin-top:0">
+    <button type="button" class="primary" id="start-camera">{{ 'Scan next' if last else 'Start camera' }}</button>
+    <button type="button" class="ghost" id="stop-camera" hidden>Stop</button>
+    <label class="button ghost filebtn" id="photo-label">Photo of barcode<input type="file" accept="image/*" capture="environment" id="photo" hidden></label>
+  </div>
+  <p class="muted" id="http-note" hidden>The live camera needs Prepare's secure address (see <a href="{{ b }}/setup">Phone setup</a>). Taking a photo of the barcode works anywhere.</p>
+  <form id="manual" class="manual" autocomplete="off">
+    <label for="code">Or type the barcode <span class="hint">the numbers under the stripes</span></label>
+    <div class="inline-row"><input id="code" inputmode="numeric" pattern="[0-9 ]*" maxlength="16"><button class="ghost">Look up</button></div>
+  </form>
+</section>
+
+<form method="post" action="{{ b }}/scan/add" id="product" class="formbox" hidden>
+  <p id="lookup-msg" class="lookup-msg" role="status" aria-live="polite"></p>
+  <div class="product-head"><img id="p-img" alt="" hidden><div><span class="lab">Barcode</span><b id="p-code"></b></div></div>
+  <input type="hidden" name="barcode" id="f-barcode">
+  <input type="hidden" name="source" id="f-source">
+  <input type="hidden" name="quantity_text" id="f-qtext">
+  <input type="hidden" name="image_url" id="f-image">
+
+  <label for="f-generic">Product type <span class="hint">what it is, whatever the brand — this groups them in the inventory</span></label>
+  <input id="f-generic" name="generic" list="generics" class="wide" autocomplete="off" required>
+  <datalist id="generics">{% for g in generics %}<option value="{{ g }}">{% endfor %}</datalist>
+  <div class="row2">
+    <div><label for="f-name">Product</label><input id="f-name" name="name" class="wide"></div>
+    <div><label for="f-brand">Brand</label><input id="f-brand" name="brand" class="wide"></div>
+  </div>
+  <label for="f-cat">Category</label>
+  <select id="f-cat" name="category">{% for c in cats %}<option value="{{ c.key }}" data-unit="{{ c.unit }}">{{ c.name }}</option>{% endfor %}</select>
+
+  <div class="row2">
+    <div><label for="f-packs">How many</label>
+      <div class="stepper"><button type="button" class="ghost" data-step="-1" aria-label="One fewer">−</button><input id="f-packs" name="packs" type="number" min="0" step="1" value="1" inputmode="numeric"><button type="button" class="ghost" data-step="1" aria-label="One more">+</button></div></div>
+    <div><label for="f-each">Each counts as <span class="hint" id="unit-label">meals</span></label><input id="f-each" name="pack_amount" type="number" min="0" step="any" value="1" inputmode="decimal" class="wide"></div>
+  </div>
+  <p class="hint" id="each-hint">For food, roughly how many meals one pack gives one person. Prepare remembers your answer for this barcode.</p>
+
+  <div class="row2">
+    <div><label for="f-bb">Best before</label><input id="f-bb" name="best_before" type="date" class="wide"></div>
+    <div><label for="f-loc">Where</label><input id="f-loc" name="location" value="{{ loc }}" class="wide" list="locations"></div>
+  </div>
+  <datalist id="locations">{% for l in locations %}<option value="{{ l }}">{% endfor %}</datalist>
+  <div class="acts"><button class="primary" id="add-btn">Add to inventory</button><button type="button" class="ghost" id="cancel">Cancel</button></div>
+</form>
+
+{% if recent %}
+<h2>Recently scanned</h2>
+<ul class="rows">
+{% for i in recent %}<li><span class="rmain"><a class="rname" href="{{ b }}/items/{{ i.id }}">{{ i.name }}</a><span class="rsub">{{ i.generic }}{% if i.location %} · {{ i.location }}{% endif %}</span></span><span class="rqty">{{ num(i.quantity) }} {{ i.unit }}</span></li>{% endfor %}
+</ul>
+{% endif %}
+<p class="muted" style="margin-top:20px">Product details from <a href="https://uk.openfoodfacts.org/">Open Food Facts</a> and its sister databases (Open Beauty Facts, Open Pet Food Facts) — © their contributors, Open Database Licence. Anything you correct or add is kept on this app only.</p>
+
+<script src="{{ b }}/static/scan.js?v={{ version }}" data-base="{{ b }}" data-zxing="{{ b }}/static/vendor/zxing-library-0.21.3.min.js" data-autostart="{{ 1 if last else '' }}" defer></script>
+{% endblock %}

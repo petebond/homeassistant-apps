@@ -75,6 +75,7 @@ Government [Be Ready](https://beready.campaign.gov.uk/) guidance.
 
 **Know what you've got** — emergency water, food and kit, with best-before dates
 and a *use first* list, so stock is eaten and replaced rather than thrown away.
+Scan barcodes to add things; different brands of the same food group together.
 
 **Know how ready you are** — a score against the guidance, scaled to who lives in
 the house, and exactly what to buy to close the gap.

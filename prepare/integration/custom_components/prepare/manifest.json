@@ -1,0 +1,15 @@
+{
+  "domain": "prepare",
+  "name": "Prepare (Home Emergency System)",
+  "codeowners": [
+    "@petebond"
+  ],
+  "config_flow": true,
+  "dependencies": [],
+  "documentation": "https://github.com/petebond/homeassistant-apps/tree/main/prepare",
+  "integration_type": "service",
+  "iot_class": "local_polling",
+  "issue_tracker": "https://github.com/petebond/homeassistant-apps/issues",
+  "requirements": [],
+  "version": "0.1.0"
+}

@@ -1,0 +1,20 @@
+# What Home Assistant shows under each field in the app's Configuration panel.
+configuration:
+  https_enabled:
+    name: Serve https as well
+    description: >-
+      Also listen on port 8998. Phones need it to install Prepare and read it
+      offline; set each one up once at http://<your-ha-ip>:8999/setup.
+  cert_hosts:
+    name: Extra addresses for the certificate
+    description: >-
+      Comma separated, and only for an address the app can't work out itself.
+      A missing one shows as an https warning on the phone.
+  install_integration:
+    name: Install the Home Assistant integration
+    description: >-
+      Copies the Prepare integration and blueprints into your config folder.
+      Restart Home Assistant after the first install to load it.
+network:
+  8999/tcp: Plain http (main address)
+  8998/tcp: https (phones, offline)

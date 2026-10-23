@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}Edit medication{% endblock %}
+{% block content %}
+<h1>Edit: {{ med.name }}</h1>
+<form method="post" action="{{ b }}/meds/{{ med.id }}">
+{% include "_med_form.html" %}
+<button>Save</button> <a href="{{ b }}/meds">Cancel</a>
+</form>
+{% endblock %}

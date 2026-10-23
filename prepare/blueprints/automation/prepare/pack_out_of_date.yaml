@@ -1,0 +1,51 @@
+blueprint:
+  name: Prepare - reprint the emergency pack
+  description: Remind someone to reprint the paper emergency pack when plans, contacts, medication or stock have changed since it was last printed.
+  domain: automation
+  source_url: https://github.com/petebond/homeassistant-apps/blob/main/prepare/blueprints/automation/prepare/pack_out_of_date.yaml
+  input:
+    notify_device:
+      name: Phone to notify
+      selector:
+        device:
+          integration: mobile_app
+    pack_sensor:
+      name: Pack out of date sensor
+      default: binary_sensor.prepare_pack_out_of_date
+      selector:
+        entity:
+          domain: binary_sensor
+          integration: prepare
+    wait_days:
+      name: Days to wait before reminding (lets changes settle)
+      default: 3
+      selector:
+        number:
+          min: 0
+          max: 30
+          unit_of_measurement: days
+    print_url:
+      name: Print page address
+      default: https://homeassistant.local:8998/print
+      selector:
+        text:
+
+variables:
+  print_url: !input print_url
+
+triggers:
+  - trigger: state
+    entity_id: !input pack_sensor
+    to: "on"
+    for:
+      days: !input wait_days
+
+actions:
+  - device_id: !input notify_device
+    domain: mobile_app
+    type: notify
+    title: "Prepare: reprint the emergency pack"
+    message: Plans, contacts or stock have changed since the pack was last printed. Print a fresh copy for the grab bag.
+    data:
+      url: "{{ print_url }}"
+      clickAction: "{{ print_url }}"

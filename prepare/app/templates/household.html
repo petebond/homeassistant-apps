@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Household{% endblock %}
+{% block content %}
+<h1>Household</h1>
+<h2>Who lives here</h2>
+<p class="muted">Members drive the targets: water and food per person per day, extra for infants and pets.</p>
+<div class="wrap"><table>
+<tr><th>Name</th><th>Type</th><th>Dietary needs</th><th>Notes</th><th></th></tr>
+{% for m in members %}
+<tr>
+<td><input form="mem-{{ m.id }}" name="name" value="{{ m.name }}" size="12"></td>
+<td><select form="mem-{{ m.id }}" name="type">{% for t in types %}<option{% if t == m.type %} selected{% endif %}>{{ t }}</option>{% endfor %}</select></td>
+<td><input form="mem-{{ m.id }}" name="dietary" value="{{ m.dietary }}" size="14"></td>
+<td><input form="mem-{{ m.id }}" name="notes" value="{{ m.notes }}" size="14"></td>
+<td><form id="mem-{{ m.id }}" class="inline" method="post" action="{{ b }}/members/{{ m.id }}"><button>Save</button></form>
+<form class="inline" method="post" action="{{ b }}/members/{{ m.id }}/delete" onsubmit="return confirm('Remove {{ m.name }}?')"><button>Remove</button></form></td>
+</tr>
+{% endfor %}
+<tr>
+<td><input form="mem-new" name="name" placeholder="Name" required size="12"></td>
+<td><select form="mem-new" name="type">{% for t in types %}<option>{{ t }}</option>{% endfor %}</select></td>
+<td><input form="mem-new" name="dietary" size="14"></td><td><input form="mem-new" name="notes" size="14"></td>
+<td><form id="mem-new" class="inline" method="post" action="{{ b }}/members"><button>Add</button></form></td></tr>
+</table></div>
+
+<h2>Household details (printed in the pack)</h2>
+<form method="post" action="{{ b }}/household">
+{% for key, label, kind in fields %}
+<label>{{ label }}<br>
+{% if kind == 'textarea' %}<textarea name="{{ key }}">{{ s[key] }}</textarea>{% else %}<input name="{{ key }}" value="{{ s[key] }}" size="40">{% endif %}
+</label>
+{% endfor %}
+<button>Save details</button>
+</form>
+<p class="muted">Also: add ICE contacts / Medical ID on everyone's phone, and check school or childcare have your current numbers.</p>
+{% endblock %}

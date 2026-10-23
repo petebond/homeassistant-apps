@@ -1,0 +1,7 @@
+{
+  "services": {
+    "add_item": { "service": "mdi:basket-plus" },
+    "consume_item": { "service": "mdi:basket-minus" },
+    "mark_printed": { "service": "mdi:printer-check" }
+  }
+}

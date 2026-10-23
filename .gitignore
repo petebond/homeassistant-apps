@@ -32,3 +32,6 @@ Thumbs.db
 
 # Admin and project promo files
 admin/
+
+# Prepare: local development data
+prepare/.devdata/

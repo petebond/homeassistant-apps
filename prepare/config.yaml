@@ -1,0 +1,61 @@
+name: Prepare
+version: "0.1.0"
+slug: prepare
+description: Household emergency preparedness - kit, food rotation, family plans and a printable pack.
+url: https://github.com/petebond/homeassistant-apps/tree/main/prepare
+
+# Official Home Assistant Python base images (see build.yaml). They run s6 as
+# PID 1, which does NOT pass Dockerfile ENV through to the app - so paths are
+# code defaults (/data), not environment variables.
+arch:
+  - aarch64
+  - amd64
+  - armv7
+init: false
+
+boot: auto
+startup: application
+watchdog: "tcp://[HOST]:[PORT:8999]"
+
+# Also the host name the companion integration is told to use (discovery).
+hostname: prepare
+
+ports:
+  8999/tcp: 8999
+  8998/tcp: 8998
+ports_description:
+  8999/tcp: Plain http - the main address, and for testing
+  8998/tcp: Same interface over https - needed to install on phones and read offline
+
+# A sidebar link, as a secondary route. The app reads the X-Ingress-Path header
+# and prefixes every link with it, so it works under ingress as well as on the
+# direct ports. The PWA is only offered on the direct https port.
+ingress: true
+ingress_port: 8999
+panel_icon: mdi:shield-home
+panel_title: Prepare
+
+# Announces the app to Home Assistant so the companion integration is offered
+# with one click (Settings > Devices & services > Discovered).
+hassio_api: true
+discovery:
+  - prepare
+
+# Home Assistant's config folder at /homeassistant, so the app can install its
+# companion integration (custom_components/prepare) and its blueprints
+# (blueprints/automation/prepare). Nothing else there is touched. Turn
+# install_integration off to manage those folders yourself.
+map:
+  - type: homeassistant_config
+    read_only: false
+
+# `schema` takes a type, not a value - writing a value there makes the whole
+# app config invalid and Supervisor quietly hides the app.
+options:
+  https_enabled: false
+  cert_hosts: ""
+  install_integration: true
+schema:
+  https_enabled: bool
+  cert_hosts: "str?"
+  install_integration: bool

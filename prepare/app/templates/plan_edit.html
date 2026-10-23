@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Edit plan{% endblock %}
+{% block content %}
+<h1>Edit plan: {{ plan.scenario }}</h1>
+<form method="post" action="{{ b }}/plans/{{ plan.id }}">
+<label>Scenario <input name="scenario" value="{{ plan.scenario }}" size="40" required></label>
+<label>Steps, in order (one per line)<br><textarea name="steps" rows="8">{{ plan.steps }}</textarea></label>
+<label>Meeting point for this scenario (blank = household default)<br><input name="meeting_point" value="{{ plan.meeting_point }}" size="40"></label>
+<label>Who does what (one per line, e.g. "Pete: turn off gas")<br><textarea name="roles">{{ plan.roles }}</textarea></label>
+<label>What to take<br><input name="grab_bag" value="{{ plan.grab_bag }}" size="60"></label>
+<label>Notes<br><textarea name="notes">{{ plan.notes }}</textarea></label>
+<label>More information link<br><input name="info_url" value="{{ plan.info_url }}" size="60"></label>
+<button>Save (also marks reviewed)</button> <a href="{{ b }}/plans">Cancel</a>
+</form>
+<form method="post" action="{{ b }}/plans/{{ plan.id }}/delete" onsubmit="return confirm('Delete this plan?')"><button>Delete plan</button></form>
+{% endblock %}

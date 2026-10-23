@@ -1,0 +1,45 @@
+blueprint:
+  name: Prepare - readiness dropped
+  description: Notify when household readiness falls below a threshold (e.g. stock used or expired), with the shopping list.
+  domain: automation
+  source_url: https://github.com/petebond/homeassistant-apps/blob/main/prepare/blueprints/automation/prepare/readiness_low.yaml
+  input:
+    notify_device:
+      name: Phone to notify
+      selector:
+        device:
+          integration: mobile_app
+    readiness_sensor:
+      name: Readiness sensor
+      default: sensor.prepare_readiness
+      selector:
+        entity:
+          domain: sensor
+          integration: prepare
+    threshold:
+      name: Notify below
+      default: 80
+      selector:
+        number:
+          min: 0
+          max: 100
+          unit_of_measurement: "%"
+
+variables:
+  readiness_sensor: !input readiness_sensor
+
+triggers:
+  - trigger: numeric_state
+    entity_id: !input readiness_sensor
+    below: !input threshold
+    for:
+      hours: 12
+
+actions:
+  - device_id: !input notify_device
+    domain: mobile_app
+    type: notify
+    title: "Prepare: readiness {{ states(readiness_sensor) }}%"
+    message: >-
+      {% set s = state_attr(readiness_sensor, 'shortfall') or [] %}
+      To buy: {% for x in s %}{{ x.name }} ({{ x.short }} {{ x.unit }}){{ ', ' if not loop.last }}{% endfor %}

@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Settings{% endblock %}
+{% block content %}
+<h1>Settings</h1>
+<form method="post" action="{{ b }}/settings">
+<label>Warning window for best-before and expiry dates (days) <input name="warning_days" type="number" min="0" value="{{ s.warning_days }}" style="width:5em"></label>
+<label>Days of supplies to aim for <input name="target_days" type="number" min="1" step="any" value="{{ s.target_days }}" style="width:5em"> <span class="muted">guidance: 3</span></label>
+<label>Review kit and plans every (months) <input name="review_months" type="number" min="1" value="{{ s.review_months }}" style="width:5em"> <span class="muted">guidance: check kit every 6 months</span></label>
+<label>Warn about repeat prescriptions (days before due) <input name="repeat_warning_days" type="number" min="0" value="{{ s.repeat_warning_days }}" style="width:5em"></label>
+<button>Save</button>
+</form>
+
+<h2>Access</h2>
+<ul>
+<li>Plain view: <code>http://homeassistant.local:8999</code> - works on anything on the home network.</li>
+<li>Phone app (PWA, works offline): <code>https://homeassistant.local:8998</code> - turn on <i>Serve https as well</i> in the App's Configuration, then follow <a href="{{ b }}/setup">Phone setup</a> on each phone.</li>
+<li>Data: <code>/data/prepare.db</code> inside the App, included in Home Assistant backups.</li>
+</ul>
+
+<h2>Recent activity</h2>
+<div class="wrap"><table>
+<tr><th>When</th><th>What</th><th>Detail</th></tr>
+{% for e in events %}<tr><td>{{ e.ts }}</td><td>{{ e.action }}</td><td>{{ e.detail }}</td></tr>{% else %}<tr><td colspan="3">Nothing yet.</td></tr>{% endfor %}
+</table></div>
+{% endblock %}

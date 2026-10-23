@@ -1,0 +1,135 @@
+# Default kit categories and targets.
+# Source: UK Government "Be ready for emergencies"
+#   https://beready.campaign.gov.uk/be-ready-for-emergencies/
+# Contains public sector information licensed under the Open Government Licence v3.0.
+# Checked: 2026-10-23
+#
+# basis:
+#   person_day  - amount x people x days to cover   (people = adults, children, infants)
+#   person      - amount x people
+#   infant_day  - amount x infants x days (only counts if there is an infant)
+#   pet_day     - amount x pets x days (only counts if there is a pet)
+#   household   - amount, once for the household
+# in_score: false = listed on the checklist but not counted in the readiness score
+
+source_checked: "2026-10-23"
+categories:
+  - key: water
+    name: Drinking water
+    unit: litres
+    basis: person_day
+    amount: 3
+    in_score: true
+    guidance: "3 litres per person per day for drinking. More is needed for cooking and washing."
+  - key: food
+    name: Non-perishable food
+    unit: meals
+    basis: person_day
+    amount: 3
+    in_score: true
+    guidance: "Long shelf life, no fridge or cooking needed (tins, dried fruit, nuts). Buy food you usually eat."
+  - key: torch
+    name: Torch
+    unit: torches
+    basis: household
+    amount: 1
+    in_score: true
+    guidance: "Torches are safer than candles."
+  - key: batteries
+    name: Spare batteries
+    unit: sets
+    basis: household
+    amount: 1
+    in_score: true
+    guidance: "For the torch and radio."
+  - key: warmth
+    name: Blankets, sleeping bags, warm clothing
+    unit: items
+    basis: person
+    amount: 1
+    in_score: true
+    guidance: "Blankets, sleeping bags and warm clothing."
+  - key: radio
+    name: Battery or wind-up FM radio
+    unit: radios
+    basis: household
+    amount: 1
+    in_score: true
+    guidance: "Write down the frequencies of your local news stations (see Household details)."
+  - key: powerbank
+    name: Charged power bank
+    unit: power banks
+    basis: household
+    amount: 1
+    in_score: true
+    guidance: "Keep it charged."
+  - key: cash
+    name: Cash in coins and notes
+    unit: bundles
+    basis: household
+    amount: 1
+    in_score: true
+    guidance: "Cash in coins and notes, plus cards."
+  - key: documents
+    name: Printed copies of ID and important documents
+    unit: sets
+    basis: household
+    amount: 1
+    in_score: true
+    guidance: "Printed copies of IDs and important documents. The printed pack covers contacts and medication."
+  - key: firstaid
+    name: First aid kit
+    unit: kits
+    basis: household
+    amount: 1
+    in_score: true
+    guidance: "Plasters, bandages, thermometer, antiseptic, eyewash, sterile dressings, gloves, medical tape, tweezers."
+  - key: sanitiser
+    name: Hand sanitiser
+    unit: bottles
+    basis: household
+    amount: 1
+    in_score: true
+    guidance: ""
+  - key: wipes
+    name: Wet wipes
+    unit: packs
+    basis: household
+    amount: 1
+    in_score: true
+    guidance: ""
+  - key: bathroom
+    name: Bathroom products
+    unit: items
+    basis: household
+    amount: 1
+    in_score: true
+    guidance: "Toilet roll, sanitary products and similar."
+  - key: baby
+    name: "Baby: ready-to-feed formula, nappies, wipes"
+    unit: days
+    basis: infant_day
+    amount: 1
+    in_score: true
+    guidance: "Ready-to-feed formula is best, as powdered formula may not be safe to make up without boiling water."
+  - key: pet
+    name: "Pets: food and bottled water"
+    unit: days
+    basis: pet_day
+    amount: 1
+    in_score: true
+    guidance: "Pet food and bottled water."
+  - key: car
+    name: Car kit (wintry weather)
+    unit: kits
+    basis: household
+    amount: 1
+    in_score: false
+    guidance: "Torch, in-car phone charger, warm clothes and blankets, hi-vis, jump leads, food and drink, snow shovel, optional first aid kit."
+  - key: other
+    name: Other / not counted
+    unit: items
+    basis: household
+    amount: 0
+    in_score: false
+    guidance: "Anything else you keep for emergencies."

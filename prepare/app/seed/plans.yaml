@@ -1,0 +1,65 @@
+# Starting-point family plans. Edit them for your household in the app.
+# Steps are drawn from UK Government "Be ready for emergencies" and the hazards pages:
+#   https://beready.campaign.gov.uk/be-ready-for-emergencies/
+#   https://beready.campaign.gov.uk/be-informed-about-hazards/
+# Contains public sector information licensed under the Open Government Licence v3.0.
+# Checked: 2026-10-23
+
+general_actions:
+  - "Call 999 if you or someone else is in immediate danger. Make sure children know when and how to dial 999."
+  - "Go in, Stay in, Tune in - going indoors and getting information is often safest, unless there is an obvious risk to the building."
+  - "Evacuate when told to. Delaying can put your life and responders at risk."
+  - "Only help at the scene if it is safe. Otherwise stay away from it."
+  - "Check on neighbours who may need help, if it is safe to do so."
+  - "Use official sources: local council, emergency services, UK Government Emergency Alerts."
+
+plans:
+  - scenario: Power cut
+    steps: |
+      Report it: call 105 (England, Scotland, Wales) or 03457 643643 (Northern Ireland).
+      Use torches, not candles.
+      Use the battery or wind-up radio for news.
+      Check on neighbours who may be at risk.
+      If you need to leave, turn off gas, electricity and water.
+    info_url: https://beready.campaign.gov.uk/be-informed-about-hazards/power-cuts/
+  - scenario: Flooding
+    steps: |
+      Check your flood risk and flood insurance in advance.
+      Agree with everyone at home what you will do if the house floods.
+      Follow emergency services' advice. Evacuate when told to.
+      If you need to leave, turn off gas, electricity and water. Take the grab bag.
+    info_url: https://beready.campaign.gov.uk/be-informed-about-hazards/flooding/
+  - scenario: Fire in the home
+    steps: |
+      Get everyone out using the planned escape route. Call 999.
+      Do not go back inside.
+      Meet at the meeting point near home.
+      In advance: test smoke alarms monthly and book a home fire safety check.
+    info_url: https://beready.campaign.gov.uk/be-informed-about-hazards/fires-in-the-home/
+  - scenario: Evacuation
+    steps: |
+      Leave when told to by the emergency services.
+      Take the grab bag and medication.
+      Turn off gas, electricity and water if you have time.
+      Go to the agreed meeting point; let the emergency contact know where you are.
+    info_url: https://beready.campaign.gov.uk/be-ready-for-emergencies/
+  - scenario: Severe weather (storms, snow and ice, heatwave)
+    steps: |
+      Check Met Office weather warnings: https://www.metoffice.gov.uk/
+      Go in, Stay in, Tune in.
+      Check on neighbours who may be at risk.
+      If travelling in wintry weather, carry the car kit.
+    info_url: https://beready.campaign.gov.uk/be-informed-about-hazards/storms/
+  - scenario: Water supply interruption
+    steps: |
+      Use stored drinking water: 3 litres per person per day.
+      Contact the water supplier (see Household details) for updates.
+      Use ready-to-feed formula for babies rather than making up powder.
+    info_url: https://beready.campaign.gov.uk/be-informed-about-hazards/water-supply-interruptions-or-outages/
+  - scenario: Phone and broadband outage
+    steps: |
+      Use the battery or wind-up FM radio for news (frequencies in Household details).
+      Use the printed contact list.
+      If someone cannot be reached by phone, follow the backup plan (e.g. a trusted person visits them).
+      Go to the meeting point if agreed.
+    info_url: https://beready.campaign.gov.uk/be-informed-about-hazards/phone-broadband-outages/

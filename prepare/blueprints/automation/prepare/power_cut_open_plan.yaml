@@ -1,0 +1,47 @@
+blueprint:
+  name: Prepare - power cut, open the plan
+  description: When a sensor reports mains power lost (e.g. a UPS on battery, or a smart plug going unavailable), send phones a notification that opens the power cut plan. Phones keep the plan offline if Prepare is installed from the HTTPS address.
+  domain: automation
+  source_url: https://github.com/petebond/homeassistant-apps/blob/main/prepare/blueprints/automation/prepare/power_cut_open_plan.yaml
+  input:
+    notify_device:
+      name: Phone to notify
+      selector:
+        device:
+          integration: mobile_app
+    power_entity:
+      name: Entity that shows mains power loss
+      selector:
+        entity:
+    lost_state:
+      name: State that means power is lost
+      description: e.g. "on_battery", "unavailable", "off"
+      default: "unavailable"
+      selector:
+        text:
+    plans_url:
+      name: Plans page address
+      default: https://homeassistant.local:8998/plans
+      selector:
+        text:
+
+variables:
+  plans_url: !input plans_url
+
+triggers:
+  - trigger: state
+    entity_id: !input power_entity
+    to: !input lost_state
+    for:
+      minutes: 2
+
+actions:
+  - device_id: !input notify_device
+    domain: mobile_app
+    type: notify
+    title: "Power cut"
+    message: "Mains power looks lost. Report it on 105. Torches, not candles. Tap to open the power cut plan."
+    data:
+      url: "{{ plans_url }}"
+      clickAction: "{{ plans_url }}"
+      priority: high

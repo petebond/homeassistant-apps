@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% from "_macros.html" import cat_select, expiry_class, days_text %}
+{% block title %}Inventory{% endblock %}
+{% block content %}
+<h1>Inventory</h1>
+<fieldset><legend>Add item</legend>
+<form method="post" action="{{ b }}/items">
+<label>What <input name="name" required size="30" placeholder="e.g. Bottled water 2L"></label>
+<label>Category {{ cat_select(cats, cat) }}</label>
+<label>Quantity <input name="quantity" type="number" step="any" value="1" style="width:6em"> unit <input name="unit" size="8" placeholder="(category unit)"></label>
+<label>Best before <input name="best_before" type="date"> <span class="muted">leave blank if it doesn't expire</span></label>
+<label>Where <input name="location" size="20" placeholder="e.g. Garage shelf"></label>
+<label><input type="checkbox" name="perishable" value="1"> Perishable</label>
+<label>Notes <input name="notes" size="30"></label>
+<button>Add</button>
+</form>
+<p class="muted">Tip: water and food count towards the target in the category unit (litres, meals). Six 2L bottles with the same date = one row, quantity 12. Different dates = separate rows. A tin that feeds one person one meal = 1 meal.</p>
+</fieldset>
+
+<form method="get" action="{{ b }}/items">
+Show: <select name="show"><option value="active"{% if show != 'all' %} selected{% endif %}>In stock</option><option value="all"{% if show == 'all' %} selected{% endif %}>Everything (incl. used/binned)</option></select>
+Category: <select name="cat"><option value="">All</option>{% for c in cats %}<option value="{{ c.key }}"{% if c.key == cat %} selected{% endif %}>{{ c.name }}</option>{% endfor %}</select>
+<button>Filter</button>
+</form>
+
+<div class="wrap"><table>
+<tr><th>Item</th><th>Category</th><th>Qty</th><th>Best before</th><th>Left</th><th>Where</th><th>Status</th><th>Actions</th></tr>
+{% for i in items %}
+<tr id="item-{{ i.id }}" class="{% if i.status == 'active' %}{{ expiry_class(i.days_left, warning) }}{% else %}muted{% endif %}">
+<td><a href="{{ b }}/items/{{ i.id }}">{{ i.name }}</a>{% if i.perishable %} (P){% endif %}{% if i.notes %}<br><span class="muted">{{ i.notes }}</span>{% endif %}</td>
+<td>{{ cmap[i.category].name if i.category in cmap else i.category }}</td>
+<td>{{ i.quantity | round(2) }} {{ i.unit }}</td>
+<td>{{ i.best_before or '-' }}</td>
+<td>{{ days_text(i.days_left) }}</td>
+<td>{{ i.location }}</td>
+<td>{{ i.status }}</td>
+<td>{% if i.status == 'active' %}
+<form class="inline" method="post" action="{{ b }}/items/{{ i.id }}/used"><input name="qty" type="number" step="any" placeholder="all" style="width:4em" title="How many used (blank = all)"><button>Used</button></form>
+<form class="inline" method="post" action="{{ b }}/items/{{ i.id }}/discard"><button>Binned</button></form>
+{% endif %}
+<form class="inline" method="post" action="{{ b }}/items/{{ i.id }}/delete" onsubmit="return confirm('Delete permanently? (Use Used/Binned instead to keep history)')"><button>Delete</button></form>
+</td></tr>
+{% else %}<tr><td colspan="8">No items.</td></tr>{% endfor %}
+</table></div>
+<p class="muted">Red = expired (doesn't count towards readiness). Yellow = within {{ warning }} days. "Used" = eaten/used; "Binned" = thrown away (counts as waste).</p>
+{% endblock %}

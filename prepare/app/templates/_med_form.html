@@ -1,0 +1,12 @@
+<label>Medicine <input name="name" required size="24" value="{{ med.name if med else '' }}" placeholder="e.g. Paracetamol"></label>
+<label>Strength <input name="strength" size="10" value="{{ med.strength if med else '' }}" placeholder="500mg"></label>
+<label>Dose / how to take <input name="dose" size="30" value="{{ med.dose if med else '' }}" placeholder="2 tablets up to 4 times a day"></label>
+<label>Quantity held <input name="quantity" size="12" value="{{ med.quantity if med else '' }}" placeholder="32 tablets"></label>
+<label>For
+<select name="owner_id">
+<option value="">Household (shared)</option>
+{% for p in people %}<option value="{{ p.id }}"{% if med and med.owner_id == p.id %} selected{% endif %}>{{ p.name }} ({{ p.type }})</option>{% endfor %}
+</select></label>
+<label>Expiry <input name="expiry" type="date" value="{{ med.expiry or '' if med else '' }}"></label>
+<label>Next repeat prescription due <input name="repeat_due" type="date" value="{{ med.repeat_due or '' if med else '' }}"> <span class="muted">request up to 5 working days before</span></label>
+<label>Notes <input name="notes" size="30" value="{{ med.notes if med else '' }}"></label>

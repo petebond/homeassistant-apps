@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Family plans{% endblock %}
+{% block content %}
+<h1>Family plans</h1>
+<fieldset><legend>In any emergency</legend>
+<ul>{% for a in general %}<li>{{ a }}</li>{% endfor %}</ul>
+<p>Meeting point near home: <b>{{ s.meeting_near or '(not set)' }}</b> · away from the area: <b>{{ s.meeting_far or '(not set)' }}</b> · <a href="{{ b }}/household">edit</a></p>
+</fieldset>
+
+{% set due_ids = v.plans_due | map(attribute="id") | list %}
+<p>Jump to: {% for p in plans %}<a href="#plan-{{ p.id }}">{{ p.scenario }}</a>{% if not loop.last %} · {% endif %}{% endfor %}</p>
+
+{% for p in plans %}
+<fieldset id="plan-{{ p.id }}"><legend><b>{{ p.scenario }}</b></legend>
+<ol>{% for line in p.steps.splitlines() if line.strip() %}<li>{{ line }}</li>{% endfor %}</ol>
+{% if p.meeting_point %}<p><b>Meet at:</b> {{ p.meeting_point }}</p>{% endif %}
+{% if p.roles %}<p><b>Who does what:</b><br><span style="white-space:pre-line">{{ p.roles }}</span></p>{% endif %}
+{% if p.grab_bag %}<p><b>Take:</b> {{ p.grab_bag }}</p>{% endif %}
+{% if p.notes %}<p><b>Notes:</b> {{ p.notes }}</p>{% endif %}
+{% if p.info_url %}<p class="muted">More: <a href="{{ p.info_url }}">{{ p.info_url }}</a></p>{% endif %}
+<p class="muted {% if p.id in due_ids %}warn{% endif %}">Last reviewed: {{ p.last_reviewed or 'never' }}</p>
+<a href="{{ b }}/plans/{{ p.id }}">Edit</a>
+<form class="inline" method="post" action="{{ b }}/plans/{{ p.id }}/reviewed"><button>Mark reviewed today</button></form>
+</fieldset>
+{% endfor %}
+
+<fieldset><legend>Add a scenario</legend>
+<form method="post" action="{{ b }}/plans"><input name="scenario" placeholder="e.g. Heatwave" required> <button>Add</button></form>
+</fieldset>
+{% endblock %}

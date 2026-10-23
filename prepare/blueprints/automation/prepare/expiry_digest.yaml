@@ -1,0 +1,69 @@
+blueprint:
+  name: Prepare - weekly expiry digest
+  description: Once a week, send a phone notification listing emergency stock that is about to expire (eat it and replace it) or has expired.
+  domain: automation
+  source_url: https://github.com/petebond/homeassistant-apps/blob/main/prepare/blueprints/automation/prepare/expiry_digest.yaml
+  input:
+    notify_device:
+      name: Phone to notify
+      selector:
+        device:
+          integration: mobile_app
+    day:
+      name: Day of the week
+      default: sat
+      selector:
+        select:
+          options: [mon, tue, wed, thu, fri, sat, sun]
+    time:
+      name: Time
+      default: "09:00:00"
+      selector:
+        time:
+    expiring_sensor:
+      name: Items expiring sensor
+      default: sensor.prepare_items_expiring
+      selector:
+        entity:
+          domain: sensor
+          integration: prepare
+    expired_sensor:
+      name: Items expired sensor
+      default: sensor.prepare_items_expired
+      selector:
+        entity:
+          domain: sensor
+          integration: prepare
+    app_url:
+      name: Prepare address to open
+      default: https://homeassistant.local:8998/
+      selector:
+        text:
+
+variables:
+  expiring_sensor: !input expiring_sensor
+  expired_sensor: !input expired_sensor
+  app_url: !input app_url
+
+triggers:
+  - trigger: time
+    at: !input time
+    weekday: !input day
+
+conditions:
+  - condition: template
+    value_template: "{{ (states(expiring_sensor) | int(0)) + (states(expired_sensor) | int(0)) > 0 }}"
+
+actions:
+  - device_id: !input notify_device
+    domain: mobile_app
+    type: notify
+    title: "Prepare: use it or replace it"
+    message: >-
+      {% set soon = state_attr(expiring_sensor, 'items') or [] %}
+      {% set gone = state_attr(expired_sensor, 'items') or [] %}
+      {% if gone %}Expired: {{ gone | map(attribute='name') | join(', ') }}. {% endif %}
+      {% if soon %}Use soon: {% for i in soon %}{{ i.name }} ({{ i.days_left }}d){{ ', ' if not loop.last }}{% endfor %}.{% endif %}
+    data:
+      url: "{{ app_url }}"
+      clickAction: "{{ app_url }}"

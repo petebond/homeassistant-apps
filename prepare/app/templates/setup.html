@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Phone setup{% endblock %}
+{% block content %}
+<h1>Set a phone up for offline use</h1>
+<p>To keep plans, contacts and the pack on a phone for a power cut, the browser needs a secure (https) address. Prepare signs its own certificate, and each phone has to trust it once. (This is separate from the Meal Planner's certificate - a phone needs both if you use both.)</p>
+{% if not ready %}<div class="banner bad"><b>https is not switched on yet.</b> In Home Assistant: Settings &rarr; Apps &rarr; Prepare &rarr; Configuration, turn on <i>Serve https as well</i>, save and restart the app, then reload this page.</div>{% endif %}
+
+<h2>1. Install the certificate</h2>
+<p><a href="{{ b }}/ca.crt"><b>Download the certificate</b></a></p>
+
+{% set apple_steps %}
+<li>Tap <b>Download the certificate</b>. Allow Safari to download the configuration profile.</li>
+<li><b>Settings</b> &rarr; <b>Profile Downloaded</b> &rarr; <b>Install</b>, enter your passcode, <b>Install</b> again.</li>
+<li>The step people miss: <b>Settings &rsaquo; General &rsaquo; About &rsaquo; Certificate Trust Settings</b> &rarr; turn <b>on</b> "Prepare Local CA".</li>
+{% endset %}
+{% set android_steps %}
+<li>Tap <b>Download the certificate</b> and let it save.</li>
+<li><b>Settings</b>, search for <b>CA certificate</b> (usually Security &rsaquo; More security settings &rsaquo; Encryption &amp; credentials &rsaquo; Install a certificate &rsaquo; CA certificate).</li>
+<li><b>Install anyway</b>, pick the downloaded <code>prepare-ca.crt</code>. A "network may be monitored" notice is expected and harmless.</li>
+{% endset %}
+
+<h2>2. {{ "On an iPhone or iPad" if apple else "On an Android phone" }}</h2>
+<ol>{{ apple_steps if apple else android_steps }}</ol>
+
+<h2>3. Open Prepare at its secure address</h2>
+<p><code>https://{{ host }}:{{ https_port }}/</code></p>
+<p>Then add it to the home screen (Share &rsaquo; Add to Home Screen on iPhone; &#8942; &rsaquo; Install app on Android). Open the Dashboard once while at home: it saves every main page on the phone.</p>
+
+<h2 class="muted">{{ "On an Android phone" if apple else "On an iPhone or iPad" }}</h2>
+<ol class="muted">{{ android_steps if apple else apple_steps }}</ol>
+
+<p class="muted">Plain address, still works: <code>http://{{ host }}:8999/</code></p>
+{% if fingerprint %}<p class="muted">Certificate fingerprint (SHA-256): <code>{{ fingerprint }}</code></p>{% endif %}
+{% endblock %}

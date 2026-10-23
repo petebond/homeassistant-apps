@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Contacts{% endblock %}
+{% block content %}
+<h1>Contacts</h1>
+<p class="muted">Write the important numbers down: this list is printed in the pack. Power cuts: 105 (GB) / 03457 643643 (NI). Emergencies: 999.</p>
+<div class="wrap"><table>
+<tr><th>Name</th><th>Role</th><th>Phone</th><th>Other phone</th><th>Notes</th><th></th></tr>
+{% for c in contacts %}
+<tr>
+<td><input form="c-{{ c.id }}" name="name" value="{{ c.name }}" size="14"></td>
+<td><select form="c-{{ c.id }}" name="role">{% for r in roles %}<option{% if r == c.role %} selected{% endif %}>{{ r }}</option>{% endfor %}{% if c.role not in roles %}<option selected>{{ c.role }}</option>{% endif %}</select></td>
+<td><input form="c-{{ c.id }}" name="phone" value="{{ c.phone }}" size="12" type="tel"> {% if c.phone %}<a href="tel:{{ c.phone }}">call</a>{% endif %}</td>
+<td><input form="c-{{ c.id }}" name="phone2" value="{{ c.phone2 }}" size="12" type="tel"></td>
+<td><input form="c-{{ c.id }}" name="notes" value="{{ c.notes }}" size="14"></td>
+<td><form id="c-{{ c.id }}" class="inline" method="post" action="{{ b }}/contacts/{{ c.id }}"><button>Save</button></form>
+<form class="inline" method="post" action="{{ b }}/contacts/{{ c.id }}/delete" onsubmit="return confirm('Delete {{ c.name }}?')"><button>Delete</button></form></td>
+</tr>
+{% endfor %}
+<tr>
+<td><input form="c-new" name="name" placeholder="Name" required size="14"></td>
+<td><select form="c-new" name="role">{% for r in roles %}<option>{{ r }}</option>{% endfor %}</select></td>
+<td><input form="c-new" name="phone" size="12" type="tel"></td>
+<td><input form="c-new" name="phone2" size="12" type="tel"></td>
+<td><input form="c-new" name="notes" size="14"></td>
+<td><form id="c-new" class="inline" method="post" action="{{ b }}/contacts"><button>Add</button></form></td>
+</tr>
+</table></div>
+{% endblock %}

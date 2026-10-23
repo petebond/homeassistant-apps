@@ -68,6 +68,38 @@ which you can edit or delete.
 | Requires | Home Assistant OS or Supervised |
 | Data | Written to the app's `/data` volume, and included in Home Assistant's own backups |
 
+### 🛟 Prepare
+
+Get the household ready for emergencies, and keep it ready, following the UK
+Government [Be Ready](https://beready.campaign.gov.uk/) guidance.
+
+**Know what you've got** — emergency water, food and kit, with best-before dates
+and a *use first* list, so stock is eaten and replaced rather than thrown away.
+
+**Know how ready you are** — a score against the guidance, scaled to who lives in
+the house, and exactly what to buy to close the gap.
+
+**Know what to do** — family plans for power cuts, flooding, fire, evacuation,
+severe weather and outages, plus contacts, meeting points and medication.
+
+**Have it on paper** — a printed pack, because there's no point having it online
+when the power goes out. Prepare says when it needs reprinting.
+
+**Have it on your phone** — installs as an app over https and works offline.
+
+**Reminders in Home Assistant** — the app installs its own integration (sensors,
+a shopping To-do list, services) and blueprints for expiry, reprinting and power cuts.
+
+Version 0.1 is deliberately plain: function first.
+
+→ [Full documentation](prepare/README.md) · [Changelog](prepare/CHANGELOG.md)
+
+| | |
+| --- | --- |
+| Ports | 8999 (web interface), 8998 (the same over https, needed for phones and offline) |
+| Requires | Home Assistant OS or Supervised |
+| Data | Written to the app's `/data` volume, and included in Home Assistant's own backups |
+
 ## Licence
 
 MIT — see [LICENSE](LICENSE).

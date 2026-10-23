@@ -1,0 +1,17 @@
+{% macro cat_select(cats, selected='', name='category') -%}
+<select name="{{ name }}">
+{% for c in cats %}<option value="{{ c.key }}"{% if c.key == selected %} selected{% endif %}>{{ c.name }} ({{ c.unit }})</option>{% endfor %}
+</select>
+{%- endmacro %}
+
+{% macro expiry_class(days, warning=30) -%}
+{%- if days is none -%}{%- elif days < 0 -%}bad{%- elif days <= warning -%}warn{%- endif -%}
+{%- endmacro %}
+
+{% macro days_text(days) -%}
+{%- if days is none -%}-{%- elif days < 0 -%}EXPIRED {{ -days }}d ago{%- elif days == 0 -%}today{%- else -%}{{ days }}d{%- endif -%}
+{%- endmacro %}
+
+{% macro pct(score) -%}{% if score is none %}n/a{% else %}{{ (score * 100) | round | int }}%{% endif %}{%- endmacro %}
+
+{% macro score_class(score) -%}{% if score is none %}{% elif score >= 1 %}ok{% elif score >= 0.5 %}warn{% else %}bad{% endif %}{%- endmacro %}

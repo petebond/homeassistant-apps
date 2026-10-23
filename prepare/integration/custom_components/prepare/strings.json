@@ -1,0 +1,65 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect to the Prepare App",
+        "description": "Enter the address of the Prepare App's plain HTTP port.",
+        "data": { "url": "App URL" }
+      },
+      "hassio_confirm": {
+        "title": "Prepare App found",
+        "description": "Set up the Prepare integration using the App at {url}?"
+      }
+    },
+    "error": { "cannot_connect": "Could not reach the Prepare App. Is it running?" },
+    "abort": {
+      "already_configured": "Prepare is already set up.",
+      "cannot_connect": "Could not reach the Prepare App."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "readiness": { "name": "Readiness" },
+      "days_covered": { "name": "Days covered" },
+      "items_expiring": { "name": "Items expiring" },
+      "items_expired": { "name": "Items expired" },
+      "meds_expiring": { "name": "Medication expiring" },
+      "pack_last_printed": { "name": "Pack last printed" }
+    },
+    "binary_sensor": {
+      "pack_out_of_date": { "name": "Pack out of date" },
+      "kit_check_due": { "name": "Kit check due" },
+      "plans_review_due": { "name": "Plans review due" }
+    },
+    "todo": {
+      "shortfall": { "name": "Shortfall" }
+    }
+  },
+  "services": {
+    "add_item": {
+      "name": "Add item",
+      "description": "Add stock to the Prepare inventory.",
+      "fields": {
+        "name": { "name": "Name", "description": "What it is." },
+        "category": { "name": "Category", "description": "Category key, e.g. water, food, torch, batteries, firstaid." },
+        "quantity": { "name": "Quantity", "description": "How much, in the category unit (litres for water, meals for food)." },
+        "unit": { "name": "Unit", "description": "Leave blank to use the category unit." },
+        "best_before": { "name": "Best before", "description": "Best-before or expiry date." },
+        "location": { "name": "Location", "description": "Where it is kept." }
+      }
+    },
+    "consume_item": {
+      "name": "Use or bin an item",
+      "description": "Record that some or all of an item was used or thrown away.",
+      "fields": {
+        "item_id": { "name": "Item ID", "description": "ID from the Items expiring sensor's attributes." },
+        "quantity": { "name": "Quantity", "description": "How much was used. Leave blank for all of it." },
+        "discard": { "name": "Thrown away", "description": "True if it was binned rather than used." }
+      }
+    },
+    "mark_printed": {
+      "name": "Mark pack printed",
+      "description": "Record that the emergency pack has been printed."
+    }
+  }
+}

@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}Prepare{% endblock %} - Prepare</title>
+<link rel="manifest" href="{{ b }}/manifest.webmanifest">
+<link rel="icon" href="{{ b }}/static/icon-192.png">
+<link rel="apple-touch-icon" href="{{ b }}/static/icon-192.png">
+<meta name="theme-color" content="#c81e1e">
+<link rel="stylesheet" href="{{ b }}/static/style.css">
+</head>
+<body>
+<nav>
+<b>PREPARE</b> |
+<a href="{{ b }}/">Dashboard</a>
+<a href="{{ b }}/items">Inventory</a>
+<a href="{{ b }}/meds">Medication</a>
+<a href="{{ b }}/kit">Kit &amp; targets</a>
+<a href="{{ b }}/plans">Family plans</a>
+<a href="{{ b }}/contacts">Contacts</a>
+<a href="{{ b }}/household">Household</a>
+<a href="{{ b }}/print">PRINT PACK</a>
+<a href="{{ b }}/settings">Settings</a>
+<a href="{{ b }}/setup">Phone setup</a>
+</nav>
+<div id="offline-banner" class="banner warn" style="display:none">OFFLINE - showing the last saved copy. Changes can't be saved until you're back on the home network.</div>
+{% if pack.out_of_date %}<div class="banner warn noprint">Printed pack is out of date{% if pack.last_printed %} (last printed {{ pack.last_printed[:10] }}){% else %} (never printed){% endif %}. <a href="{{ b }}/print">Print it now</a>.</div>{% endif %}
+{% block content %}{% endblock %}
+<p class="muted noprint">Prepare v{{ version }} · Guidance: <a href="https://beready.campaign.gov.uk/">beready.campaign.gov.uk</a> (OGL v3.0)</p>
+<script>
+(function () {
+  var base = "{{ b }}";
+  if (!navigator.onLine) document.getElementById("offline-banner").style.display = "block";
+  window.addEventListener("offline", function () { document.getElementById("offline-banner").style.display = "block"; });
+  window.addEventListener("online", function () { document.getElementById("offline-banner").style.display = "none"; });
+  // PWA: only on HTTPS (port 8998) and not inside the HA sidebar (Ingress).
+  if ("serviceWorker" in navigator && window.isSecureContext && base === "") {
+    navigator.serviceWorker.register("/sw.js", { scope: "/" });
+    // Opening the dashboard online refreshes the saved copies of every core page.
+    if (navigator.onLine && location.pathname === "/") {
+      navigator.serviceWorker.ready.then(function (r) { if (r.active) r.active.postMessage("refresh"); });
+    }
+  }
+})();
+</script>
+</body>
+</html>

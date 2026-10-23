@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% from "_macros.html" import expiry_class, days_text %}
+{% block title %}Medication{% endblock %}
+{% block content %}
+<h1>Medication</h1>
+<p class="muted">Optional. Personal medication belongs to one person; household medication (e.g. paracetamol, ibuprofen) is shared. Everything here is printed in the pack with doses, as the guidance advises.</p>
+<div class="wrap"><table>
+<tr><th>For</th><th>Medicine</th><th>Dose</th><th>Held</th><th>Expiry</th><th>Repeat due</th><th></th></tr>
+{% for m in meds %}
+<tr class="{{ expiry_class(m.days_left) }}">
+<td>{{ pmap.get(m.owner_id, 'Household') if m.owner_id else 'Household' }}</td>
+<td><a href="{{ b }}/meds/{{ m.id }}">{{ m.name }}</a> {{ m.strength }}{% if m.notes %}<br><span class="muted">{{ m.notes }}</span>{% endif %}</td>
+<td>{{ m.dose }}</td><td>{{ m.quantity }}</td>
+<td>{{ m.expiry or '-' }} {% if m.days_left is not none %}({{ days_text(m.days_left) }}){% endif %}</td>
+<td class="{% if m.repeat_days is not none and m.repeat_days <= 7 %}warn{% endif %}">{{ m.repeat_due or '-' }}</td>
+<td><form class="inline" method="post" action="{{ b }}/meds/{{ m.id }}/delete" onsubmit="return confirm('Delete?')"><button>Delete</button></form></td>
+</tr>
+{% else %}<tr><td colspan="7">No medication recorded.</td></tr>{% endfor %}
+</table></div>
+<fieldset><legend>Add medication</legend>
+<form method="post" action="{{ b }}/meds">
+{% set med = none %}{% include "_med_form.html" %}
+<button>Add</button>
+</form></fieldset>
+{% endblock %}

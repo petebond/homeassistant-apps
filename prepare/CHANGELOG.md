@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.1 - 2026-10-23
+
+- Fix: the app now announces itself to Home Assistant, so the integration is
+  offered under Discovered. The base image's s6 init was hiding Supervisor's
+  token from the app; it is now read back from s6's container environment.
+- Fix: dates and times follow Home Assistant's time zone instead of UTC (same cause).
+- Docs: the medication sensor is `sensor.prepare_medication_expiring`.
+
 ## 0.1.0 - 2026-10-23
 
 First version. Deliberately plain HTML: function and content first.

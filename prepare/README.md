@@ -58,7 +58,7 @@ Prepare then appears under **Settings → Devices & services → Discovered**.
 | `sensor.prepare_readiness` | Overall %, per-category scores and shortfall as attributes |
 | `sensor.prepare_days_covered` | Days the household could manage on water and food |
 | `sensor.prepare_items_expiring` / `_items_expired` | Counts, with the items as attributes |
-| `sensor.prepare_meds_expiring` | Medication expiring or expired |
+| `sensor.prepare_medication_expiring` | Medication expiring or expired |
 | `sensor.prepare_pack_last_printed` | When the pack was last printed |
 | `binary_sensor.prepare_pack_out_of_date` | On when the pack needs reprinting |
 | `binary_sensor.prepare_kit_check_due` / `_plans_review_due` | Reviews due |

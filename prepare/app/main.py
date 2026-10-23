@@ -7,6 +7,7 @@ import re
 import socket
 import ssl
 import threading
+import time
 import urllib.request
 from pathlib import Path
 
@@ -20,7 +21,7 @@ from . import db, installer, logic, tls
 
 log = logging.getLogger("prepare")
 HERE = Path(__file__).parent
-VERSION = "0.1.0"
+VERSION = "0.1.1"
 
 app = FastAPI(title="Prepare", version=VERSION, docs_url="/api/docs", redoc_url=None)
 app.mount("/static", StaticFiles(directory=HERE / "static"), name="static")
@@ -603,6 +604,7 @@ def supervisor_discovery() -> None:
     """Tell HA the App exists so the companion integration can be set up with one click."""
     token = os.environ.get("SUPERVISOR_TOKEN")
     if not token:
+        log.warning("No SUPERVISOR_TOKEN - can't announce the app for discovery")
         return
     body = json.dumps({"service": "prepare", "config": {"host": socket.gethostname(), "port": 8999}}).encode()
     req = urllib.request.Request("http://supervisor/discovery", data=body, method="POST",
@@ -626,7 +628,28 @@ def lan_ip() -> str:
         s.close()
 
 
+def load_container_environment(path: str = "/run/s6/container_environment") -> None:
+    """Pick up the variables Supervisor gave the container.
+
+    The base image runs s6 as PID 1, and s6 starts the app with a cleaned
+    environment: SUPERVISOR_TOKEN (needed to announce the app for discovery)
+    and TZ (UK time rather than UTC) never reach it. s6 keeps them as one file
+    per variable here, so read them back in."""
+    folder = Path(path)
+    if not folder.is_dir():
+        return
+    for f in folder.iterdir():
+        if f.is_file() and f.name not in os.environ:
+            try:
+                os.environ[f.name] = f.read_text().strip()
+            except OSError:
+                pass
+    if hasattr(time, "tzset"):
+        time.tzset()
+
+
 async def serve() -> None:
+    load_container_environment()
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
     db.init()
     opts = load_options()

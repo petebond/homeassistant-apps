@@ -21,7 +21,7 @@ from . import db, installer, logic, products, tls
 
 log = logging.getLogger("prepare")
 HERE = Path(__file__).parent
-VERSION = "0.3.0"
+VERSION = "0.3.1"
 
 app = FastAPI(title="Prepare", version=VERSION, docs_url="/api/docs", redoc_url=None)
 app.mount("/static", StaticFiles(directory=HERE / "static"), name="static")

@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.1 - 2026-10-23
+
+- Brands: Open Food Facts sometimes lists the maker's company ("H J Heinz Foods
+  UK Ltd"). Prepare now prefers the brand on the pack ("Heinz").
+- Product types drop "in a rich tomato sauce" and similar, and use a more
+  specific Open Food Facts category when it says the same thing ("Beans" with
+  the category baked beans becomes "Baked beans").
+
 ## 0.3.0 - 2026-10-23
 
 Barcode scanning, and grouping different brands of the same thing.

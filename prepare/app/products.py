@@ -49,7 +49,7 @@ UK_OWN_LABELS = sorted([
 # Words that describe the same thing differently, and packing liquids that don't change
 # what it is for an emergency store: "Chopped Tomatoes in Tomato Juice" is chopped tomatoes.
 DESCRIPTORS = re.compile(r"\b(italian|premium|classic|original|traditional|everyday|value|select|quality|plum|whole)\b(?=.*\w)", re.I)
-PACKED_IN = re.compile(r"\s+in\s+(rich\s+)?(tomato\s+juice|tomato\s+sauce|juice|natural\s+juice|water|spring\s+water|brine|"
+PACKED_IN = re.compile(r"\s+in\s+(?:a\s+|an\s+)?(?:rich\s+|thick\s+|light\s+|natural\s+)?(tomato\s+juice|tomato\s+sauce|juice|natural\s+juice|water|spring\s+water|brine|"
                        r"sunflower\s+oil|olive\s+oil|oil|syrup|light\s+syrup|own\s+juice)\b.*$", re.I)
 SPELLINGS = {r"\bbeanz\b": "beans", r"\btomatos\b": "tomatoes"}
 SIZE_RE = re.compile(r"\b\d+(?:[.,]\d+)?\s*(?:x\s*\d+(?:[.,]\d+)?\s*)?(?:kg|g|gr|grams?|ml|cl|l|ltr|litres?|liters?|oz|pk|pack|cans?|tins?)\b\.?", re.I)
@@ -106,6 +106,26 @@ def parse_quantity(text: str) -> dict:
 
 # ---------------------------------------------------------------- product types
 
+COMPANY = re.compile(r"\b(ltd|limited|plc|llp|llc|inc|gmbh|s\.?a\.?|uk|foods?|group|company|brands?|international)\b\.?", re.I)
+
+
+def pick_brand(brands: str, name: str = "") -> str:
+    """Open Food Facts 'brands' can list the maker's company first ('H J Heinz Foods UK Ltd, Heinz').
+    Prefer a brand that appears in the product name, then one that isn't a company, then tidy one up."""
+    cands = [_clean(b) for b in (brands or "").split(",") if _clean(b)]
+    if not cands:
+        return ""
+    for b in cands:
+        if b.lower() in (name or "").lower():
+            return b
+    plain = [b for b in cands if not COMPANY.search(b)]
+    if plain:
+        return min(plain, key=len)
+    tidy = _clean(COMPANY.sub(" ", cands[0]))
+    tidy = re.sub(r"^(?:[A-Z]\.?\s+)+", "", tidy)  # leading initials: "H J Heinz" -> "Heinz"
+    return tidy or cands[0]
+
+
 def _clean(s: str) -> str:
     return re.sub(r"\s+", " ", s or "").strip(" -,.:;")
 
@@ -143,6 +163,14 @@ def suggest_generic(name: str, brands: str = "", category_tags: list[str] | None
             return g
     if not cleaned and generic_name:
         cleaned = _clean(generic_name)
+    # A more specific Open Food Facts category that says the same thing wins:
+    # "Beans" with the category "en:baked-beans" becomes "Baked beans".
+    words = set(cleaned.lower().split())
+    for tag in reversed([t for t in (category_tags or []) if t.startswith("en:")][-4:]):
+        human = tag[3:].replace("-", " ")
+        if words and words < set(human.split()) and len(human.split()) <= 4:
+            cleaned = human
+            break
     if not cleaned and category_tags:
         tag = category_tags[-1].split(":", 1)[-1].replace("-", " ")
         cleaned = tag
@@ -225,7 +253,7 @@ def lookup(raw: str, version: str = "0") -> dict:
             continue
         p = data["product"]
         name = _clean(p.get("product_name_en") or p.get("product_name") or p.get("generic_name_en") or p.get("generic_name") or "")
-        brand = _clean((p.get("brands") or "").split(",")[0])
+        brand = pick_brand(p.get("brands") or "", name)
         tags = p.get("categories_tags") or []
         qtext = _clean(p.get("quantity") or (f"{p.get('product_quantity')} {p.get('product_quantity_unit') or ''}" if p.get("product_quantity") else ""))
         category = guess_category(key, tags, name)
@@ -233,7 +261,7 @@ def lookup(raw: str, version: str = "0") -> dict:
         display = name if not brand or brand.lower() in name.lower() else f"{brand} {name}"
         return {"ok": True, "found": True, "barcode": code, "source": key, "source_name": label, "saved": False,
                 "name": _clean(f"{display} {qtext}" if qtext and qtext.lower() not in display.lower() else display),
-                "brand": brand, "generic": suggest_generic(name, p.get("brands") or "", tags, p.get("generic_name_en") or p.get("generic_name") or ""),
+                "brand": brand, "generic": suggest_generic(name, (p.get("brands") or "") + "," + brand, tags, p.get("generic_name_en") or p.get("generic_name") or ""),
                 "category": category, "pack_amount": pack_amount(category, q), "quantity_text": qtext,
                 "image_url": p.get("image_front_small_url") or ""}
     return {"ok": True, "found": False, "barcode": code, "errors": errors,

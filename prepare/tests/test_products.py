@@ -89,3 +89,24 @@ def test_lookup_beauty_database(monkeypatch):
     monkeypatch.setattr(products, "fetch", fake)
     r = products.lookup("0036000291452")
     assert r["source"] == "obf" and r["category"] == "sanitiser" and r["generic"] == "Hand sanitiser"
+
+
+@pytest.mark.parametrize("brands,name,expected", [
+    ("H J Heinz Foods UK Ltd", "Beanz in a rich tomato sauce", "Heinz"),
+    ("H J Heinz Foods UK Ltd, Heinz", "Beanz", "Heinz"),
+    ("Tesco", "Tesco Chopped Tomatoes", "Tesco"),
+    ("Princes Ltd, Princes", "Tuna Chunks", "Princes"),
+])
+def test_pick_brand(brands, name, expected):
+    assert products.pick_brand(brands, name) == expected
+
+
+def test_real_heinz_record(monkeypatch):
+    """Name, brand and size as Open Food Facts returned them for 5000157024671 (23 Oct 2026); categories illustrative."""
+    monkeypatch.setattr(products, "fetch", lambda url, v: {"status": 1, "product": {
+        "product_name": "Beanz in a rich tomato sauce", "brands": "H J Heinz Foods UK Ltd", "quantity": "415g",
+        "categories_tags": ["en:plant-based-foods", "en:legumes", "en:canned-foods", "en:baked-beans"]}})
+    db.execute("DELETE FROM products WHERE barcode='5000157024671'")
+    r = products.lookup("5000157024671")
+    assert r["brand"] == "Heinz" and r["name"] == "Heinz Beanz in a rich tomato sauce 415g", r
+    assert r["generic"] == "Baked beans", r

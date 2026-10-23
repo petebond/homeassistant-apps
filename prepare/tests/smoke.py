@@ -38,8 +38,11 @@ s = c.get("/api/summary").json()
 print("summary", {k: s[k] for k in ("readiness", "days_covered", "items_expiring", "items_expired", "people", "pets")})
 assert s["people"] == 3 and s["pets"] == 1
 assert s["items_expired"] == 1 and s["items_expiring"] == 1
-# water 12L / (3L x 3 people) = 1.3 days; food (10+8)=18 meals / 9 per day = 2.0
-assert s["days_covered"] == 1.3, s["days_covered"]
+# water 12L / (3L x 3 people) = 1.3 days. Food: rice is a base with nothing to go on it
+# yet, so only the beans count: 10 meals / 9 per day = 1.1 days.
+assert s["days_covered"] == 1.1, s["days_covered"]
+assert s["food"]["spare_base"] == 8 and s["food"]["meals"] == 10, s["food"]
+ok(c.get("/"), "Pair", "8 portions of pasta, rice etc.")
 
 items = c.get("/api/items").json()
 beans = [i for i in items if i["name"] == "Beans"][0]

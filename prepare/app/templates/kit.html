@@ -21,7 +21,7 @@
 <td data-label="Category"><a href="{{ b }}/items?cat={{ c.key }}"><b>{{ c.name }}</b></a>{% if c.guidance %}<span class="rsub">{{ c.guidance }}</span>{% endif %}</td>
 <td data-label="Target" style="white-space:nowrap"><input name="amount_{{ c.key }}" type="number" step="any" value="{{ '%g' % c.amount }}" style="width:4.5em" aria-label="Amount for {{ c.name }}"><span class="rsub">{{ c.unit }} {{ {'person_day':'per person per day','person':'per person','infant_day':'per infant per day','pet_day':'per pet per day','household':'per household'}[c.basis] }}</span></td>
 <td data-label="Need">{% if c.applies %}{{ num(c.required) }}{% else %}n/a{% endif %}</td>
-<td data-label="Have">{{ num(c.held) }}</td>
+<td data-label="Have">{{ num(c.held) }}{% if c.food and (c.food.spare_base or c.food.spare_topping or c.food.extra) %}<br><small class="muted">{% if c.food.base or c.food.topping %}{{ num(c.food.paired) }} paired{% endif %}{% if c.food.spare_base %}, {{ num(c.food.spare_base) }} base spare{% endif %}{% if c.food.spare_topping %}, {{ num(c.food.spare_topping) }} topping spare{% endif %}{% if c.food.extra %}, {{ num(c.food.extra) }} extras not counted{% endif %}</small>{% endif %}</td>
 <td data-label="Score">{{ pct(c.score) }}<div class="cbar" style="margin-top:4px;width:60px"><span class="{{ bar_class(c.score) }}" style="width:{{ ((c.score or 0) * 100) | round }}%"></span></div></td>
 <td data-label="Counts"><input type="checkbox" name="score_{{ c.key }}" value="1"{% if c.in_score %} checked{% endif %} aria-label="Count {{ c.name }} towards readiness"></td>
 </tr>

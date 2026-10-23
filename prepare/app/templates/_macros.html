@@ -19,3 +19,17 @@
 {% macro bar_class(score) -%}{% if score is none %}{% elif score >= 1 %}full{% elif score < 0.5 %}low{% endif %}{%- endmacro %}
 
 {% macro num(x) -%}{{ '%g' % (x | round(1)) }}{%- endmacro %}
+
+{# What part a food plays in a meal (products.ROLES). Hidden unless the category is food. #}
+{% macro role_pick(roles, selected='', category='food') -%}
+<fieldset class="roles" data-food-only{% if category != 'food' %} hidden{% endif %}>
+<legend>This is… <span class="hint">pasta and a sauce make meals together, so they aren't counted twice{% if not selected %}; leave it and Prepare guesses from the name{% endif %}</span></legend>
+{% for k, n, eg in roles %}<label class="role"><input type="radio" name="role" value="{{ k }}"{% if k == selected %} checked{% endif %}><span><b>{{ n }}</b><small>{{ eg }}</small></span></label>
+{% endfor %}</fieldset>
+{%- endmacro %}
+
+{% macro role_tag(role) -%}
+{%- if role == 'base' %}<span class="tag grey" title="Counts as meals with a sauce or topping">needs a topping</span>
+{%- elif role == 'topping' %}<span class="tag grey" title="Counts as meals with pasta, rice or similar">goes with a base</span>
+{%- elif role == 'extra' %}<span class="tag grey" title="Not counted as meals">extra</span>{% endif -%}
+{%- endmacro %}

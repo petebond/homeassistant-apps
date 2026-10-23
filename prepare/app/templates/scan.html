@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "_macros.html" import num %}
+{% from "_macros.html" import num, role_pick %}
 {% block title %}Scan{% endblock %}
 {% block content %}
 <h1>Scan</h1>
@@ -43,13 +43,14 @@
   </div>
   <label for="f-cat">Category</label>
   <select id="f-cat" name="category">{% for c in cats %}<option value="{{ c.key }}" data-unit="{{ c.unit }}">{{ c.name }}</option>{% endfor %}</select>
+  {{ role_pick(roles) }}
 
   <div class="row2">
     <div><label for="f-packs">How many</label>
       <div class="stepper"><button type="button" class="ghost" data-step="-1" aria-label="One fewer">−</button><input id="f-packs" name="packs" type="number" min="0" step="1" value="1" inputmode="numeric"><button type="button" class="ghost" data-step="1" aria-label="One more">+</button></div></div>
     <div><label for="f-each">Each counts as <span class="hint" id="unit-label">meals</span></label><input id="f-each" name="pack_amount" type="number" min="0" step="any" value="1" inputmode="decimal" class="wide"></div>
   </div>
-  <p class="hint" id="each-hint">For food, roughly how many meals one pack gives one person. Prepare remembers your answer for this barcode.</p>
+  <p class="hint" id="each-hint">For food, roughly how many portions one pack gives one person. Prepare remembers your answer for this barcode.</p>
 
   <div class="row2">
     <div><label for="f-bb">Best before</label><input id="f-bb" name="best_before" type="date" class="wide"></div>

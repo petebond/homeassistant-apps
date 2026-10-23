@@ -102,9 +102,12 @@ def init() -> None:
         # 0.3: scanned products carry a barcode, a brand, and a product type ("generic")
         # that groups different brands of the same thing.
         item_cols = [r[1] for r in c.execute("PRAGMA table_info(items)")]
-        for col in ("barcode", "brand", "generic"):
+        for col in ("barcode", "brand", "generic", "role"):
             if col not in item_cols:
                 c.execute(f"ALTER TABLE items ADD COLUMN {col} TEXT")
+        # 0.5: food plays a part in a meal - meal / base / topping / extra (products.ROLES).
+        if "role" not in [r[1] for r in c.execute("PRAGMA table_info(products)")]:
+            c.execute("ALTER TABLE products ADD COLUMN role TEXT")
         # Seed categories the database doesn't have yet: all of them on a new install,
         # and any added in a later version (also after restoring an older backup).
         # Existing ones keep the household's own targets.
@@ -124,6 +127,10 @@ def init() -> None:
                     "INSERT INTO plans(scenario, steps, info_url, sort) VALUES (?,?,?,?)",
                     (p["scenario"], p["steps"].strip(), p.get("info_url", ""), i),
                 )
+
+
+    from . import products  # products imports db, so import here, once the tables exist
+    products.assign_roles()
 
 
 def checklist_groups() -> list[dict]:

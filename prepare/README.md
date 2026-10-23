@@ -21,6 +21,15 @@ Open **`http://homeassistant.local:8999`** on anything on the home network.
   Open Beauty Facts and Open Pet Food Facts, and remembered in the app.
 - **Product types** - different brands of the same thing group together: Napolina and Tesco
   chopped tomatoes both count as *Chopped tomatoes*, each batch keeping its own date.
+- **Meals that need two things** - each food says what it is: *a meal on its own* (soup,
+  stew, beans, porridge), *needs something with it* (pasta, rice, noodles), *goes with
+  something* (pasta sauce, curry, tuna) or *a snack or extra* (biscuits, bars, milk).
+  Pasta for 10 and a sauce for 4 make **4 meals**, not 14; the dashboard says what's
+  missing to use up the other 6. Extras are kept but not counted as meals. Prepare
+  guesses from the product type, and remembers your choice for each barcode.
+- **Spreadsheet view** - *Inventory → Edit as a spreadsheet*: every item in one table
+  to edit in place, filter and sort, and tick rows to change many at once (category,
+  what it is, where it's kept, product type, brand, date, used up, binned, delete).
 - **Medication** - optional. Personal (one person) or household (e.g. paracetamol,
   ibuprofen). Expiry and repeat-prescription reminders; printed with doses.
 - **Kit & targets** - the guidance's checklist, scaled to who lives here

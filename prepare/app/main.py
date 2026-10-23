@@ -21,7 +21,7 @@ from . import backup, db, installer, logic, products, tls
 
 log = logging.getLogger("prepare")
 HERE = Path(__file__).parent
-VERSION = "0.4.0"
+VERSION = "0.5.0"
 
 app = FastAPI(title="Prepare", version=VERSION, docs_url="/api/docs", redoc_url=None)
 app.mount("/static", StaticFiles(directory=HERE / "static"), name="static")
@@ -157,7 +157,8 @@ def items_page(request: Request, show: str = "active", cat: str = "", group: str
     here = "/items" + (f"?group={group}" if group else f"?cat={cat}" if cat else "")
     return render(request, "items.html", items=items, cats=cats, cmap=cmap, show=show, cat=cat, group=group,
                   groups=groups, counts=counts, total=len(active), default_cat=default_cat, sec=sec, here=here,
-                  view=view, bundles=bundle(items), generics=products.known_generics(),
+                  view=view, bundles=bundle(items), generics=products.known_generics(), roles=products.ROLES,
+                  food=next((c["food"] for c in logic.readiness()["categories"] if c["key"] == "food"), None),
                   warning=int(db.settings().get("warning_days") or 30))
 
 
@@ -187,17 +188,30 @@ def bundle(items: list[dict]) -> list[dict]:
     return out
 
 
+def item_role(category: str, role, name: str = "", generic: str = "") -> str | None:
+    """Food always has a role (guessed if the form didn't say); nothing else does."""
+    if category != "food":
+        return None
+    return role if role in products.ROLE_KEYS else products.guess_role(name, generic)
+
+
 def item_values(f: dict) -> tuple:
-    cat = db.row("SELECT unit FROM categories WHERE key=?", (f.get("category"),))
+    category = f.get("category") or "other"
+    cat = db.row("SELECT unit FROM categories WHERE key=?", (category,))
     unit = f.get("unit") or (cat["unit"] if cat else "")
-    generic = (f.get("generic") or "").strip()
-    return (f.get("name") or "Unnamed", f.get("category") or "other", num(f.get("quantity"), 1), unit,
+    generic = match_generic((f.get("generic") or "").strip())
+    name = f.get("name") or "Unnamed"
+    role = item_role(category, f.get("role"), name, generic)
+    if role:
+        unit = products.food_unit(role, unit)
+    return (name, category, num(f.get("quantity"), 1), unit,
             f.get("location", ""), opt_date(f.get("best_before")), 1 if f.get("perishable") else 0,
-            f.get("notes", ""), (f.get("brand") or "").strip(), match_generic(generic),
-            products.normalise_barcode(f.get("barcode") or "") or None)
+            f.get("notes", ""), (f.get("brand") or "").strip(), generic,
+            products.normalise_barcode(f.get("barcode") or "") or None, role)
 
 
-ITEM_COLS = "name, category, quantity, unit, location, best_before, perishable, notes, brand, generic, barcode"
+ITEM_COLS = "name, category, quantity, unit, location, best_before, perishable, notes, brand, generic, barcode, role"
+ITEM_QS = ",".join("?" * (len(ITEM_COLS.split(",")) + 1))  # + added
 
 
 def match_generic(name: str) -> str:
@@ -215,9 +229,107 @@ def match_generic(name: str) -> str:
 async def item_add(request: Request):
     f = await form(request)
     vals = item_values(f)
-    db.execute(f"INSERT INTO items({ITEM_COLS}, added) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)", vals + (db.now_iso(),))
+    db.execute(f"INSERT INTO items({ITEM_COLS}, added) VALUES ({ITEM_QS})", vals + (db.now_iso(),))
     db.log("added", f"{vals[0]} {vals[2]:g} {vals[3]}")
     return back(request, f.get("next") or "/items")
+
+
+# ---------- inventory as a spreadsheet ----------
+
+SHEET_STATUSES = ["active", "used", "discarded"]
+
+
+@app.get("/items/sheet", response_class=HTMLResponse)
+def items_sheet(request: Request, show: str = "active", done: str = "", n: int = 0):
+    sql = "SELECT * FROM items" + ("" if show == "all" else " WHERE status='active'")
+    items = db.rows(sql + " ORDER BY category, lower(COALESCE(NULLIF(generic, ''), name)), best_before IS NULL, best_before")
+    for i in items:
+        i["days_left"] = logic.days_until(i["best_before"])
+    locations = [r["location"] for r in db.rows("SELECT DISTINCT location FROM items WHERE location != '' ORDER BY location")]
+    return render(request, "items_sheet.html", items=items, cats=categories(), roles=products.ROLES, show=show,
+                  generics=products.known_generics(), locations=locations, statuses=SHEET_STATUSES, done=done, n=n,
+                  warning=int(db.settings().get("warning_days") or 30))
+
+
+def apply_item_changes(item_id: int, ch: dict) -> bool:
+    """Change only the fields given; keeps role and unit consistent with the category."""
+    item = db.row("SELECT * FROM items WHERE id=?", (item_id,))
+    if not item:
+        return False
+    new = dict(item)
+    if "name" in ch:
+        new["name"] = ch["name"] or item["name"]
+    if "generic" in ch:
+        new["generic"] = match_generic(ch["generic"])
+    for k in ("brand", "location", "notes"):
+        if k in ch:
+            new[k] = ch[k]
+    if "quantity" in ch:
+        new["quantity"] = max(num(ch["quantity"], item["quantity"] or 0), 0)
+    if "best_before" in ch:
+        new["best_before"] = opt_date(ch["best_before"])
+    if "perishable" in ch:
+        new["perishable"] = 1 if ch["perishable"] in ("1", "yes", "on") else 0
+    if ch.get("category") and db.row("SELECT key FROM categories WHERE key=?", (ch["category"],)):
+        if ch["category"] != item["category"] and "unit" not in ch:
+            new["unit"] = db.row("SELECT unit FROM categories WHERE key=?", (ch["category"],))["unit"]
+        new["category"] = ch["category"]
+    if "unit" in ch:
+        new["unit"] = ch["unit"]
+    if "role" in ch or new["category"] != item["category"]:
+        new["role"] = item_role(new["category"], ch.get("role", item["role"]), new["name"], new["generic"] or "")
+    if new["role"]:
+        new["unit"] = products.food_unit(new["role"], new["unit"] or "")
+    if ch.get("status") in SHEET_STATUSES:
+        new["status"] = ch["status"]
+    cols = ["name", "generic", "brand", "location", "notes", "quantity", "best_before", "perishable",
+            "category", "unit", "role", "status"]
+    if all(new[c] == item[c] for c in cols):
+        return False
+    db.execute(f"UPDATE items SET {', '.join(c + '=?' for c in cols)} WHERE id=?", [new[c] for c in cols] + [item_id])
+    if new["role"] != item["role"] and new["barcode"]:  # remember the choice for the next scan
+        db.execute("UPDATE products SET role=? WHERE barcode=?", (new["role"], new["barcode"]))
+    return True
+
+
+@app.post("/items/sheet")
+async def items_sheet_save(request: Request):
+    """Every edited cell arrives as c-<id>-<field>; untouched rows aren't sent."""
+    f = await form(request)
+    changes: dict[int, dict] = {}
+    for key, value in f.items():
+        m = re.fullmatch(r"c-(\d+)-(\w+)", key)
+        if m:
+            changes.setdefault(int(m.group(1)), {})[m.group(2)] = value
+    n = sum(apply_item_changes(iid, ch) for iid, ch in changes.items())
+    if n:
+        db.log("bulk_edit", f"{n} item{'s' if n != 1 else ''} changed")
+    show = "&show=all" if f.get("show") == "all" else ""
+    return back(request, f"/items/sheet?done=saved&n={n}{show}")
+
+
+@app.post("/items/bulk")
+async def items_bulk(request: Request):
+    f = await request.form()
+    ids = [int(x) for x in f.getlist("sel") if str(x).isdigit()]
+    action = f.get("action", "")
+    value = (f.get("value") or "").strip()
+    show = "&show=all" if f.get("show") == "all" else ""
+    n = 0
+    for iid in ids:
+        if action == "delete":
+            n += 1 if db.row("SELECT id FROM items WHERE id=?", (iid,)) else 0
+            db.execute("DELETE FROM items WHERE id=?", (iid,))
+        elif action in ("used", "discarded"):
+            item = db.row("SELECT status FROM items WHERE id=?", (iid,))
+            if item and item["status"] == "active":
+                consume(iid, None, action)
+                n += 1
+        elif action in ("category", "role", "location", "generic", "best_before", "brand"):
+            n += apply_item_changes(iid, {action: value})
+    if n:
+        db.log("bulk_edit", f"{action}: {n} item{'s' if n != 1 else ''}")
+    return back(request, f"/items/sheet?done={action}&n={n}{show}")
 
 
 @app.get("/items/{item_id}", response_class=HTMLResponse)
@@ -225,14 +337,14 @@ def item_edit_page(request: Request, item_id: int):
     item = db.row("SELECT * FROM items WHERE id=?", (item_id,))
     if not item:
         return back(request, "/items")
-    return render(request, "item_edit.html", item=item, cats=categories(), generics=products.known_generics())
+    return render(request, "item_edit.html", item=item, cats=categories(), generics=products.known_generics(), roles=products.ROLES)
 
 
 @app.post("/items/{item_id}")
 async def item_edit(request: Request, item_id: int):
     f = await form(request)
     db.execute("UPDATE items SET name=?, category=?, quantity=?, unit=?, location=?, best_before=?, perishable=?, notes=?, "
-               "brand=?, generic=?, barcode=? WHERE id=?", item_values(f) + (item_id,))
+               "brand=?, generic=?, barcode=?, role=? WHERE id=?", item_values(f) + (item_id,))
     return back(request, "/items")
 
 
@@ -242,7 +354,7 @@ async def item_edit(request: Request, item_id: int):
 def scan_page(request: Request, added: int = 0, loc: str = ""):
     last = db.row("SELECT * FROM items WHERE id=?", (added,)) if added else None
     recent = db.rows("SELECT * FROM items WHERE barcode IS NOT NULL AND barcode != '' ORDER BY id DESC LIMIT 6")
-    return render(request, "scan.html", cats=categories(), generics=products.known_generics(), last=last, loc=loc,
+    return render(request, "scan.html", cats=categories(), generics=products.known_generics(), last=last, loc=loc, roles=products.ROLES,
                   recent=recent, cmap={c["key"]: c for c in categories()},
                   locations=[r["location"] for r in db.rows("SELECT DISTINCT location FROM items WHERE location != '' ORDER BY location")])
 
@@ -264,14 +376,16 @@ async def scan_add(request: Request):
     generic = match_generic(f.get("generic") or "")
     name = (f.get("name") or generic or "Unnamed").strip()
     brand = (f.get("brand") or "").strip()
+    role = item_role(category, f.get("role"), name, generic)
+    unit = cat["unit"] if cat else ""
     iid = db.execute(
-        f"INSERT INTO items({ITEM_COLS}, added) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
-        (name, category, round(packs * each, 3), cat["unit"] if cat else "", f.get("location", ""),
-         opt_date(f.get("best_before")), 0, "", brand, generic, code or None, db.now_iso()),
+        f"INSERT INTO items({ITEM_COLS}, added) VALUES ({ITEM_QS})",
+        (name, category, round(packs * each, 3), products.food_unit(role, unit) if role else unit, f.get("location", ""),
+         opt_date(f.get("best_before")), 0, "", brand, generic, code or None, role, db.now_iso()),
     )
     if code:
         products.remember(code, name, brand, generic, category, each, f.get("quantity_text", ""),
-                          f.get("source") or "manual", f.get("image_url", ""))
+                          f.get("source") or "manual", f.get("image_url", ""), role)
     db.log("added", f"{name} x{packs:g} (scanned)")
     from urllib.parse import urlencode
     return back(request, "/scan?" + urlencode({"added": iid, "loc": f.get("location", "")}))
@@ -681,7 +795,7 @@ def api_items():
 @app.post("/api/items")
 async def api_item_add(request: Request):
     f = await request.json()
-    iid = db.execute(f"INSERT INTO items({ITEM_COLS}, added) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
+    iid = db.execute(f"INSERT INTO items({ITEM_COLS}, added) VALUES ({ITEM_QS})",
                      item_values({k: str(v) if v is not None else "" for k, v in f.items()}) + (db.now_iso(),))
     db.log("added", f"{f.get('name')} (via HA)")
     return {"id": iid}

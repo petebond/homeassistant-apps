@@ -7,8 +7,9 @@
 <datalist id="generics">{% for g in generics %}<option value="{{ g }}">{% endfor %}</datalist>
 <input type="hidden" name="barcode" value="{{ item.barcode or '' if item else '' }}">
 <label for="f-cat">Category</label>{{ cat_select(cats, item.category if item else default_cat, id='f-cat') }}
+{{ role_pick(roles, item.role or '' if item else '', item.category if item else default_cat) }}
 <div class="row2">
-<div><label for="f-qty">Quantity <span class="hint">in the category's unit</span></label><input id="f-qty" name="quantity" type="number" step="any" inputmode="decimal" value="{{ ('%g' % item.quantity) if item else 1 }}" class="wide"></div>
+<div><label for="f-qty">Quantity <span class="hint">in the category's unit; food in meals or portions for one person</span></label><input id="f-qty" name="quantity" type="number" step="any" inputmode="decimal" value="{{ ('%g' % item.quantity) if item else 1 }}" class="wide"></div>
 <div><label for="f-unit">Unit <span class="hint">blank = category's</span></label><input id="f-unit" name="unit" value="{{ item.unit if item else '' }}" class="wide"></div>
 </div>
 <div class="row2">
@@ -17,3 +18,9 @@
 </div>
 <label class="check"><input type="checkbox" name="perishable" value="1"{% if item and item.perishable %} checked{% endif %}>Perishable</label>
 <label for="f-notes">Notes</label><input id="f-notes" name="notes" value="{{ item.notes if item else '' }}" class="wide">
+<script>
+(function () {
+  var cat = document.getElementById("f-cat"), box = document.querySelector("[data-food-only]");
+  if (cat && box) cat.addEventListener("change", function () { box.hidden = cat.value !== "food"; });
+})();
+</script>

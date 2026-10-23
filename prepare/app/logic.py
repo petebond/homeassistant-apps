@@ -59,6 +59,30 @@ def is_usable(item: dict) -> bool:
     return d is None or d >= today()
 
 
+def food_meals(items: list[dict]) -> dict:
+    """How many meals the food makes. Bases and toppings only count in pairs.
+
+    Meals on their own count one each. A portion of a base (pasta, rice) and a
+    portion of a topping (sauce, curry) together make one meal, so the smaller of
+    the two counts; the rest of the larger is spare until its other half is bought.
+    Extras (biscuits, bars, milk) aren't counted. Items with no role yet count as meals."""
+    t = {"meal": 0.0, "base": 0.0, "topping": 0.0, "extra": 0.0}
+    for i in items:
+        role = i.get("role") if i.get("role") in t else "meal"
+        t[role] += i["quantity"] or 0
+    paired = min(t["base"], t["topping"])
+    return {
+        "meals": round(t["meal"] + paired, 2),
+        "own": round(t["meal"], 2),
+        "paired": round(paired, 2),
+        "base": round(t["base"], 2),
+        "topping": round(t["topping"], 2),
+        "extra": round(t["extra"], 2),
+        "spare_base": round(t["base"] - paired, 2),
+        "spare_topping": round(t["topping"] - paired, 2),
+    }
+
+
 def readiness() -> dict:
     s = db.settings()
     days = float(s.get("target_days") or 3)
@@ -69,11 +93,17 @@ def readiness() -> dict:
     for c in cats:
         required = round(c["amount"] * multiplier(c["basis"], counts, days), 2)
         in_cat = [i for i in items if i["category"] == c["key"]]
-        held = round(sum(i["quantity"] or 0 for i in in_cat if is_usable(i)), 2)
-        expired = round(sum(i["quantity"] or 0 for i in in_cat if not is_usable(i)), 2)
+        if c["key"] == "food":
+            food = food_meals([i for i in in_cat if is_usable(i)])
+            held = food["meals"]
+            expired = food_meals([i for i in in_cat if not is_usable(i)])["meals"]
+        else:
+            held = round(sum(i["quantity"] or 0 for i in in_cat if is_usable(i)), 2)
+            expired = round(sum(i["quantity"] or 0 for i in in_cat if not is_usable(i)), 2)
         applies = required > 0
         score = min(held / required, 1.0) if applies else None
         row = {**c, "required": required, "held": held, "expired_qty": expired,
+               "food": food if c["key"] == "food" else None,
                "applies": applies, "score": score,
                "short": round(max(required - held, 0), 2) if applies else 0}
         out.append(row)
@@ -211,10 +241,19 @@ def summary() -> dict:
         "pack_out_of_date": p["out_of_date"],
         "kit_check_due": v["kit_due"],
         "plans_review_due": [x["scenario"] for x in v["plans_due"]],
+        "food": next((c["food"] for c in r["categories"] if c["key"] == "food"), None),
         "backup_due": bk["due"],
         "backup_last": bk["last_at"],
         "backup_downloaded": bk["downloaded_at"],
     }
+
+
+def food_note(f: dict) -> str:
+    if f["spare_base"]:
+        return f"; {f['spare_base']:g} portions of pasta, rice etc. need a sauce or topping"
+    if f["spare_topping"]:
+        return f"; {f['spare_topping']:g} portions of sauce etc. need pasta, rice or similar"
+    return ""
 
 
 def sections(r: dict | None = None) -> list[dict]:
@@ -235,6 +274,8 @@ def sections(r: dict | None = None) -> list[dict]:
         elif len(cats) == 1:
             c = cats[0]
             note = f"{c['held']:g} of {c['required']:g} {c['unit']}"
+            if c.get("food"):
+                note += food_note(c["food"])
         else:
             names = [c["name"].split(",")[0].split(":")[0] for c in missing]
             names = [n if i == 0 or n[:2].isupper() else n[0].lower() + n[1:] for i, n in enumerate(names)]

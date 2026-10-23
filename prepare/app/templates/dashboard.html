@@ -18,6 +18,9 @@
 
 <h2>To do</h2>
 <ul class="todo">
+{% set fd = (r.categories | selectattr('key', 'equalto', 'food') | first or {}).food %}
+{% if fd and fd.spare_base %}<li><span class="tag amber">Pair</span><span><a href="{{ b }}/items?group=food">{{ num(fd.spare_base) }} portions of pasta, rice etc.</a> have nothing to go with them — sauce, curry or tuna for {{ num(fd.spare_base) }} would make {{ num(fd.spare_base) }} more meals</span></li>{% endif %}
+{% if fd and fd.spare_topping %}<li><span class="tag amber">Pair</span><span><a href="{{ b }}/items?group=food">{{ num(fd.spare_topping) }} portions of sauce and toppings</a> need pasta, rice or similar to make meals</span></li>{% endif %}
 {% for c in r.shortfall %}<li><span class="tag red">Buy</span><span><a href="{{ b }}/items?cat={{ c.key }}">{{ c.name }}</a> — {{ num(c.short) }} more {{ c.unit }}</span></li>{% endfor %}
 {% for i in e.expired %}<li><span class="tag red">Replace</span><span><a href="{{ b }}/items#item-{{ i.id }}">{{ i.name }}</a> (expired {{ i.best_before | nicedate }})</span></li>{% endfor %}
 {% for x in m.expired %}<li><span class="tag red">Replace</span><span><a href="{{ b }}/meds">{{ x.name }}</a> — medication expired {{ x.expiry | nicedate }}</span></li>{% endfor %}

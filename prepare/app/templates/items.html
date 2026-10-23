@@ -1,10 +1,10 @@
 {% extends "base.html" %}
-{% from "_macros.html" import cat_select, date_tag, num %}
+{% from "_macros.html" import cat_select, date_tag, num, role_pick, role_tag %}
 {% from "_icons.html" import icon %}
 {% block title %}Inventory{% endblock %}
 {% block content %}
 <h1>Inventory</h1>
-<div class="acts noprint" style="margin:0 0 14px"><a class="button" href="{{ b }}/scan">Scan a barcode</a> <a class="button ghost" href="#add">Add by hand</a></div>
+<div class="acts noprint" style="margin:0 0 14px"><a class="button" href="{{ b }}/scan">Scan a barcode</a> <a class="button ghost" href="#add">Add by hand</a> <a class="button ghost" href="{{ b }}/items/sheet">Edit as a spreadsheet</a></div>
 {% set q = "&show=all" if show == "all" else "" %}
 <nav class="chips" aria-label="Checklist sections">
 <a href="{{ b }}/items?{{ q }}"{% if not group and not cat %} aria-current="true"{% endif %}>All <b>{{ total }}</b></a>
@@ -17,6 +17,13 @@
 <div class="meter small"><span style="width:{{ sec.pct }}%"></span></div>
 {% elif group == 'other' %}<h2>Other / car kit</h2>
 {% elif cat %}<h2>{{ cmap[cat].name if cat in cmap else cat }}</h2>{% endif %}
+{% if food and (group == 'food' or cat == 'food') %}
+<div class="foodsum">
+<p><b>{{ num(food.meals) }} meals</b>: {{ num(food.own) }} on their own{% if food.base or food.topping %} + {{ num(food.paired) }} from pasta, rice and similar with a sauce or topping{% endif %}.{% if food.extra %} {{ num(food.extra) }} portions of snacks and extras aren't counted.{% endif %}</p>
+{% if food.spare_base %}<p class="hint"><b>{{ num(food.spare_base) }} portions</b> of pasta, rice etc. have no sauce or topping to go with them yet — buying {{ num(food.spare_base) }} portions of sauce, curry or tuna would make {{ num(food.spare_base) }} more meals.</p>{% endif %}
+{% if food.spare_topping %}<p class="hint"><b>{{ num(food.spare_topping) }} portions</b> of sauce and toppings have no pasta, rice or similar to go with them yet.</p>{% endif %}
+</div>
+{% endif %}
 {% if group == 'medical' %}<p class="muted">Medicines with doses and owners are on the <a href="{{ b }}/meds">Medication</a> page. This list is the first aid kit and other medical supplies.</p>{% endif %}
 
 {% set vq = (('group=' ~ group) if group else ('cat=' ~ cat) if cat else '') ~ ('&show=all' if show == 'all' else '') %}
@@ -28,6 +35,7 @@
   <li id="item-{{ i.id }}"{% if i.status != 'active' %} class="gone"{% endif %}>
     <span class="rmain"><a class="rname" href="{{ b }}/items/{{ i.id }}">{{ i.name }}</a><span class="rsub">{% if view == 'batches' and (not group or group == 'other') %}{{ cmap[i.category].name if i.category in cmap else i.category }}{% if i.location %} · {% endif %}{% endif %}{{ i.location }}{% if i.notes %} · {{ i.notes }}{% endif %}{% if i.status != 'active' %} · {{ i.status }}{% endif %}</span></span>
     <span class="rqty">{{ num(i.quantity) }} {{ i.unit }}</span>
+    {% if view == 'batches' and i.category == 'food' %}{{ role_tag(i.role) }}{% endif %}
     {% if i.status == 'active' %}{{ date_tag(i.best_before, i.days_left, warning) }}
     <span class="racts">
       <form class="inline" method="post" action="{{ b }}/items/{{ i.id }}/used"><input type="hidden" name="next" value="{{ here }}"><input name="qty" type="number" step="any" inputmode="decimal" placeholder="all" aria-label="How much used (blank = all)" style="width:4.2em"> <button class="ghost small">Used</button></form>
@@ -43,6 +51,7 @@
     <summary>
       <span class="rmain"><span class="rname">{{ g.label }}</span><span class="rsub">{{ g.batches | length }} batch{{ 'es' if g.batches | length != 1 }}{% if g.brands %} · {{ g.brands | join(', ') }}{% endif %}</span></span>
       <span class="rqty"><b>{{ num(g.quantity) }}</b> {{ g.unit }}</span>
+      {% if g.category == 'food' %}{{ role_tag(g.batches[0].role) }}{% endif %}
       {% if g.first %}{{ date_tag(g.first.best_before, g.first.days_left, warning) }}{% else %}<span class="tag grey">No date</span>{% endif %}
     </summary>
     <ul class="rows">{% for i in g.batches %}{{ batch_row(i) }}{% endfor %}</ul>

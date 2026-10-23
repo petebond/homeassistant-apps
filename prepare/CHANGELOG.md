@@ -1,5 +1,30 @@
 # Changelog
 
+## 0.5.0 - 2026-10-23
+
+Meals that need two things, and a spreadsheet view of the inventory.
+
+- **Food says what it is:** a meal on its own (soup, stew, beans, porridge, ready
+  meals), needs something with it (pasta, rice, noodles, couscous), goes with
+  something (pasta sauce, curry, chilli, tuna), or a snack or extra (biscuits, bars,
+  fruit, milk).
+- **Meals add up properly.** Pasta and sauce only count in pairs: pasta for 10 and
+  a jar of sauce for 4 is 4 meals, not 14. Extras are kept but not counted as meals.
+  The dashboard, Food section and Kit page say what's spare: "6 portions of pasta,
+  rice etc. have nothing to go with them".
+- **Existing food is sorted automatically** from its product type (rice and pasta →
+  needs something with it; sauces, curries and tuna → goes with something; biscuits,
+  bars, fruit, milk and purée → extras; soups, porridge and the rest → meals on their
+  own). Halves of a meal are counted in *portions* rather than *meals*. Change any of
+  them on the item, or many at once in the spreadsheet; your choice is never
+  overwritten, and scanning the same barcode again remembers it.
+- **Edit as a spreadsheet** (from the Inventory page): every item in one table to
+  edit in place, filter, sort by any column, and tick rows to set category, what it
+  is, where it's kept, product type, brand or date, mark used up or binned, or delete.
+  Only the cells you change are saved.
+- Backups: unchanged format. Backups from 0.4 restore, and their food is sorted the
+  same way on restore.
+
 ## 0.4.0 - 2026-10-23
 
 Backup and restore.

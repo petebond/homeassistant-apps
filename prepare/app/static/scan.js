@@ -125,8 +125,11 @@
   function setUnit() {
     var opt = $("f-cat").selectedOptions[0];
     var unit = opt ? opt.dataset.unit : "";
-    $("unit-label").textContent = unit;
-    $("each-hint").hidden = $("f-cat").value !== "food";
+    var food = $("f-cat").value === "food";
+    var role = form.querySelector("input[name=role]:checked");
+    $("unit-label").textContent = food ? (role && role.value !== "meal" ? "portions" : "meals") : unit;
+    $("each-hint").hidden = !food;
+    form.querySelector("[data-food-only]").hidden = !food;
   }
 
   async function lookup(code) {
@@ -156,6 +159,8 @@
       $("f-brand").value = data.brand || "";
       $("f-cat").value = data.category || "food";
       $("f-each").value = data.pack_amount || 1;
+      var r = form.querySelector("input[name=role][value='" + (data.role || "meal") + "']");
+      if (r) r.checked = true;
       msg.textContent = data.saved ? "Known product — saved on this app." : "Found in " + data.source_name + ". Check the details, then add the date.";
       msg.className = "lookup-msg good";
     } else {
@@ -174,6 +179,7 @@
   $("photo").addEventListener("change", function (e) { if (e.target.files[0]) fromPhoto(e.target.files[0]); e.target.value = ""; });
   $("manual").addEventListener("submit", function (e) { e.preventDefault(); var c = $("code").value.trim(); if (c) lookup(c); });
   $("f-cat").addEventListener("change", setUnit);
+  form.querySelectorAll("input[name=role]").forEach(function (r) { r.addEventListener("change", setUnit); });
   $("cancel").addEventListener("click", function () { form.hidden = true; say(""); if (canLive) startBtn.hidden = false; });
   document.querySelectorAll(".stepper button").forEach(function (b) {
     b.addEventListener("click", function () {

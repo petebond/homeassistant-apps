@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}Inventory spreadsheet{% endblock %}
+{% block content %}
+{% set short_roles = {'meal': 'Meal on its own', 'base': 'Base: pasta, rice…', 'topping': 'Topping: sauce…', 'extra': 'Extra, not counted'} %}
+<h1>Inventory spreadsheet</h1>
+<div class="acts noprint" style="margin:0 0 14px"><a class="button ghost" href="{{ b }}/items">Back to inventory</a>
+{% if show == 'all' %}<a class="button ghost" href="{{ b }}/items/sheet">In stock only</a>{% else %}<a class="button ghost" href="{{ b }}/items/sheet?show=all">Include used and binned</a>{% endif %}</div>
+
+{% if done %}
+<div class="notice good" role="status"><strong>{% if n == 0 %}Nothing changed.{% else %}{{ n }} item{{ '' if n == 1 else 's' }} {{ {'delete': 'deleted', 'used': 'marked used up', 'discarded': 'marked binned'}.get(done, 'updated') }}.{% endif %}</strong></div>{% endif %}
+
+<p class="muted">Change any cell, then <b>Save changes</b>. Tick rows to change several at once. Click a heading to sort.</p>
+
+<form method="post" action="{{ b }}/items/bulk" id="bulk" class="bulkbar noprint">
+<input type="hidden" name="show" value="{{ show }}">
+<span id="sel-count">None ticked</span>
+<select name="action" id="bulk-action" aria-label="What to do with the ticked rows">
+<option value="category">Set category</option>
+<option value="role">Set "This is…" (food)</option>
+<option value="location">Set where it's kept</option>
+<option value="generic">Set product type</option>
+<option value="brand">Set brand</option>
+<option value="best_before">Set best before</option>
+<option value="used">Mark used up</option>
+<option value="discarded">Mark binned</option>
+<option value="delete">Delete</option>
+</select>
+<select name="value" data-for="category" aria-label="Category">{% for c in cats %}<option value="{{ c.key }}">{{ c.name }}</option>{% endfor %}</select>
+<select name="value" data-for="role" aria-label="This is" disabled>{% for k, n, eg in roles %}<option value="{{ k }}">{{ n }}</option>{% endfor %}</select>
+<input name="value" data-for="location" list="sheet-locations" placeholder="e.g. Garage shelf" aria-label="Where" disabled>
+<input name="value" data-for="generic" list="sheet-generics" placeholder="e.g. Chopped tomatoes" aria-label="Product type" disabled>
+<input name="value" data-for="brand" placeholder="Brand" aria-label="Brand" disabled>
+<input name="value" data-for="best_before" type="date" aria-label="Best before" disabled>
+<button class="primary" id="bulk-apply" disabled>Apply</button>
+</form>
+
+<div class="sheettools noprint">
+<input type="search" id="sheet-filter" placeholder="Filter: type a name, brand, place…" aria-label="Filter rows">
+<select id="sheet-cat" aria-label="Show category"><option value="">All categories</option>{% for c in cats %}<option value="{{ c.key }}">{{ c.name }}</option>{% endfor %}</select>
+</div>
+
+<datalist id="sheet-generics">{% for g in generics %}<option value="{{ g }}">{% endfor %}</datalist>
+<datalist id="sheet-locations">{% for l in locations %}<option value="{{ l }}">{% endfor %}</datalist>
+
+<form method="post" action="{{ b }}/items/sheet" id="sheet">
+<input type="hidden" name="show" value="{{ show }}">
+<div class="sheetwrap">
+<table class="sheet">
+<thead><tr>
+<th class="sel"><input type="checkbox" id="sel-all" aria-label="Tick all shown rows"></th>
+<th data-sort="text">Product type</th><th data-sort="text">Name</th><th data-sort="text">Brand</th>
+<th data-sort="text">Category</th><th data-sort="text">This is…</th>
+<th data-sort="num">Qty</th><th data-sort="text">Unit</th><th data-sort="text">Best before</th>
+<th data-sort="text">Where</th><th data-sort="text">Notes</th>{% if show == 'all' %}<th data-sort="text">Status</th>{% endif %}
+</tr></thead>
+<tbody>
+{% for i in items %}{% set p = 'c-' ~ i.id ~ '-' %}
+<tr data-id="{{ i.id }}" data-cat="{{ i.category }}"{% if i.days_left is not none and i.days_left < 0 %} class="expired"{% elif i.days_left is not none and i.days_left <= warning %} class="soon"{% endif %}>
+<td class="sel"><input type="checkbox" name="sel" value="{{ i.id }}" form="bulk" aria-label="Tick {{ i.name }}"></td>
+<td><input name="{{ p }}generic" value="{{ i.generic or '' }}" list="sheet-generics" aria-label="Product type"></td>
+<td><input name="{{ p }}name" value="{{ i.name }}" class="w-name" aria-label="Name" required></td>
+<td><input name="{{ p }}brand" value="{{ i.brand or '' }}" class="w-short" aria-label="Brand"></td>
+<td><select name="{{ p }}category" class="w-cat" aria-label="Category">{% for c in cats %}<option value="{{ c.key }}"{% if c.key == i.category %} selected{% endif %}>{{ c.name }}</option>{% endfor %}</select></td>
+<td><select name="{{ p }}role" class="w-role" aria-label="This is"{% if i.category != 'food' %} hidden{% endif %}>{% for k, n, eg in roles %}<option value="{{ k }}"{% if k == i.role %} selected{% endif %}>{{ short_roles[k] }}</option>{% endfor %}</select></td>
+<td><input name="{{ p }}quantity" value="{{ '%g' % (i.quantity or 0) }}" type="number" step="any" min="0" inputmode="decimal" class="w-num" aria-label="Quantity"></td>
+<td><input name="{{ p }}unit" value="{{ i.unit or '' }}" class="w-unit" aria-label="Unit"></td>
+<td><input name="{{ p }}best_before" value="{{ i.best_before or '' }}" type="date" aria-label="Best before"></td>
+<td><input name="{{ p }}location" value="{{ i.location or '' }}" list="sheet-locations" class="w-short" aria-label="Where"></td>
+<td><input name="{{ p }}notes" value="{{ i.notes or '' }}" class="w-short" aria-label="Notes"></td>
+{% if show == 'all' %}<td><select name="{{ p }}status" aria-label="Status">{% for st in statuses %}<option value="{{ st }}"{% if st == i.status %} selected{% endif %}>{{ {'active': 'In stock', 'used': 'Used up', 'discarded': 'Binned'}[st] }}</option>{% endfor %}</select></td>{% endif %}
+</tr>
+{% else %}<tr><td colspan="12" class="muted">Nothing in the inventory yet.</td></tr>{% endfor %}
+</tbody>
+</table>
+</div>
+<div class="savebar"><span id="dirty-count">No changes</span> <button class="primary" id="save-btn">Save changes</button> <a class="button ghost" href="{{ b }}/items/sheet{{ '?show=all' if show == 'all' }}" id="undo-btn">Undo all</a></div>
+</form>
+<p class="muted">Rows in red are past their date; amber is within {{ warning }} days. Food <i>This is…</i>: a meal on its own counts as meals; pasta, rice and the like count only alongside sauces and toppings; snacks and extras aren't counted.</p>
+<script src="{{ b }}/static/sheet.js?v={{ version }}"></script>
+{% endblock %}

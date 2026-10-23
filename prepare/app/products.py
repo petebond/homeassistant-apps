@@ -56,6 +56,47 @@ PACKED_IN = re.compile(r"\s+in\s+(?:a\s+|an\s+)?(?:rich\s+|thick\s+|light\s+|nat
 UK_TYPES = [
     (re.compile(r"\bbean[sz]\b.*\btomato sauce\b|\bbaked bean", re.I), "Baked beans"),
 ]
+# What part a food plays in a meal. Bases (pasta, rice) and toppings (sauces, curries)
+# only make meals in pairs: 4 portions of pasta and a jar of sauce for 4 is 4 meals,
+# not 8. Extras (biscuits, bars, milk) are worth having but aren't counted as meals.
+ROLES = [
+    ("meal", "A meal on its own", "soup, stew, beans, porridge, ready meals"),
+    ("base", "Needs something with it", "pasta, rice, noodles, couscous"),
+    ("topping", "Goes with something", "pasta sauce, curry, chilli, tuna"),
+    ("extra", "Snack or extra", "biscuits, bars, fruit, milk - not counted as meals"),
+]
+ROLE_KEYS = [r[0] for r in ROLES]
+ROLE_NAMES = {k: n for k, n, _ in ROLES}
+# Checked in order; the first match wins. Prepared foods come first, so "spaghetti
+# hoops" and "chicken noodle soup" are meals, not bases.
+ROLE_RULES = [
+    ("meal", r"\bsoups?\b|\bbroth\b|\bstew\b|casserole|hotpot|\bhoops\b|ravioli|macaroni cheese|mac (?:and|&|n) cheese|"
+             r"\bbean[sz]\b|all[- ]day breakfast|ready meal|porridge|\bcereal\b(?! bar)|muesli|\bbreakfast\b|pot noodle|"
+             r"\bpie\b|\bhash\b|\bdhal\b|\bdal\b|risotto|paella|savoury rice|rice pot|noodle pot|pasta pot"),
+    ("extra", r"biscuit|cookie|cracker|crispbread|rice cake|crisps|chocolate|\bchoc\b|sweets|\bbars?\b|flapjack|granola|"
+              r"nature valley|\bnuts?\b|raisins|dried fruit|pineapple|peach|pears?\b|apricot|fruit cocktail|mandarin|\bfruit\b|"
+              r"\bmilk\b|almond|\boat drink|\bsoya\b|\bjuice\b|\bdrink\b|squash|cordial|\btea\b|coffee|cocoa|"
+              r"pur[eé]e|stock cube|\bstock\b|gravy|\boil\b|vinegar|\bsalt\b|sugar|flour|\bherbs?\b|spice|seasoning|"
+              r"\bjam\b|marmalade|honey|syrup|peanut butter|spread|custard|rice pudding|jelly|dessert"),
+    ("topping", r"\bsauce\b|pesto|\bragu\b|bolognese|\bcurry\b|tikka|masala|korma|jalfrezi|balti|madras|rogan|"
+                r"chilli|\btuna\b|salmon|sardines?|mackerel|pilchards|corned beef|\bspam\b|meatballs|\bchicken\b|"
+                r"passata|chopped tomatoes|\btomatoes\b|stir[- ]fry"),
+    ("base", r"\bpasta\b|spaghetti|fusilli|penne|macaroni|tagliatelle|linguine|farfalle|rigatoni|conchiglie|lasagne|"
+             r"orzo|\bnoodles?\b|\brice\b|couscous|quinoa|bulgur|\bbread\b|tortilla|\bwraps?\b|pitta|naan|"
+             r"potato|\bmash\b|polenta"),
+]
+_ROLE_RE = [(role, re.compile(rx, re.I)) for role, rx in ROLE_RULES]
+
+
+def guess_role(name: str = "", generic: str = "") -> str:
+    """A best guess from the product type and name; the household can always change it."""
+    for text in (generic, name):
+        for role, rx in _ROLE_RE:
+            if text and rx.search(text):
+                return role
+    return "meal"
+
+
 # Open Food Facts category words that make a type vaguer, not more specific.
 VAGUE_TAG_WORDS = {"canned", "tinned", "common", "prepared", "products", "foods", "food", "based", "plant", "dried", "preserved"}
 SPELLINGS = {r"\bbeanz\b": "beans", r"\btomatos\b": "tomatoes"}
@@ -252,7 +293,8 @@ def lookup(raw: str, version: str = "0") -> dict:
     saved = db.row("SELECT * FROM products WHERE barcode=?", (code,))
     if saved:
         return {"ok": True, "found": True, "barcode": code, "source": saved["source"], "source_name": SOURCE_NAMES.get(saved["source"], saved["source"]),
-                "saved": True, **{k: saved[k] for k in ("name", "brand", "generic", "category", "pack_amount", "quantity_text", "image_url")}}
+                "saved": True, "role": saved.get("role") or guess_role(saved["name"] or "", saved["generic"] or ""),
+                **{k: saved[k] for k in ("name", "brand", "generic", "category", "pack_amount", "quantity_text", "image_url")}}
     errors = []
     for key, label, url in SOURCES:
         try:
@@ -276,9 +318,10 @@ def lookup(raw: str, version: str = "0") -> dict:
         category = guess_category(key, tags, name)
         q = parse_quantity(qtext)
         display = name if not brand or brand.lower() in name.lower() else f"{brand} {name}"
+        generic = suggest_generic(name, (p.get("brands") or "") + "," + brand, tags, p.get("generic_name_en") or p.get("generic_name") or "")
         return {"ok": True, "found": True, "barcode": code, "source": key, "source_name": label, "saved": False,
                 "name": _clean(f"{display} {qtext}" if qtext and qtext.lower() not in display.lower() else display),
-                "brand": brand, "generic": suggest_generic(name, (p.get("brands") or "") + "," + brand, tags, p.get("generic_name_en") or p.get("generic_name") or ""),
+                "brand": brand, "generic": generic, "role": guess_role(name, generic),
                 "category": category, "pack_amount": pack_amount(category, q), "quantity_text": qtext,
                 "image_url": p.get("image_front_small_url") or ""}
     return {"ok": True, "found": False, "barcode": code, "errors": errors,
@@ -286,14 +329,42 @@ def lookup(raw: str, version: str = "0") -> dict:
                        if errors else "Not in Open Food Facts yet. Fill it in once and this app will remember it."}
 
 
-def remember(code: str, name: str, brand: str, generic: str, category: str, amount: float, quantity_text: str, source: str, image_url: str = "") -> None:
+def remember(code: str, name: str, brand: str, generic: str, category: str, amount: float, quantity_text: str, source: str,
+             image_url: str = "", role: str | None = None) -> None:
     """Save (or correct) what this barcode is, so the next scan needs no typing."""
     if not code:
         return
     db.execute(
-        "INSERT INTO products(barcode, name, brand, generic, category, pack_amount, quantity_text, source, image_url, updated) "
-        "VALUES (?,?,?,?,?,?,?,?,?,?) ON CONFLICT(barcode) DO UPDATE SET name=excluded.name, brand=excluded.brand, "
+        "INSERT INTO products(barcode, name, brand, generic, category, pack_amount, quantity_text, source, image_url, updated, role) "
+        "VALUES (?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(barcode) DO UPDATE SET name=excluded.name, brand=excluded.brand, "
         "generic=excluded.generic, category=excluded.category, pack_amount=excluded.pack_amount, "
-        "quantity_text=excluded.quantity_text, updated=excluded.updated",
-        (code, name, brand, generic, category, amount, quantity_text, source or "manual", image_url, db.now_iso()),
+        "quantity_text=excluded.quantity_text, updated=excluded.updated, role=COALESCE(excluded.role, products.role)",
+        (code, name, brand, generic, category, amount, quantity_text, source or "manual", image_url, db.now_iso(), role),
     )
+
+
+def food_unit(role: str | None, unit: str) -> str:
+    """Meals for whole meals; portions for halves of a meal and extras."""
+    if role in ("base", "topping", "extra") and unit in ("", "meals", "meal"):
+        return "portions"
+    if role == "meal" and unit in ("", "portions", "portion"):
+        return "meals"
+    return unit
+
+
+def assign_roles() -> int:
+    """Give every food item and remembered food barcode without a role a sensible one.
+
+    Runs on every start (and after a restore), so items from before 0.5 and from older
+    backups get a role; anything the household has set is never touched."""
+    n = 0
+    for i in db.rows("SELECT id, name, generic, unit, barcode FROM items WHERE category='food' AND (role IS NULL OR role='')"):
+        saved = db.row("SELECT role FROM products WHERE barcode=? AND role IS NOT NULL AND role != ''", (i["barcode"],)) if i["barcode"] else None
+        role = saved["role"] if saved else guess_role(i["name"] or "", i["generic"] or "")
+        db.execute("UPDATE items SET role=?, unit=? WHERE id=?", (role, food_unit(role, i["unit"] or ""), i["id"]))
+        n += 1
+    for p in db.rows("SELECT barcode, name, generic FROM products WHERE category='food' AND (role IS NULL OR role='')"):
+        item = db.row("SELECT role FROM items WHERE barcode=? AND role IS NOT NULL ORDER BY id DESC", (p["barcode"],))
+        db.execute("UPDATE products SET role=? WHERE barcode=?",
+                   (item["role"] if item else guess_role(p["name"] or "", p["generic"] or ""), p["barcode"]))
+    return n

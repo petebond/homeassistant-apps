@@ -45,6 +45,7 @@ def comparable(data):
 
 def test_round_trip(fresh):
     populate()
+    db.init()  # as on every start: fills in anything newer, e.g. food roles
     before = backup.export("test")
     raw = backup.dumps(before)
     db.DB_PATH.unlink()

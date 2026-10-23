@@ -21,7 +21,7 @@ from . import db, installer, logic, tls
 
 log = logging.getLogger("prepare")
 HERE = Path(__file__).parent
-VERSION = "0.1.1"
+VERSION = "0.1.2"
 
 app = FastAPI(title="Prepare", version=VERSION, docs_url="/api/docs", redoc_url=None)
 app.mount("/static", StaticFiles(directory=HERE / "static"), name="static")
@@ -99,20 +99,36 @@ def dashboard(request: Request):
 # ---------- inventory ----------
 
 @app.get("/items", response_class=HTMLResponse)
-def items_page(request: Request, show: str = "active", cat: str = ""):
+def items_page(request: Request, show: str = "active", cat: str = "", group: str = ""):
+    cats = categories()
+    groups = db.checklist_groups()
+    group_keys = {g["key"] for g in groups}
+    in_group = {g["key"]: [c["key"] for c in cats if c.get("grp") == g["key"]] for g in groups}
+    in_group["other"] = [c["key"] for c in cats if c.get("grp") not in group_keys]
     sql = "SELECT * FROM items WHERE 1=1"
-    args = []
+    args: list = []
     if show != "all":
         sql += " AND status='active'"
     if cat:
         sql += " AND category=?"
         args.append(cat)
+    elif group in in_group:
+        keys = in_group[group] or ["-"]
+        sql += f" AND category IN ({','.join('?' * len(keys))})"
+        args += keys
+    else:
+        group = ""
     sql += " ORDER BY CASE WHEN best_before IS NULL OR best_before='' THEN 1 ELSE 0 END, best_before, name"
     items = db.rows(sql, args)
     for i in items:
         i["days_left"] = logic.days_until(i["best_before"])
-    cmap = {c["key"]: c for c in categories()}
-    return render(request, "items.html", items=items, cats=categories(), cmap=cmap, show=show, cat=cat,
+    # How many in-stock rows each button would show, so empty sections are obvious.
+    active = db.rows("SELECT category FROM items WHERE status='active'")
+    counts = {k: sum(1 for i in active if i["category"] in keys) for k, keys in in_group.items()}
+    cmap = {c["key"]: c for c in cats}
+    default_cat = cat or (in_group.get(group) or [""])[0]
+    return render(request, "items.html", items=items, cats=cats, cmap=cmap, show=show, cat=cat, group=group,
+                  groups=groups, counts=counts, total=len(active), default_cat=default_cat,
                   warning=int(db.settings().get("warning_days") or 30))
 
 

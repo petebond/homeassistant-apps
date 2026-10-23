@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS members (
   dietary TEXT DEFAULT '', notes TEXT DEFAULT '');
 CREATE TABLE IF NOT EXISTS categories (
   key TEXT PRIMARY KEY, name TEXT, unit TEXT, basis TEXT, amount REAL,
-  in_score INTEGER, guidance TEXT, sort INTEGER);
+  in_score INTEGER, guidance TEXT, sort INTEGER, grp TEXT);
 CREATE TABLE IF NOT EXISTS items (
   id INTEGER PRIMARY KEY, name TEXT NOT NULL, category TEXT, quantity REAL DEFAULT 1,
   unit TEXT DEFAULT '', location TEXT DEFAULT '', best_before TEXT,
@@ -92,14 +92,20 @@ def init() -> None:
         c.executescript(SCHEMA)
         for k, v in DEFAULT_SETTINGS.items():
             c.execute("INSERT OR IGNORE INTO settings(key, value) VALUES (?, ?)", (k, v))
+        seed = yaml.safe_load((SEED_DIR / "categories.yaml").read_text())
+        # 0.1.x databases predate checklist groups: add the column, then fill it from the seed.
+        if "grp" not in [r[1] for r in c.execute("PRAGMA table_info(categories)")]:
+            c.execute("ALTER TABLE categories ADD COLUMN grp TEXT")
         if c.execute("SELECT COUNT(*) FROM categories").fetchone()[0] == 0:
-            seed = yaml.safe_load((SEED_DIR / "categories.yaml").read_text())
             for i, cat in enumerate(seed["categories"]):
                 c.execute(
-                    "INSERT INTO categories VALUES (?,?,?,?,?,?,?,?)",
+                    "INSERT INTO categories(key, name, unit, basis, amount, in_score, guidance, sort, grp) "
+                    "VALUES (?,?,?,?,?,?,?,?,?)",
                     (cat["key"], cat["name"], cat["unit"], cat["basis"], cat["amount"],
-                     1 if cat.get("in_score", True) else 0, cat.get("guidance", ""), i),
+                     1 if cat.get("in_score", True) else 0, cat.get("guidance", ""), i, cat.get("group", "")),
                 )
+        for cat in seed["categories"]:
+            c.execute("UPDATE categories SET grp=? WHERE key=? AND grp IS NULL", (cat.get("group", ""), cat["key"]))
         if c.execute("SELECT COUNT(*) FROM plans").fetchone()[0] == 0:
             seed = yaml.safe_load((SEED_DIR / "plans.yaml").read_text())
             for i, p in enumerate(seed["plans"]):
@@ -107,6 +113,11 @@ def init() -> None:
                     "INSERT INTO plans(scenario, steps, info_url, sort) VALUES (?,?,?,?)",
                     (p["scenario"], p["steps"].strip(), p.get("info_url", ""), i),
                 )
+
+
+def checklist_groups() -> list[dict]:
+    """The Be Ready checklist sections, in checklist order."""
+    return yaml.safe_load((SEED_DIR / "categories.yaml").read_text())["groups"]
 
 
 def general_actions() -> list[str]:

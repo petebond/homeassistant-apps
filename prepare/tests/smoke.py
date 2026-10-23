@@ -99,3 +99,15 @@ ok(c.get("/manifest.webmanifest"), "Prepare")
 ok(c.get("/sw.js"), "CACHE")
 print("ALL OK")
 print(c.get("/api/summary").json())
+
+# checklist section filters
+import re
+t = ok(c.get("/items"), "Food (", "Water (", "Hygiene (", "Light and warmth (", "Communication and information (",
+       "Money and documents (", "Medical and health (", "Baby products (", "Pet products (")
+water = ok(c.get("/items?group=water")).text
+assert "Water 2L" in water and "Rice" not in water
+assert "Medication</a> page" in ok(c.get("/items?group=medical")).text
+r = c.post("/items", data={"name": "Hand gel", "category": "sanitiser", "next": "/items?group=hygiene"}, follow_redirects=False)
+assert r.headers["location"] == "/items?group=hygiene"
+assert "Hand gel" in ok(c.get("/items?group=hygiene")).text
+print("FILTERS OK")

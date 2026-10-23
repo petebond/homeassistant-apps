@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.1.2 - 2026-10-23
+
+- Inventory filters by the Be Ready checklist sections: Food, Water, Hygiene,
+  Light and warmth, Communication and information, Money and documents, Medical
+  and health, Baby products, Pet products, plus Other / car kit. Each button shows
+  how many items are in stock in that section; empty sections are greyed out.
+- Adding an item while a section is selected keeps you in that section and
+  starts with its first category.
+- Existing databases get the sections added on start; nothing to do.
+
 ## 0.1.1 - 2026-10-23
 
 - Fix: the app now announces itself to Home Assistant, so the integration is

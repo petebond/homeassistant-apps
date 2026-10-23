@@ -17,6 +17,11 @@ label { display: block; margin-top: 4px; }
 .banner { border: 2px solid #000; padding: 6px; margin: 6px 0; }
 .big { font-size: 200%; font-weight: bold; }
 .wrap { overflow-x: auto; }
+/* Filter buttons: plain boxes, the selected one inverted. */
+.filters { line-height: 2.4; }
+a.btn { border: 2px solid #000; padding: 3px 7px; margin: 0 4px 4px 0; text-decoration: none; color: #000; background: #eee; white-space: nowrap; }
+a.btn.on { background: #000; color: #fff; }
+a.btn.empty { color: #888; border-color: #aaa; }
 @page { size: A4; margin: 12mm; }
 @media print {
   nav, .noprint, form { display: none !important; }

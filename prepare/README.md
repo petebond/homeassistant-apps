@@ -11,8 +11,9 @@ Open **`http://homeassistant.local:8999`** on anything on the home network.
 
 - **Dashboard** - readiness score, days of water and food covered, what to buy,
   what to eat first, and everything else that needs doing.
-- **Inventory** - emergency stock with best-before dates. Water counts in litres,
-  food in meals. *Used* and *Binned* keep a record, so you can see the rotation
+- **Inventory** - emergency stock with best-before dates, filtered by the Be Ready
+  checklist sections (Food, Water, Hygiene, Light and warmth, and so on). Water counts
+  in litres, food in meals. *Used* and *Binned* keep a record, so you can see the rotation
   working and the waste going down.
 - **Medication** - optional. Personal (one person) or household (e.g. paracetamol,
   ibuprofen). Expiry and repeat-prescription reminders; printed with doses.

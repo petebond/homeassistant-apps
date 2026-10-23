@@ -3,10 +3,18 @@
 {% block title %}Inventory{% endblock %}
 {% block content %}
 <h1>Inventory</h1>
+{% set q = "&show=all" if show == "all" else "" %}
+<p class="filters">
+<a class="btn{% if not group and not cat %} on{% endif %}" href="{{ b }}/items?{{ q }}">All ({{ total }})</a>
+{% for g in groups %}<a class="btn{% if group == g.key %} on{% endif %}{% if not counts[g.key] %} empty{% endif %}" href="{{ b }}/items?group={{ g.key }}{{ q }}">{{ g.name }} ({{ counts[g.key] }})</a>
+{% endfor %}<a class="btn{% if group == 'other' %} on{% endif %}{% if not counts['other'] %} empty{% endif %}" href="{{ b }}/items?group=other{{ q }}">Other / car kit ({{ counts['other'] }})</a>
+</p>
+{% if group == 'medical' %}<p class="banner">Medicines with doses and owners are on the <a href="{{ b }}/meds">Medication</a> page. This list is the first aid kit and other medical supplies.</p>{% endif %}
 <fieldset><legend>Add item</legend>
 <form method="post" action="{{ b }}/items">
+<input type="hidden" name="next" value="/items{% if group %}?group={{ group }}{% elif cat %}?cat={{ cat }}{% endif %}">
 <label>What <input name="name" required size="30" placeholder="e.g. Bottled water 2L"></label>
-<label>Category {{ cat_select(cats, cat) }}</label>
+<label>Category {{ cat_select(cats, default_cat) }}</label>
 <label>Quantity <input name="quantity" type="number" step="any" value="1" style="width:6em"> unit <input name="unit" size="8" placeholder="(category unit)"></label>
 <label>Best before <input name="best_before" type="date"> <span class="muted">leave blank if it doesn't expire</span></label>
 <label>Where <input name="location" size="20" placeholder="e.g. Garage shelf"></label>
@@ -19,8 +27,8 @@
 
 <form method="get" action="{{ b }}/items">
 Show: <select name="show"><option value="active"{% if show != 'all' %} selected{% endif %}>In stock</option><option value="all"{% if show == 'all' %} selected{% endif %}>Everything (incl. used/binned)</option></select>
-Category: <select name="cat"><option value="">All</option>{% for c in cats %}<option value="{{ c.key }}"{% if c.key == cat %} selected{% endif %}>{{ c.name }}</option>{% endfor %}</select>
-<button>Filter</button>
+Category: <select name="cat"><option value="">{{ 'All in this section' if group else 'All' }}</option>{% for c in cats %}<option value="{{ c.key }}"{% if c.key == cat %} selected{% endif %}>{{ c.name }}</option>{% endfor %}</select>
+{% if group %}<input type="hidden" name="group" value="{{ group }}">{% endif %}<button>Filter</button>
 </form>
 
 <div class="wrap"><table>

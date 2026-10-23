@@ -29,7 +29,8 @@
     "binary_sensor": {
       "pack_out_of_date": { "name": "Pack out of date" },
       "kit_check_due": { "name": "Kit check due" },
-      "plans_review_due": { "name": "Plans review due" }
+      "plans_review_due": { "name": "Plans review due" },
+      "backup_due": { "name": "Backup due" }
     },
     "todo": {
       "shortfall": { "name": "Shortfall" }

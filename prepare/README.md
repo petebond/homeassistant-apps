@@ -69,6 +69,7 @@ Prepare then appears under **Settings → Devices & services → Discovered**.
 | `sensor.prepare_pack_last_printed` | When the pack was last printed |
 | `binary_sensor.prepare_pack_out_of_date` | On when the pack needs reprinting |
 | `binary_sensor.prepare_kit_check_due` / `_plans_review_due` | Reviews due |
+| `binary_sensor.prepare_backup_due` | On when a backup should be downloaded |
 | `todo.prepare_shortfall` | What to buy, and expired stock to replace |
 
 Services: `prepare.add_item`, `prepare.consume_item`, `prepare.mark_printed`.
@@ -76,10 +77,31 @@ Services: `prepare.add_item`, `prepare.consume_item`, `prepare.mark_printed`.
 Blueprints: weekly expiry digest, reprint the pack, readiness dropped, power cut
 (opens the plan on phones).
 
+## Backup and restore
+
+**Settings → Backup** downloads one JSON file with everything the household has entered:
+inventory and best-before dates, household members and details, medication, plans,
+contacts, kit targets, settings, remembered barcodes and product types, and the
+activity log. Keep it somewhere other than Home Assistant. Restoring shows what's in
+the file and what's here now before anything changes, and saves a copy of the current
+data first. (The light/dark choice is kept by each phone, so it isn't in the file.)
+
+Prepare also saves backups on Home Assistant in `/data/backups`: once a day when
+something has changed (14 kept), before and after every update (a database copy and a
+full backup), and before every restore. The dashboard asks for a download when there
+has never been one, or when the last is over a month old and things have changed.
+
+**Every backup restores into every later version.** That's a rule for anyone changing
+the code - see the top of `app/backup.py`. In short: new tables and columns need
+nothing; any other change to stored data bumps `backup.FORMAT` with a migration step,
+and adds a real backup of the new format to `tests/backups/`, which the tests restore
+on every run. If a change ever can't be migrated, `MIN_RESTORABLE` goes up and the app
+asks the household to download a fresh backup straight away.
+
 ## Where the data lives
 
-`/data/prepare.db` inside the app, included in Home Assistant backups. The certificate
-authority is in `/data/certs`.
+`/data/prepare.db` inside the app, with backups in `/data/backups`; both are included
+in Home Assistant backups. The certificate authority is in `/data/certs`.
 
 ## Developing
 
@@ -87,6 +109,7 @@ authority is in `/data/certs`.
 pip install -r requirements.txt httpx
 tests/run_local.sh            # http://localhost:8999, data in .devdata/
 python tests/smoke.py         # every page and API call
+pytest tests/test_backup.py   # backups, including every past format
 pip install pytest-homeassistant-custom-component
 pytest                        # integration tests
 ```

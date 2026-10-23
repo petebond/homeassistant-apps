@@ -105,14 +105,16 @@ def init() -> None:
         for col in ("barcode", "brand", "generic"):
             if col not in item_cols:
                 c.execute(f"ALTER TABLE items ADD COLUMN {col} TEXT")
-        if c.execute("SELECT COUNT(*) FROM categories").fetchone()[0] == 0:
-            for i, cat in enumerate(seed["categories"]):
-                c.execute(
-                    "INSERT INTO categories(key, name, unit, basis, amount, in_score, guidance, sort, grp) "
-                    "VALUES (?,?,?,?,?,?,?,?,?)",
-                    (cat["key"], cat["name"], cat["unit"], cat["basis"], cat["amount"],
-                     1 if cat.get("in_score", True) else 0, cat.get("guidance", ""), i, cat.get("group", "")),
-                )
+        # Seed categories the database doesn't have yet: all of them on a new install,
+        # and any added in a later version (also after restoring an older backup).
+        # Existing ones keep the household's own targets.
+        for i, cat in enumerate(seed["categories"]):
+            c.execute(
+                "INSERT OR IGNORE INTO categories(key, name, unit, basis, amount, in_score, guidance, sort, grp) "
+                "VALUES (?,?,?,?,?,?,?,?,?)",
+                (cat["key"], cat["name"], cat["unit"], cat["basis"], cat["amount"],
+                 1 if cat.get("in_score", True) else 0, cat.get("guidance", ""), i, cat.get("group", "")),
+            )
         for cat in seed["categories"]:
             c.execute("UPDATE categories SET grp=? WHERE key=? AND grp IS NULL", (cat.get("group", ""), cat["key"]))
         if c.execute("SELECT COUNT(*) FROM plans").fetchone()[0] == 0:

@@ -1,7 +1,7 @@
 """Readiness, expiry and reminder calculations. Pure functions over the database."""
 from datetime import date, datetime, timedelta
 
-from . import db
+from . import backup, db
 
 PEOPLE_TYPES = ("adult", "child", "infant")
 
@@ -186,6 +186,7 @@ def summary() -> dict:
     m = medication_alerts()
     p = pack_status()
     v = reviews()
+    bk = backup.status()
     return {
         "readiness": r["score"],
         "categories": {c["key"]: (round(c["score"] * 100) if c["score"] is not None else None)
@@ -210,6 +211,9 @@ def summary() -> dict:
         "pack_out_of_date": p["out_of_date"],
         "kit_check_due": v["kit_due"],
         "plans_review_due": [x["scenario"] for x in v["plans_due"]],
+        "backup_due": bk["due"],
+        "backup_last": bk["last_at"],
+        "backup_downloaded": bk["downloaded_at"],
     }
 
 

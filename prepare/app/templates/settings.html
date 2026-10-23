@@ -10,6 +10,9 @@
 <p></p><button class="primary">Save</button>
 </form>
 
+<h2>Backup</h2>
+<p>Download a copy of everything you've entered, or restore one, on the <a href="{{ b }}/backup">Backup</a> page. Prepare also keeps daily backups on Home Assistant.</p>
+
 <h2>Appearance</h2>
 <p>Light, dark or automatic (matches the device) is set with the switch at the top of every page. Each phone and browser remembers its own choice.</p>
 
@@ -17,7 +20,7 @@
 <ul>
 <li>Plain view: <code>http://homeassistant.local:8999</code> — works on anything on the home network.</li>
 <li>Phone app, works offline: <code>https://homeassistant.local:8998</code> — turn on <i>Serve https as well</i> in the app's Configuration, then follow <a href="{{ b }}/setup">Phone setup</a> on each phone.</li>
-<li>Data: <code>/data/prepare.db</code> inside the app, included in Home Assistant backups.</li>
+<li>Data: <code>/data/prepare.db</code> inside the app, with automatic backups in <code>/data/backups</code>. Both are included in Home Assistant backups.</li>
 </ul>
 
 <h2>Recent activity</h2>

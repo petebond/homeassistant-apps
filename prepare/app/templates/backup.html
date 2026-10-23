@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}Backup{% endblock %}
+{% block content %}
+<h1>Backup and restore</h1>
+
+{% if done == "restored" %}<div class="notice good"><strong>Restored.</strong> The backup has replaced everything. A copy of what was here before is kept below as a <i>before restore</i> backup, in case you need it back.</div>{% endif %}
+{% if done == "saved" %}<div class="notice good"><strong>Saved</strong> a backup on Home Assistant.</div>{% endif %}
+{% if error %}<div class="notice bad"><strong>Can't use that file.</strong> {{ error }}</div>{% endif %}
+
+{% if preview %}
+<div class="formbox">
+<h2 style="margin-top:0">Restore this backup?</h2>
+<p>From <b>{{ label }}</b>: made {{ preview.created[:10] | nicedate }} at {{ preview.created[11:16] }} by Prepare {{ preview.app_version }}.</p>
+<div class="tablewrap"><table>
+<thead><tr><th></th><th>Backup</th><th>Now</th></tr></thead>
+<tbody>
+<tr><td>Household</td><td>{{ preview.household_name or "—" }}</td><td>{{ now.household_name or "—" }}</td></tr>
+<tr><td>Items in stock</td><td>{{ preview.stock }}</td><td>{{ now.stock }}</td></tr>
+<tr><td>People and pets</td><td>{{ preview.members }}</td><td>{{ now.members }}</td></tr>
+<tr><td>Medication</td><td>{{ preview.medications }}</td><td>{{ now.medications }}</td></tr>
+<tr><td>Plans</td><td>{{ preview.plans }}</td><td>{{ now.plans }}</td></tr>
+<tr><td>Contacts</td><td>{{ preview.contacts }}</td><td>{{ now.contacts }}</td></tr>
+<tr><td>Remembered barcodes</td><td>{{ preview.products }}</td><td>{{ now.products }}</td></tr>
+</tbody></table></div>
+<p><b>Restoring replaces everything here</b> with what's in the backup. Prepare saves a copy of the current data first.</p>
+<form method="post" action="{{ b }}/backup/restore" class="inline">
+<input type="hidden" name="confirm" value="yes">
+<button class="primary">Restore this backup</button>
+</form>
+<a class="button ghost" href="{{ b }}/backup">Cancel</a>
+</div>
+{% endif %}
+
+<h2>Download a backup</h2>
+<p>One file with everything you've entered: inventory and best-before dates, household and details, medication, plans, contacts, kit targets, settings and remembered barcodes. Keep a copy somewhere other than Home Assistant — a laptop, a USB stick, cloud storage.</p>
+<p>
+{% if st.downloaded_at %}Last downloaded {{ st.downloaded_at[:10] | nicedate }}.{% else %}<b>Not downloaded yet.</b>{% endif %}
+{% if st.too_old %} <b>That copy is from before a change in Prepare that older backups can't restore across — download a new one.</b>{% endif %}
+</p>
+<p><a class="button" href="{{ b }}/backup/download" download>Download backup</a></p>
+
+<h2>Backups on Home Assistant</h2>
+<p>Prepare saves one automatically each day something has changed, before and after every update, and before a restore. They live in the app's data folder, so Home Assistant's own backups include them too.{% if st.last_at %} Latest: {{ st.last_at[:10] | nicedate }} {{ st.last_at[11:16] }}.{% endif %}</p>
+<form method="post" action="{{ b }}/backup/now"><button class="ghost">Save one now</button></form>
+{% if files %}
+<ul class="rows">
+{% for f in files %}
+<li><span class="rmain"><a class="rname" href="{{ b }}/backup/files/{{ f.name }}" download>{{ f.when[:10] | nicedate }} {{ f.when[11:16] }}</a><span class="rsub">{{ {"daily": "Daily", "upgrade": "Update", "before-restore": "Before restore", "manual": "Saved by hand"}[f.kind] }}{% if f.type == "db" %} · database copy (for recovery by hand){% endif %} · {{ (f.bytes / 1024) | round(1) }} KB</span></span>
+{% if f.type == "json" %}<span class="racts"><form class="inline" method="post" action="{{ b }}/backup/check-stored"><input type="hidden" name="name" value="{{ f.name }}"><button class="ghost small">Restore…</button></form></span>{% endif %}
+</li>
+{% endfor %}
+</ul>
+{% else %}<p class="muted">None yet.</p>{% endif %}
+
+<h2>Restore from a file</h2>
+<form method="post" action="{{ b }}/backup/check" enctype="multipart/form-data" class="formbox">
+<label for="bk-file">Backup file <span class="hint">a prepare-backup-….json file; you'll see what's in it before anything changes</span></label>
+<input id="bk-file" name="file" type="file" accept=".json,application/json" required>
+<p></p><button class="primary">Check file</button>
+</form>
+<p class="muted">Backups from any earlier version of Prepare restore into this one (backup format {{ fmt }}).</p>
+{% endblock %}

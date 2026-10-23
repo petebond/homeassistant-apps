@@ -12,6 +12,9 @@ BINARY = {
     "pack_out_of_date": ("mdi:printer-alert", lambda d: d["pack_out_of_date"], lambda d: {"last_printed": d["pack_last_printed"]}),
     "kit_check_due": ("mdi:clipboard-check-outline", lambda d: d["kit_check_due"], lambda d: {}),
     "plans_review_due": ("mdi:file-document-alert", lambda d: bool(d["plans_review_due"]), lambda d: {"plans": d["plans_review_due"]}),
+    # Added in app 0.4.0; .get() keeps the integration working with an older app.
+    "backup_due": ("mdi:backup-restore", lambda d: bool(d.get("backup_due")),
+                   lambda d: {"last_backup": d.get("backup_last") or None, "last_downloaded": d.get("backup_downloaded") or None}),
 }
 
 

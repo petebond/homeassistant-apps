@@ -1,0 +1,725 @@
+{
+ "kind": "prepare-backup",
+ "format": 1,
+ "app_version": "0.4.0",
+ "created": "2026-10-23T14:22:19.677288",
+ "counts": {
+  "settings": 18,
+  "members": 5,
+  "categories": 17,
+  "items": 9,
+  "medications": 2,
+  "plans": 8,
+  "contacts": 2,
+  "products": 2,
+  "events": 15
+ },
+ "tables": {
+  "settings": [
+   {
+    "key": "repeat_warning_days",
+    "value": "7"
+   },
+   {
+    "key": "address",
+    "value": ""
+   },
+   {
+    "key": "meeting_far",
+    "value": ""
+   },
+   {
+    "key": "radio_stations",
+    "value": ""
+   },
+   {
+    "key": "energy_supplier",
+    "value": ""
+   },
+   {
+    "key": "water_supplier",
+    "value": ""
+   },
+   {
+    "key": "insurance",
+    "value": ""
+   },
+   {
+    "key": "backup_plan",
+    "value": ""
+   },
+   {
+    "key": "neighbours",
+    "value": ""
+   },
+   {
+    "key": "grab_bag",
+    "value": ""
+   },
+   {
+    "key": "household_name",
+    "value": "Bondy household"
+   },
+   {
+    "key": "meeting_near",
+    "value": "Village hall"
+   },
+   {
+    "key": "kit_last_checked",
+    "value": "2026-10-23"
+   },
+   {
+    "key": "warning_days",
+    "value": "14"
+   },
+   {
+    "key": "target_days",
+    "value": "3"
+   },
+   {
+    "key": "review_months",
+    "value": "6"
+   },
+   {
+    "key": "pack_last_printed",
+    "value": "2026-10-23T14:22:06.725866"
+   },
+   {
+    "key": "data_changed_at",
+    "value": "2026-10-23T14:22:07.462165"
+   }
+  ],
+  "members": [
+   {
+    "id": 1,
+    "name": "Pete B",
+    "type": "adult",
+    "dietary": "",
+    "notes": ""
+   },
+   {
+    "id": 2,
+    "name": "Sam",
+    "type": "adult",
+    "dietary": "",
+    "notes": ""
+   },
+   {
+    "id": 3,
+    "name": "Kid",
+    "type": "child",
+    "dietary": "no nuts",
+    "notes": ""
+   },
+   {
+    "id": 4,
+    "name": "Rex",
+    "type": "pet",
+    "dietary": "",
+    "notes": ""
+   },
+   {
+    "id": 5,
+    "name": "X",
+    "type": "adult",
+    "dietary": "",
+    "notes": ""
+   }
+  ],
+  "categories": [
+   {
+    "key": "water",
+    "name": "Drinking water",
+    "unit": "litres",
+    "basis": "person_day",
+    "amount": 4.0,
+    "in_score": 1,
+    "guidance": "3 litres per person per day for drinking. More is needed for cooking and washing.",
+    "sort": 0,
+    "grp": "water"
+   },
+   {
+    "key": "food",
+    "name": "Non-perishable food",
+    "unit": "meals",
+    "basis": "person_day",
+    "amount": 3.0,
+    "in_score": 1,
+    "guidance": "Long shelf life, no fridge or cooking needed (tins, dried fruit, nuts). Buy food you usually eat.",
+    "sort": 1,
+    "grp": "food"
+   },
+   {
+    "key": "torch",
+    "name": "Torch",
+    "unit": "torches",
+    "basis": "household",
+    "amount": 1.0,
+    "in_score": 1,
+    "guidance": "Torches are safer than candles.",
+    "sort": 2,
+    "grp": "light_warmth"
+   },
+   {
+    "key": "batteries",
+    "name": "Spare batteries",
+    "unit": "sets",
+    "basis": "household",
+    "amount": 1.0,
+    "in_score": 1,
+    "guidance": "For the torch and radio.",
+    "sort": 3,
+    "grp": "light_warmth"
+   },
+   {
+    "key": "warmth",
+    "name": "Blankets, sleeping bags, warm clothing",
+    "unit": "items",
+    "basis": "person",
+    "amount": 1.0,
+    "in_score": 1,
+    "guidance": "Blankets, sleeping bags and warm clothing.",
+    "sort": 4,
+    "grp": "light_warmth"
+   },
+   {
+    "key": "radio",
+    "name": "Battery or wind-up FM radio",
+    "unit": "radios",
+    "basis": "household",
+    "amount": 1.0,
+    "in_score": 1,
+    "guidance": "Write down the frequencies of your local news stations (see Household details).",
+    "sort": 5,
+    "grp": "comms"
+   },
+   {
+    "key": "powerbank",
+    "name": "Charged power bank",
+    "unit": "power banks",
+    "basis": "household",
+    "amount": 1.0,
+    "in_score": 1,
+    "guidance": "Keep it charged.",
+    "sort": 6,
+    "grp": "comms"
+   },
+   {
+    "key": "cash",
+    "name": "Cash in coins and notes",
+    "unit": "bundles",
+    "basis": "household",
+    "amount": 1.0,
+    "in_score": 1,
+    "guidance": "Cash in coins and notes, plus cards.",
+    "sort": 7,
+    "grp": "money_docs"
+   },
+   {
+    "key": "documents",
+    "name": "Printed copies of ID and important documents",
+    "unit": "sets",
+    "basis": "household",
+    "amount": 1.0,
+    "in_score": 1,
+    "guidance": "Printed copies of IDs and important documents. The printed pack covers contacts and medication.",
+    "sort": 8,
+    "grp": "money_docs"
+   },
+   {
+    "key": "firstaid",
+    "name": "First aid kit",
+    "unit": "kits",
+    "basis": "household",
+    "amount": 1.0,
+    "in_score": 1,
+    "guidance": "Plasters, bandages, thermometer, antiseptic, eyewash, sterile dressings, gloves, medical tape, tweezers.",
+    "sort": 9,
+    "grp": "medical"
+   },
+   {
+    "key": "sanitiser",
+    "name": "Hand sanitiser",
+    "unit": "bottles",
+    "basis": "household",
+    "amount": 1.0,
+    "in_score": 1,
+    "guidance": "",
+    "sort": 10,
+    "grp": "hygiene"
+   },
+   {
+    "key": "wipes",
+    "name": "Wet wipes",
+    "unit": "packs",
+    "basis": "household",
+    "amount": 1.0,
+    "in_score": 1,
+    "guidance": "",
+    "sort": 11,
+    "grp": "hygiene"
+   },
+   {
+    "key": "bathroom",
+    "name": "Bathroom products",
+    "unit": "items",
+    "basis": "household",
+    "amount": 1.0,
+    "in_score": 1,
+    "guidance": "Toilet roll, sanitary products and similar.",
+    "sort": 12,
+    "grp": "hygiene"
+   },
+   {
+    "key": "baby",
+    "name": "Baby: ready-to-feed formula, nappies, wipes",
+    "unit": "days",
+    "basis": "infant_day",
+    "amount": 1.0,
+    "in_score": 1,
+    "guidance": "Ready-to-feed formula is best, as powdered formula may not be safe to make up without boiling water.",
+    "sort": 13,
+    "grp": "baby"
+   },
+   {
+    "key": "pet",
+    "name": "Pets: food and bottled water",
+    "unit": "days",
+    "basis": "pet_day",
+    "amount": 1.0,
+    "in_score": 1,
+    "guidance": "Pet food and bottled water.",
+    "sort": 14,
+    "grp": "pet"
+   },
+   {
+    "key": "car",
+    "name": "Car kit (wintry weather)",
+    "unit": "kits",
+    "basis": "household",
+    "amount": 1.0,
+    "in_score": 0,
+    "guidance": "Torch, in-car phone charger, warm clothes and blankets, hi-vis, jump leads, food and drink, snow shovel, optional first aid kit.",
+    "sort": 15,
+    "grp": ""
+   },
+   {
+    "key": "other",
+    "name": "Other / not counted",
+    "unit": "items",
+    "basis": "household",
+    "amount": 0.0,
+    "in_score": 0,
+    "guidance": "Anything else you keep for emergencies.",
+    "sort": 16,
+    "grp": ""
+   }
+  ],
+  "items": [
+   {
+    "id": 1,
+    "name": "Water 2L",
+    "category": "water",
+    "quantity": 12.0,
+    "unit": "litres",
+    "location": "",
+    "best_before": "2027-11-27",
+    "perishable": 0,
+    "notes": "",
+    "added": "2026-10-23T14:22:04.455352",
+    "status": "active",
+    "barcode": null,
+    "brand": "",
+    "generic": ""
+   },
+   {
+    "id": 2,
+    "name": "Beans",
+    "category": "food",
+    "quantity": 6.0,
+    "unit": "meals",
+    "location": "",
+    "best_before": "2026-11-02",
+    "perishable": 0,
+    "notes": "",
+    "added": "2026-10-23T14:22:04.558369",
+    "status": "active",
+    "barcode": null,
+    "brand": "",
+    "generic": ""
+   },
+   {
+    "id": 3,
+    "name": "Old soup",
+    "category": "food",
+    "quantity": 0.0,
+    "unit": "meals",
+    "location": "",
+    "best_before": "2026-10-18",
+    "perishable": 0,
+    "notes": "",
+    "added": "2026-10-23T14:22:04.700606",
+    "status": "discarded",
+    "barcode": null,
+    "brand": "",
+    "generic": ""
+   },
+   {
+    "id": 4,
+    "name": "Torch",
+    "category": "torch",
+    "quantity": 1.0,
+    "unit": "torches",
+    "location": "",
+    "best_before": null,
+    "perishable": 0,
+    "notes": "",
+    "added": "2026-10-23T14:22:04.831878",
+    "status": "active",
+    "barcode": null,
+    "brand": "",
+    "generic": ""
+   },
+   {
+    "id": 5,
+    "name": "Rice 1kg",
+    "category": "food",
+    "quantity": 6.0,
+    "unit": "meals",
+    "location": "",
+    "best_before": "2027-03-22",
+    "perishable": 0,
+    "notes": "",
+    "added": "2026-10-23T14:22:04.977534",
+    "status": "active",
+    "barcode": null,
+    "brand": "",
+    "generic": ""
+   },
+   {
+    "id": 6,
+    "name": "Batteries AA",
+    "category": "batteries",
+    "quantity": 0.0,
+    "unit": "sets",
+    "location": "",
+    "best_before": null,
+    "perishable": 0,
+    "notes": "",
+    "added": "2026-10-23T14:22:05.857062",
+    "status": "used",
+    "barcode": null,
+    "brand": "",
+    "generic": ""
+   },
+   {
+    "id": 7,
+    "name": "Hand gel",
+    "category": "sanitiser",
+    "quantity": 1.0,
+    "unit": "bottles",
+    "location": "",
+    "best_before": null,
+    "perishable": 0,
+    "notes": "",
+    "added": "2026-10-23T14:22:07.127529",
+    "status": "active",
+    "barcode": null,
+    "brand": "",
+    "generic": ""
+   },
+   {
+    "id": 8,
+    "name": "Napolina Chopped Tomatoes 400g",
+    "category": "food",
+    "quantity": 2.0,
+    "unit": "meals",
+    "location": "Cupboard",
+    "best_before": "2027-08-19",
+    "perishable": 0,
+    "notes": "",
+    "added": "2026-10-23T14:22:07.302093",
+    "status": "active",
+    "barcode": "8005121000108",
+    "brand": "Napolina",
+    "generic": "Chopped tomatoes"
+   },
+   {
+    "id": 9,
+    "name": "Tesco Chopped Tomatoes",
+    "category": "food",
+    "quantity": 4.0,
+    "unit": "meals",
+    "location": "Cupboard",
+    "best_before": "2026-12-02",
+    "perishable": 0,
+    "notes": "",
+    "added": "2026-10-23T14:22:07.398217",
+    "status": "active",
+    "barcode": "5000436589778",
+    "brand": "Tesco",
+    "generic": "Chopped tomatoes"
+   }
+  ],
+  "medications": [
+   {
+    "id": 1,
+    "name": "Paracetamol",
+    "strength": "500mg",
+    "dose": "2 tabs up to 4x/day",
+    "quantity": "",
+    "expiry": "2026-11-12",
+    "owner_id": null,
+    "repeat_due": null,
+    "notes": "",
+    "status": "active"
+   },
+   {
+    "id": 2,
+    "name": "Inhaler (blue)",
+    "strength": "",
+    "dose": "2 puffs",
+    "quantity": "",
+    "expiry": null,
+    "owner_id": 2,
+    "repeat_due": "2026-10-26",
+    "notes": "",
+    "status": "active"
+   }
+  ],
+  "plans": [
+   {
+    "id": 1,
+    "scenario": "Power cut",
+    "steps": "Report it: call 105 (England, Scotland, Wales) or 03457 643643 (Northern Ireland).\nUse torches, not candles.\nUse the battery or wind-up radio for news.\nCheck on neighbours who may be at risk.\nIf you need to leave, turn off gas, electricity and water.",
+    "meeting_point": "",
+    "roles": "",
+    "grab_bag": "",
+    "notes": "",
+    "info_url": "https://beready.campaign.gov.uk/be-informed-about-hazards/power-cuts/",
+    "last_reviewed": "2026-10-23",
+    "sort": 0
+   },
+   {
+    "id": 2,
+    "scenario": "Flooding",
+    "steps": "Check your flood risk and flood insurance in advance.\nAgree with everyone at home what you will do if the house floods.\nFollow emergency services' advice. Evacuate when told to.\nIf you need to leave, turn off gas, electricity and water. Take the grab bag.",
+    "meeting_point": "",
+    "roles": "",
+    "grab_bag": "",
+    "notes": "",
+    "info_url": "https://beready.campaign.gov.uk/be-informed-about-hazards/flooding/",
+    "last_reviewed": null,
+    "sort": 1
+   },
+   {
+    "id": 3,
+    "scenario": "Fire in the home",
+    "steps": "Get everyone out using the planned escape route. Call 999.\nDo not go back inside.\nMeet at the meeting point near home.\nIn advance: test smoke alarms monthly and book a home fire safety check.",
+    "meeting_point": "",
+    "roles": "",
+    "grab_bag": "",
+    "notes": "",
+    "info_url": "https://beready.campaign.gov.uk/be-informed-about-hazards/fires-in-the-home/",
+    "last_reviewed": null,
+    "sort": 2
+   },
+   {
+    "id": 4,
+    "scenario": "Evacuation",
+    "steps": "Leave when told to by the emergency services.\nTake the grab bag and medication.\nTurn off gas, electricity and water if you have time.\nGo to the agreed meeting point; let the emergency contact know where you are.",
+    "meeting_point": "",
+    "roles": "",
+    "grab_bag": "",
+    "notes": "",
+    "info_url": "https://beready.campaign.gov.uk/be-ready-for-emergencies/",
+    "last_reviewed": null,
+    "sort": 3
+   },
+   {
+    "id": 5,
+    "scenario": "Severe weather (storms, snow and ice, heatwave)",
+    "steps": "Check Met Office weather warnings: https://www.metoffice.gov.uk/\nGo in, Stay in, Tune in.\nCheck on neighbours who may be at risk.\nIf travelling in wintry weather, carry the car kit.",
+    "meeting_point": "",
+    "roles": "",
+    "grab_bag": "",
+    "notes": "",
+    "info_url": "https://beready.campaign.gov.uk/be-informed-about-hazards/storms/",
+    "last_reviewed": null,
+    "sort": 4
+   },
+   {
+    "id": 6,
+    "scenario": "Water supply interruption",
+    "steps": "Use stored drinking water: 3 litres per person per day.\nContact the water supplier (see Household details) for updates.\nUse ready-to-feed formula for babies rather than making up powder.",
+    "meeting_point": "",
+    "roles": "",
+    "grab_bag": "",
+    "notes": "",
+    "info_url": "https://beready.campaign.gov.uk/be-informed-about-hazards/water-supply-interruptions-or-outages/",
+    "last_reviewed": null,
+    "sort": 5
+   },
+   {
+    "id": 7,
+    "scenario": "Phone and broadband outage",
+    "steps": "Use the battery or wind-up FM radio for news (frequencies in Household details).\nUse the printed contact list.\nIf someone cannot be reached by phone, follow the backup plan (e.g. a trusted person visits them).\nGo to the meeting point if agreed.",
+    "meeting_point": "",
+    "roles": "",
+    "grab_bag": "",
+    "notes": "",
+    "info_url": "https://beready.campaign.gov.uk/be-informed-about-hazards/phone-broadband-outages/",
+    "last_reviewed": null,
+    "sort": 6
+   },
+   {
+    "id": 8,
+    "scenario": "Heatwave",
+    "steps": "Close curtains\nDrink water",
+    "meeting_point": "",
+    "roles": "Pete: check on neighbours",
+    "grab_bag": "",
+    "notes": "",
+    "info_url": "",
+    "last_reviewed": "2026-10-23",
+    "sort": 999
+   }
+  ],
+  "contacts": [
+   {
+    "id": 1,
+    "name": "Granny",
+    "role": "family",
+    "phone": "01747 000001",
+    "phone2": "",
+    "notes": ""
+   },
+   {
+    "id": 2,
+    "name": "Neighbour",
+    "role": "neighbour",
+    "phone": "",
+    "phone2": "",
+    "notes": ""
+   }
+  ],
+  "products": [
+   {
+    "barcode": "8005121000108",
+    "name": "Napolina Chopped Tomatoes 400g",
+    "brand": "Napolina",
+    "generic": "Chopped tomatoes",
+    "category": "food",
+    "pack_amount": 1.0,
+    "quantity_text": "",
+    "source": "manual",
+    "image_url": "",
+    "updated": "2026-10-23T14:22:07.325979"
+   },
+   {
+    "barcode": "5000436589778",
+    "name": "Tesco Chopped Tomatoes",
+    "brand": "Tesco",
+    "generic": "Chopped tomatoes",
+    "category": "food",
+    "pack_amount": 4.0,
+    "quantity_text": "",
+    "source": "manual",
+    "image_url": "",
+    "updated": "2026-10-23T14:22:07.417943"
+   }
+  ],
+  "events": [
+   {
+    "id": 1,
+    "ts": "2026-10-23T14:22:04.474269",
+    "action": "added",
+    "detail": "Water 2L 12 litres"
+   },
+   {
+    "id": 2,
+    "ts": "2026-10-23T14:22:04.560769",
+    "action": "added",
+    "detail": "Beans 10 meals"
+   },
+   {
+    "id": 3,
+    "ts": "2026-10-23T14:22:04.718859",
+    "action": "added",
+    "detail": "Old soup 2 meals"
+   },
+   {
+    "id": 4,
+    "ts": "2026-10-23T14:22:04.862193",
+    "action": "added",
+    "detail": "Torch 1 torches"
+   },
+   {
+    "id": 5,
+    "ts": "2026-10-23T14:22:05.002215",
+    "action": "added",
+    "detail": "Rice 8 meals"
+   },
+   {
+    "id": 6,
+    "ts": "2026-10-23T14:22:05.170149",
+    "action": "used",
+    "detail": "Beans 4 meals"
+   },
+   {
+    "id": 7,
+    "ts": "2026-10-23T14:22:05.330193",
+    "action": "discarded",
+    "detail": "Old soup 2 meals"
+   },
+   {
+    "id": 8,
+    "ts": "2026-10-23T14:22:05.470176",
+    "action": "used",
+    "detail": "Rice 3 meals"
+   },
+   {
+    "id": 9,
+    "ts": "2026-10-23T14:22:05.874903",
+    "action": "added",
+    "detail": "Batteries AA (via HA)"
+   },
+   {
+    "id": 10,
+    "ts": "2026-10-23T14:22:05.930100",
+    "action": "used",
+    "detail": "Batteries AA 1 sets"
+   },
+   {
+    "id": 11,
+    "ts": "2026-10-23T14:22:06.558111",
+    "action": "kit_checked",
+    "detail": ""
+   },
+   {
+    "id": 12,
+    "ts": "2026-10-23T14:22:06.750126",
+    "action": "printed",
+    "detail": ""
+   },
+   {
+    "id": 13,
+    "ts": "2026-10-23T14:22:07.146115",
+    "action": "added",
+    "detail": "Hand gel 1 bottles"
+   },
+   {
+    "id": 14,
+    "ts": "2026-10-23T14:22:07.346176",
+    "action": "added",
+    "detail": "Napolina Chopped Tomatoes 400g x2 (scanned)"
+   },
+   {
+    "id": 15,
+    "ts": "2026-10-23T14:22:07.438067",
+    "action": "added",
+    "detail": "Tesco Chopped Tomatoes x1 (scanned)"
+   }
+  ]
+ }
+}

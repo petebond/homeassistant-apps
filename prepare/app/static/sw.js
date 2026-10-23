@@ -1,7 +1,7 @@
 // Prepare service worker: network first, fall back to the last saved copy.
 // Core pages are saved on install and refreshed every time they load online,
 // so the phone always has the latest plan, contacts and pack for a power cut.
-const CACHE = "prepare-v3";
+const CACHE = "prepare-v4";
 const CORE = ["/", "/print", "/scan", "/static/scan.js", "/static/vendor/zxing-library-0.21.3.min.js", "/plans", "/contacts", "/meds", "/items", "/kit", "/household",
               "/offline", "/static/style.css", "/manifest.webmanifest", "/static/icon-192.png",
               "/static/fonts/barlow-condensed-latin-700-normal.woff2", "/static/fonts/barlow-condensed-latin-800-normal.woff2"];
@@ -21,7 +21,9 @@ self.addEventListener("activate", (event) => {
 self.addEventListener("fetch", (event) => {
   const req = event.request;
   if (req.method !== "GET" || new URL(req.url).origin !== self.location.origin) return;
-  if (new URL(req.url).pathname.startsWith("/api/")) return;
+  const path = new URL(req.url).pathname;
+  // Never keep API answers or backups (a whole copy of the household's data) in the cache.
+  if (path.startsWith("/api/") || path.startsWith("/backup")) return;
   event.respondWith(
     fetch(req)
       .then((res) => {

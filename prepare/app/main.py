@@ -17,11 +17,11 @@ from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, Redirect
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from . import db, installer, logic, products, tls
+from . import backup, db, installer, logic, products, tls
 
 log = logging.getLogger("prepare")
 HERE = Path(__file__).parent
-VERSION = "0.3.2"
+VERSION = "0.4.0"
 
 app = FastAPI(title="Prepare", version=VERSION, docs_url="/api/docs", redoc_url=None)
 app.mount("/static", StaticFiles(directory=HERE / "static"), name="static")
@@ -60,7 +60,8 @@ async def middleware(request: Request, call_next):
     path = request.url.path
     # Anything that changes what the printed pack shows makes the pack out of date.
     if (request.method == "POST" and response.status_code < 400
-            and not path.endswith(("/mark", "/checked", "/reviewed")) and path != "/settings"):
+            and not path.endswith(("/mark", "/checked", "/reviewed")) and path != "/settings"
+            and not path.startswith("/backup")):  # a restore marks the data changed itself
         db.mark_changed()
     return response
 
@@ -113,7 +114,7 @@ def dashboard(request: Request):
     return render(
         request, "dashboard.html", sections=logic.sections(r),
         r=r, e=logic.expiring_items(), m=logic.medication_alerts(),
-        v=logic.reviews(), first=logic.use_first(10), waste=logic.waste_stats(),
+        v=logic.reviews(), first=logic.use_first(10), waste=logic.waste_stats(), bk=backup.status(),
     )
 
 
@@ -516,6 +517,96 @@ async def settings_save(request: Request):
     return back(request, "/settings")
 
 
+# ---------- backup and restore ----------
+#
+# See app/backup.py for the compatibility rule every future change must keep.
+
+def backup_page_ctx(**extra) -> dict:
+    return dict(files=backup.list_files(), st=backup.status(), now=backup.current_summary(VERSION),
+                fmt=backup.FORMAT, **extra)
+
+
+@app.get("/backup", response_class=HTMLResponse)
+def backup_page(request: Request, done: str = ""):
+    return render(request, "backup.html", **backup_page_ctx(done=done))
+
+
+@app.get("/backup/download")
+def backup_download():
+    data = backup.export(VERSION)
+    backup.mark_downloaded()
+    db.log("backup", "downloaded")
+    name = f"prepare-backup-{data['created'][:10]}.json"
+    return Response(backup.dumps(data), media_type="application/json",
+                    headers={"Content-Disposition": f'attachment; filename="{name}"', "Cache-Control": "no-store"})
+
+
+@app.post("/backup/now")
+def backup_now(request: Request):
+    backup.save("manual", VERSION)
+    db.log("backup", "saved on Home Assistant")
+    return back(request, "/backup?done=saved")
+
+
+@app.get("/backup/files/{name}")
+def backup_file(name: str):
+    p = backup.file_path(name)
+    if not p:
+        return JSONResponse({"error": "not found"}, status_code=404)
+    media = "application/json" if name.endswith(".json") else "application/octet-stream"
+    return FileResponse(p, media_type=media, filename=name, headers={"Cache-Control": "no-store"})
+
+
+PENDING = "pending-restore.json"
+
+
+def _check(request: Request, raw: bytes, label: str):
+    try:
+        data = backup.parse(raw)
+    except backup.BackupError as exc:
+        return render(request, "backup.html", **backup_page_ctx(error=str(exc)))
+    (backup.backup_dir() / PENDING).write_bytes(raw)
+    return render(request, "backup.html", **backup_page_ctx(preview=backup.summary(data), label=label))
+
+
+@app.post("/backup/check", response_class=HTMLResponse)
+async def backup_check(request: Request):
+    f = await request.form()
+    up = f.get("file")
+    if not up or not hasattr(up, "read"):
+        return render(request, "backup.html", **backup_page_ctx(error="Choose a backup file first."))
+    raw = await up.read(backup.MAX_UPLOAD + 1)
+    return _check(request, raw, getattr(up, "filename", "") or "uploaded file")
+
+
+@app.post("/backup/check-stored", response_class=HTMLResponse)
+async def backup_check_stored(request: Request):
+    f = await form(request)
+    p = backup.file_path(f.get("name", ""))
+    if not p or not p.name.endswith(".json"):
+        return render(request, "backup.html", **backup_page_ctx(error="That backup file isn't there any more."))
+    return _check(request, p.read_bytes(), p.name)
+
+
+@app.post("/backup/restore")
+async def backup_restore(request: Request):
+    f = await form(request)
+    pending = backup.backup_dir() / PENDING
+    if f.get("confirm") != "yes" or not pending.exists():
+        return back(request, "/backup")
+    try:
+        data = backup.parse(pending.read_bytes())
+        backup.save("before-restore", VERSION)
+        got = backup.restore(data)
+    except backup.BackupError as exc:
+        return render(request, "backup.html", **backup_page_ctx(error=str(exc)))
+    finally:
+        pending.unlink(missing_ok=True)
+    db.mark_changed()
+    db.log("restored", f"backup from {got['created'][:16].replace('T', ' ')} (Prepare {got['app_version']})")
+    return back(request, "/backup?done=restored")
+
+
 # ---------- print pack ----------
 
 def pack_context() -> dict:
@@ -777,7 +868,9 @@ def load_container_environment(path: str = "/run/s6/container_environment") -> N
 async def serve() -> None:
     load_container_environment()
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
+    upgraded_from = backup.before_init(VERSION)  # copies the database before an upgrade changes it
     db.init()
+    backup.after_init(VERSION, upgraded_from)  # ...and a full backup once it has
     opts = load_options()
     if opts.get("install_integration", True):
         installer.install()
@@ -792,7 +885,18 @@ async def serve() -> None:
     else:
         log.info("https_enabled is off - port %d (HTTPS/PWA) not started", HTTPS_PORT)
     await asyncio.get_running_loop().run_in_executor(None, supervisor_discovery)
-    await asyncio.gather(*(s.serve() for s in servers))
+    await asyncio.gather(daily_backups(), *(s.serve() for s in servers))
+
+
+async def daily_backups() -> None:
+    """Check every hour; backup.daily() saves at most once a day, and only after changes."""
+    loop = asyncio.get_running_loop()
+    while True:
+        await asyncio.sleep(3600)
+        try:
+            await loop.run_in_executor(None, backup.daily, VERSION)
+        except Exception as exc:  # noqa: BLE001 - a failed backup must never stop the app
+            log.error("Automatic backup failed: %s", exc)
 
 
 if __name__ == "__main__":

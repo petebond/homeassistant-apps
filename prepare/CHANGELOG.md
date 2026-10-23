@@ -1,5 +1,27 @@
 # Changelog
 
+## 0.4.0 - 2026-10-23
+
+Backup and restore.
+
+- **Settings → Backup** downloads one file with everything you've entered:
+  inventory and best-before dates, household and details, medication, plans,
+  contacts, kit targets, settings, remembered barcodes and product types, and the
+  activity log.
+- Restore from that file, or from a backup kept on Home Assistant. You see what's
+  in it beside what's here now before anything changes, and the current data is
+  saved first.
+- Automatic backups on Home Assistant (`/data/backups`, so HA's own backups
+  include them): daily when something has changed, before and after every update,
+  and before every restore. The first start of 0.4.0 backs up your existing data.
+- The dashboard asks for a download when there's never been one, or the last is
+  over a month old and things have changed. New `binary_sensor.prepare_backup_due`
+  (restart Home Assistant once to pick it up).
+- **Compatibility promise:** every backup restores into every later version. Old
+  files are converted on restore; files from a newer version are refused with a
+  clear message rather than half-restored.
+- Kit categories added in future versions now appear on existing installs too.
+
 ## 0.3.2 - 2026-10-23
 
 - Beans in tomato sauce are "Baked beans", whatever the tin calls them.

@@ -25,6 +25,7 @@
 {% for x in m.repeats %}<li><span class="tag amber">Request</span><span><a href="{{ b }}/meds">{{ x.name }}</a> — request repeat prescription, due {{ x.repeat_due | nicedate }}</span></li>{% endfor %}
 {% if v.kit_due %}<li><span class="tag blue">Check</span><span><a href="{{ b }}/kit">Kit check</a> — every {{ v.months }} months{% if v.kit_last_checked %}, last {{ v.kit_last_checked | nicedate }}{% endif %}</span></li>{% endif %}
 {% for p in v.plans_due %}<li><span class="tag blue">Review</span><span><a href="{{ b }}/plans#plan-{{ p.id }}">{{ p.scenario }}</a> plan</span></li>{% endfor %}
+{% if bk.due %}<li><span class="tag amber">Back up</span><span><a href="{{ b }}/backup">Download a backup</a> and keep it off Home Assistant{% if bk.too_old %} — the last one is from before a change older backups can't restore across{% elif bk.downloaded_at %} — last one {{ bk.downloaded_at[:10] | nicedate }}{% endif %}</span></li>{% endif %}
 {% if pack.out_of_date %}<li><span class="tag amber">Print</span><span><a href="{{ b }}/print">Reprint the emergency pack</a></span></li>{% endif %}
 </ul>
 

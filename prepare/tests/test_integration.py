@@ -54,6 +54,8 @@ async def test_entities_and_services(hass: HomeAssistant, aioclient_mock):
     assert hass.states.get("binary_sensor.prepare_pack_out_of_date").state == "on"
     assert hass.states.get("binary_sensor.prepare_kit_check_due").state == "off"
     assert hass.states.get("binary_sensor.prepare_plans_review_due").state == "on"
+    # An app older than 0.4.0 sends no backup fields: the sensor stays off rather than failing.
+    assert hass.states.get("binary_sensor.prepare_backup_due").state == "off"
     assert hass.states.get("todo.prepare_shortfall").state == "2"
 
     resp = await hass.services.async_call("prepare", "consume_item", {"item_id": 7, "quantity": 2},

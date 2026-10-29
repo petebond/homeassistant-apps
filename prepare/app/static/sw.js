@@ -1,7 +1,7 @@
 // Prepare service worker: network first, fall back to the last saved copy.
 // Core pages are saved on install and refreshed every time they load online,
 // so the phone always has the latest plan, contacts and pack for a power cut.
-const CACHE = "prepare-v5";
+const CACHE = "prepare-v6";
 const CORE = ["/", "/print", "/scan", "/static/scan.js", "/static/vendor/zxing-library-0.21.3.min.js", "/plans", "/contacts", "/meds", "/items", "/kit", "/household",
               "/offline", "/static/style.css", "/manifest.webmanifest", "/static/icon-192.png",
               "/static/fonts/barlow-condensed-latin-700-normal.woff2", "/static/fonts/barlow-condensed-latin-800-normal.woff2"];

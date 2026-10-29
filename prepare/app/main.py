@@ -21,7 +21,7 @@ from . import backup, db, installer, logic, products, tls
 
 log = logging.getLogger("prepare")
 HERE = Path(__file__).parent
-VERSION = "0.5.0"
+VERSION = "0.5.1"
 
 app = FastAPI(title="Prepare", version=VERSION, docs_url="/api/docs", redoc_url=None)
 app.mount("/static", StaticFiles(directory=HERE / "static"), name="static")
@@ -200,14 +200,24 @@ def item_values(f: dict) -> tuple:
     cat = db.row("SELECT unit FROM categories WHERE key=?", (category,))
     unit = f.get("unit") or (cat["unit"] if cat else "")
     generic = match_generic((f.get("generic") or "").strip())
-    name = f.get("name") or "Unnamed"
+    brand = (f.get("brand") or "").strip()
+    name = (f.get("name") or "").strip() or compose_name(brand, generic) or "Unnamed"
     role = item_role(category, f.get("role"), name, generic)
     if role:
         unit = products.food_unit(role, unit)
     return (name, category, num(f.get("quantity"), 1), unit,
             f.get("location", ""), opt_date(f.get("best_before")), 1 if f.get("perishable") else 0,
-            f.get("notes", ""), (f.get("brand") or "").strip(), generic,
+            f.get("notes", ""), brand, generic,
             products.normalise_barcode(f.get("barcode") or "") or None, role)
+
+
+def compose_name(brand: str, generic: str) -> str:
+    """'What' when left blank: the product type, with the brand in front unless it's Generic."""
+    if not generic:
+        return brand if brand.lower() not in ("", "generic") else ""
+    if brand.lower() in ("", "generic") or generic.lower().startswith(brand.lower()):
+        return generic
+    return f"{brand} {generic[:1].lower()}{generic[1:]}"
 
 
 ITEM_COLS = "name, category, quantity, unit, location, best_before, perishable, notes, brand, generic, barcode, role"

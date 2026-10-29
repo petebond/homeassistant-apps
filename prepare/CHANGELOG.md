@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.5.1 - 2026-10-29
+
+A clearer Add item form.
+
+- **Fields go from general to specific:** Category, then Product type, then What
+  and Brand. Each has a hint saying what goes in it.
+- **What fills itself in** from Brand and Product type (e.g. "Campingaz camping
+  stove") until you type your own; left blank, it's filled in when saved.
+- **Brand defaults to Generic** for new items.
+- **Unit suggests** pieces, litres, kg, cans, jars, packets or portions; you can
+  still type anything.
+- Side-by-side fields now line up when one has a longer hint than the other.
+- Backups: unchanged format.
+
 ## 0.5.0 - 2026-10-23
 
 Meals that need two things, and a spreadsheet view of the inventory.

@@ -1,26 +1,41 @@
 {# Fields shared by the add and edit forms. item = existing row or none. #}
-<label for="f-name">What</label><input id="f-name" name="name" required class="wide" value="{{ item.name if item else '' }}" placeholder="e.g. Bottled water 2L">
-<div class="row2">
-<div><label for="f-type">Product type <span class="hint">groups brands, e.g. Chopped tomatoes</span></label><input id="f-type" name="generic" list="generics" value="{{ item.generic or '' if item else '' }}" class="wide" autocomplete="off"></div>
-<div><label for="f-brand">Brand</label><input id="f-brand" name="brand" value="{{ item.brand or '' if item else '' }}" class="wide"></div>
-</div>
-<datalist id="generics">{% for g in generics %}<option value="{{ g }}">{% endfor %}</datalist>
-<input type="hidden" name="barcode" value="{{ item.barcode or '' if item else '' }}">
 <label for="f-cat">Category</label>{{ cat_select(cats, item.category if item else default_cat, id='f-cat') }}
 {{ role_pick(roles, item.role or '' if item else '', item.category if item else default_cat) }}
+<label for="f-type">Product type <span class="hint">what it is, whatever the brand, e.g. Chopped tomatoes or Camping stove. Groups brands together.</span></label><input id="f-type" name="generic" list="generics" value="{{ item.generic or '' if item else '' }}" class="wide" autocomplete="off">
+<datalist id="generics">{% for g in generics %}<option value="{{ g }}">{% endfor %}</datalist>
+<div class="row2">
+<div><label for="f-name">What <span class="hint">the exact item; filled in from brand and type if left alone</span></label><input id="f-name" name="name" class="wide" value="{{ item.name if item else '' }}" placeholder="e.g. Heinz baked beans 415g"></div>
+<div><label for="f-brand">Brand <span class="hint">Generic if unbranded or own-label</span></label><input id="f-brand" name="brand" value="{{ (item.brand or '') if item else 'Generic' }}" class="wide"></div>
+</div>
+<input type="hidden" name="barcode" value="{{ item.barcode or '' if item else '' }}">
 <div class="row2">
 <div><label for="f-qty">Quantity <span class="hint">in the category's unit; food in meals or portions for one person</span></label><input id="f-qty" name="quantity" type="number" step="any" inputmode="decimal" value="{{ ('%g' % item.quantity) if item else 1 }}" class="wide"></div>
-<div><label for="f-unit">Unit <span class="hint">blank = category's</span></label><input id="f-unit" name="unit" value="{{ item.unit if item else '' }}" class="wide"></div>
+<div><label for="f-unit">Unit <span class="hint">blank = category's</span></label><input id="f-unit" name="unit" list="units" value="{{ item.unit if item else '' }}" class="wide" autocomplete="off"></div>
 </div>
 <div class="row2">
 <div><label for="f-bb">Best before <span class="hint">blank if it doesn't expire</span></label><input id="f-bb" name="best_before" type="date" value="{{ item.best_before or '' if item else '' }}" class="wide"></div>
 <div><label for="f-loc">Where <span class="hint">e.g. Garage shelf</span></label><input id="f-loc" name="location" value="{{ item.location if item else '' }}" class="wide"></div>
 </div>
+<datalist id="units">{% for u in ["pieces", "litres", "kg", "cans", "jars", "packets", "portions"] %}<option value="{{ u }}">{% endfor %}</datalist>
 <label class="check"><input type="checkbox" name="perishable" value="1"{% if item and item.perishable %} checked{% endif %}>Perishable</label>
 <label for="f-notes">Notes</label><input id="f-notes" name="notes" value="{{ item.notes if item else '' }}" class="wide">
 <script>
 (function () {
   var cat = document.getElementById("f-cat"), box = document.querySelector("[data-food-only]");
   if (cat && box) cat.addEventListener("change", function () { box.hidden = cat.value !== "food"; });
+  // "What" follows brand + product type until the user types in it themselves.
+  var name = document.getElementById("f-name"), type = document.getElementById("f-type"), brand = document.getElementById("f-brand");
+  if (!name || !type || !brand) return;
+  function compose() {
+    var t = type.value.trim(), b = brand.value.trim();
+    if (!t) return "";
+    if (!b || b.toLowerCase() === "generic" || t.toLowerCase().indexOf(b.toLowerCase()) === 0) return t;
+    return b + " " + t.charAt(0).toLowerCase() + t.slice(1);
+  }
+  var auto = !name.value || name.value === compose();
+  function sync() { if (auto) name.value = compose(); }
+  name.addEventListener("input", function () { auto = name.value === "" || name.value === compose(); });
+  type.addEventListener("input", sync);
+  brand.addEventListener("input", sync);
 })();
 </script>

@@ -1,5 +1,5 @@
 name: Prepare
-version: "0.5.0"
+version: "0.5.1"
 slug: prepare
 description: Household emergency preparedness - kit, food rotation, family plans and a printable pack.
 url: https://github.com/petebond/homeassistant-apps/tree/main/prepare

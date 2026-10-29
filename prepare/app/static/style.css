@@ -202,6 +202,10 @@ label.check { font-weight: 400; }
 textarea { width: 100%; min-height: 5.5em; }
 select { width: 100%; }
 .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 12px; }
+/* Keep side-by-side inputs level when one label has a longer hint than the other. */
+.row2 > div { display: flex; flex-direction: column; }
+.row2 > div > input, .row2 > div > select { margin-top: auto; }
+.row2 > div > label { margin-bottom: 4px; }
 .formbox { background: var(--surface); padding: 16px; margin: 16px 0; }
 details.formbox > summary { cursor: pointer; font: 800 24px var(--hfont); text-transform: uppercase; color: var(--ink); }
 details.formbox[open] > summary { margin-bottom: 4px; }

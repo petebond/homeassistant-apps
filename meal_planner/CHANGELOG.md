@@ -1,5 +1,31 @@
 # Changelog
 
+## 1.22.0
+
+**Changed: the Plan tab is gone — change a day where it is shown.** Every day
+card on the week now has a pen beside its date. Tap it and that one card turns
+into the planner for that day — meal, who's eating, guests, note, cook, another
+meal — in the same place on the page, with the rest of the week still reading as
+the week around it. Done (or Escape) turns it back. Opening a second day shuts
+the first; paging to another week or leaving the tab shuts it too.
+
+Two pages of the same seven days was one too many: you read the week in one
+place and changed it in another, and finding your place again on the other page
+was half the job. A day is now read and changed in the same spot.
+
+"Copy last week's plan" and "Clear this week" moved to the foot of the week,
+below Sunday — they are once-a-week jobs at most, and the top of the page
+belongs to tonight. "Saved" shows beside the open day's date.
+
+Adding a meal to a date from the library now lands on the week with that day
+already open, rather than on the Plan tab. An old link or bookmark to `#plan`
+lands on the week.
+
+The open day is not redrawn by the 20-second refresh while you are in it — a
+dropdown open under your thumb would otherwise close itself — and picks up
+anything changed elsewhere when you press Done. Offline, the pens are greyed
+out like every other control that writes.
+
 ## 1.21.1
 
 **New: tap a remembered name in Settings to correct it too.** Shopping list

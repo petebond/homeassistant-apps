@@ -584,13 +584,53 @@ main { max-width: 1500px; margin: 0 auto; padding: 1.1rem 1rem; }
 .day-head {
   display: flex;
   justify-content: space-between;
-  align-items: baseline;
+  align-items: center;
+  gap: .5rem;
   border-bottom: 1px solid var(--line);
   padding-bottom: .4rem;
   margin-bottom: .55rem;
 }
 .day-name { font-weight: 700; letter-spacing: .02em; }
 .day-date { color: var(--muted); font-size: .82rem; }
+.day-head-end { display: flex; align-items: center; gap: .5rem; flex: none; }
+
+/* The pen that opens a day for changing. Small to look at, not to hit: the
+   padding is pulled back out with negative margins, so the target is a
+   thumb's width without making every card's heading taller.
+
+   It declares its own colour: a button does not inherit one, and the
+   currentColor below would otherwise be the browser's black on a dark card. */
+.day-edit {
+  appearance: none;
+  background: none;
+  border: 0;
+  color: var(--muted);
+  cursor: pointer;
+  line-height: 0;
+  padding: .45rem;
+  margin: -.45rem -.45rem -.45rem -.1rem;
+  border-radius: 8px;
+}
+.day-edit svg {
+  width: 1.1rem;
+  height: 1.1rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.day-edit:hover, .day-edit:focus-visible { color: var(--accent); background: var(--accent-wash); }
+.day-done { padding: .2rem .75rem; }
+
+/* The one day open for changing. It keeps today's tint if it is today; the
+   accent edge is what says "this one is different" next to its neighbours. */
+.day-card.editing {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-wash), var(--shadow);
+}
+.day-empty { align-items: flex-start; gap: .5rem; }
+.week-tools { margin-top: 1rem; margin-bottom: 0; }
 .today-flag {
   background: var(--today-mark);
   color: var(--today-ink);
@@ -1053,39 +1093,20 @@ main { max-width: 1500px; margin: 0 auto; padding: 1.1rem 1rem; }
 
 .toggle.taken { opacity: .45; border-style: dashed; }
 
-/* ---------- planner ---------- */
-
-.plan-grid { display: flex; flex-direction: column; gap: .7rem; }
-
-.plan-row {
-  background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  padding: .8rem .9rem;
-  box-shadow: var(--shadow);
-  display: grid;
-  grid-template-columns: 6.5rem 1fr;
-  gap: .1rem .9rem;
-  align-items: start;
-}
-.plan-row.is-today { border-color: var(--today-mark); background: var(--today); }
+/* ---------- an open day ---------- */
 
 /* The day you have just landed on after adding a meal from the library. It
-   fades out on its own: this says "here" on arrival, and after that it would
-   only be one more colour on a page that already has today marked. */
-.plan-row.just-added {
+   fades out on its own: this says "here" on arrival, and after that the open
+   card's own edge is enough. */
+.day-card.just-added {
   animation: just-added 2.4s ease-out;
 }
 @keyframes just-added {
-  0%, 45% { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-wash); }
-  100%    { border-color: var(--line); box-shadow: none; }
+  0%, 45% { border-color: var(--accent); box-shadow: 0 0 0 4px var(--accent-wash); }
 }
 @media (prefers-reduced-motion: reduce) {
-  .plan-row.just-added { animation: none; border-color: var(--accent); }
+  .day-card.just-added { animation: none; }
 }
-
-.plan-day { font-weight: 700; padding-top: .35rem; }
-.plan-day span { display: block; font-weight: 400; font-size: .8rem; color: var(--muted); }
 
 .plan-fields { display: flex; flex-direction: column; gap: .55rem; min-width: 0; }
 .plan-line { display: flex; gap: .5rem; flex-wrap: wrap; align-items: center; }
@@ -1954,9 +1975,6 @@ summary.settings-head h2 { margin: 0; flex: 1; min-width: 0; }
 /* ---------- small screens ---------- */
 
 @media (max-width: 560px) {
-  .plan-row { grid-template-columns: 1fr; gap: .5rem; }
-  .plan-day { padding-top: 0; }
-  .plan-day span { display: inline; margin-left: .4rem; }
   .weekbar-range { font-size: .95rem; }
   /* Must track main's padding below, or the sticky bar won't reach the edges. */
   .weekbar { margin: -.9rem -.7rem .8rem; padding: .55rem .7rem; }
@@ -2201,7 +2219,7 @@ summary.settings-head h2 { margin: 0; flex: 1; min-width: 0; }
 
 @media print {
   .topbar, .toolbar, .nav-btn, .footnote, .toast,
-  .theme-panel, .btn, .icon-btn { display: none !important; }
+  .theme-panel, .btn, .icon-btn, .day-edit { display: none !important; }
   body { background: #fff; color: #000; }
   /* Unpin it, or it can be laid down on every page. The date range stays,
      since a printed shopping list needs to say which week it is for. */
@@ -2290,8 +2308,9 @@ summary.settings-head h2 { margin: 0; flex: 1; min-width: 0; }
 
 /* Grey out what can't be done rather than removing it, so the page doesn't
    rearrange itself the moment the signal drops. */
-html[data-offline="1"] #view-plan .plan-grid,
-html[data-offline="1"] #view-plan .toolbar,
+html[data-offline="1"] #w-grid .day-card.editing .plan-stack,
+html[data-offline="1"] #w-tools,
+html[data-offline="1"] .day-edit,
 html[data-offline="1"] .add-panel,
 html[data-offline="1"] .add-fab,
 html[data-offline="1"] #person-form,

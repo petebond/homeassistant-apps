@@ -13,19 +13,22 @@
   /* The tabs, left to right. This is the order on screen, so it is also the
      order a swipe moves through - keep it in step with the buttons in
      index.html. */
-  var VIEWS = ["week", "plan", "shopping", "meals", "settings"];
+  var VIEWS = ["week", "shopping", "meals", "settings"];
 
   /* The Household tab became Settings, and its hash went with it. Anything
      bookmarked, shared or sitting in a phone's history still says #people, and
-     landing those on the week view would look like the page had gone. */
-  var OLD_VIEWS = { people: "settings" };
+     landing those on the week view would look like the page had gone.
+
+     The Plan tab went in 1.22.0: a day is changed where it is shown now, with
+     the pen on its card. #plan lands on the week, which is where that is. */
+  var OLD_VIEWS = { people: "settings", plan: "week" };
 
   var state = {
     people: [], meals: [], weeks: {},
     palette: [],          // colours a person can wear; the server decides
     today: null, thisWeek: null,
     viewWeek: null,   // Monday key shown on the week view
-    planWeek: null,   // Monday key shown on the planner
+    editDay: null,    // { key, day } open for changing on the week view
     view: "week",
     editingMealId: null,
     mealFilter: "",
@@ -121,7 +124,7 @@
     state.today = today;
     state.thisWeek = mondayOf(today);
     if (state.thisWeek !== wasWeek) {
-      ["viewWeek", "planWeek", "shopWeek"].forEach(function (k) {
+      ["viewWeek", "shopWeek"].forEach(function (k) {
         if (!state[k] || state[k] === wasWeek) state[k] = state.thisWeek;
       });
     }
@@ -921,7 +924,6 @@
            localToday(). render() below covers any day change. */
         syncToday(true);
         if (!state.viewWeek) state.viewWeek = state.thisWeek;
-        if (!state.planWeek) state.planWeek = state.thisWeek;
         if (!state.shopWeek) state.shopWeek = state.thisWeek;
         state.ready = true;
         render();
@@ -983,6 +985,9 @@
 
   function setView(name, dir) {
     state.view = name;
+    /* An open day belongs to the week on screen. Come back to the week and it
+       is shut again - quickAdd() opens one on purpose, after this has run. */
+    if (name !== "week") state.editDay = null;
     VIEWS.forEach(function (v) {
       $("view-" + v).hidden = v !== name;
     });
@@ -1050,6 +1055,7 @@
     if (!state.hiddenAt || Date.now() - state.hiddenAt < RESUME_MS) return false;
     if (midEdit()) return false;
     state.viewWeek = state.thisWeek;
+    state.editDay = null;
     focusOnToday();
     if (state.view !== "week") { setView("week"); return state.booted; }
     renderWeek();
@@ -1172,71 +1178,171 @@
     // The picker is anchored to a chip this is about to throw away.
     closeStars();
     var key = state.viewWeek;
+    // An open day belongs to its week; paging away shuts it.
+    if (state.editDay && state.editDay.key !== key) state.editDay = null;
     $("w-title").textContent = weekLabel(key);
     $("w-range").textContent = weekRange(key);
     markTodayBtn("w-today", key, true);
 
+    /* The open day is carried across the rebuild untouched while someone is
+       in it - a half-typed note, or a dropdown open under a thumb. Rebuilt, it
+       would lose the focus and the text with it. It never leaves the page
+       while this happens, either: taking a focused field out of the document
+       and putting it back still blurs it. */
     var grid = $("w-grid");
-    clear(grid);
-    var days = weekData(key);
+    var keep = grid.querySelector(".day-card.editing");
+    if (!keep || !state.editDay || keep.getAttribute("data-week") !== key ||
+        keep.getAttribute("data-day") !== state.editDay.day ||
+        !keep.contains(document.activeElement)) keep = null;
 
-    DAYS.forEach(function (day, i) {
-      var dateKey = addDays(key, i);
-      var cell = days[day];
-      var card = el("div", "day-card" + (dateKey === state.today ? " is-today" : ""));
-
-      var head = el("div", "day-head");
-      var nameWrap = el("div");
-      nameWrap.appendChild(el("span", "day-name", DAY_NAMES[day]));
-      if (dateKey === state.today) nameWrap.appendChild(el("span", "today-flag", "Today"));
-      head.appendChild(nameWrap);
-      head.appendChild(el("span", "day-date", prettyDate(dateKey)));
-      card.appendChild(head);
-
-      var sittings = cell.sittings;
-      var realOnes = sittings.filter(function (s) { return s.mealId || s.eaters.length; });
-
-      if (realOnes.length === 0) {
-        card.classList.add("no-plan");
-        card.appendChild(el("div", "meal-title empty", "Nothing planned"));
-      } else {
-        realOnes.forEach(function (sitting, n) {
-          card.appendChild(renderSitting(sitting, n > 0,
-                                         { key: key, day: day, on: dateKey }));
-        });
-
-        // One cook for the evening, however many meals there are, and how many
-        // they are cooking for. The count is worth its place because the chips
-        // above can't be counted for it: one of them may read "+ 3 guests".
-        //
-        // Nothing is said when nobody is marked yet - a card that reads
-        // "Cooking: not decided, for 0 people" is a worse answer than the same
-        // card without the second half.
-        var cook = cell.cookId ? personById(cell.cookId) : null;
-        var heads = dayHeadCount(realOnes);
-        var cookLine = el("div", "cook-line day-cook");
-        cookLine.appendChild(el("span", "label", "Cooking: "));
-        cookLine.appendChild(el("span", null, cook ? cook.name : "not decided"));
-        if (heads) {
-          cookLine.appendChild(el("span", "head-count", ", for " + peopleLabel(heads)));
-        }
-        card.appendChild(cookLine);
-      }
-
-      var missing = notEating(sittings);
-      if (realOnes.length && missing.length && missing.length < household().length) {
-        var out = el("div", "not-eating");
-        out.appendChild(el("span", "label", "Not eating: "));
-        out.appendChild(el("span", null, missing.map(function (p) { return p.name; }).join(", ")));
-        card.appendChild(out);
-      }
-
-      grid.appendChild(card);
+    var cards = DAYS.map(function (day, i) {
+      return keep && keep.getAttribute("data-day") === day ? keep : buildDayCard(key, day, i);
+    });
+    Array.prototype.slice.call(grid.children).forEach(function (c) {
+      if (c !== keep) grid.removeChild(c);
+    });
+    cards.forEach(function (c, i) {
+      if (c !== keep) grid.insertBefore(c, grid.children[i] || null);
     });
 
     // Re-applied on every render inside the focus window rather than consumed
     // by the first one: this rebuild may be what moved the card.
     if (Date.now() < state.focusUntil) scrollToToday();
+    applyPlanFocus();
+  }
+
+  /* The pen, drawn as the old Plan tab's icon was. */
+  var PEN_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.5h9"/>' +
+    '<path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7.5 18.5l-4 1 1-4Z"/></svg>';
+
+  /* The day's name, its date, and the one control that changes how the card
+     reads: the pen to open it, or Done to shut it again. */
+  function dayHead(key, day, dateKey, editing) {
+    var head = el("div", "day-head");
+    var nameWrap = el("div");
+    nameWrap.appendChild(el("span", "day-name", DAY_NAMES[day]));
+    if (dateKey === state.today) nameWrap.appendChild(el("span", "today-flag", "Today"));
+    head.appendChild(nameWrap);
+
+    var end = el("div", "day-head-end");
+    if (editing) {
+      var flag = el("span", "save-flag", "Saved");
+      flag.hidden = Date.now() - savedAt >= SAVED_MS;
+      end.appendChild(flag);
+    }
+    end.appendChild(el("span", "day-date", prettyDate(dateKey)));
+    if (editing) {
+      var done = el("button", "btn small day-done", "Done");
+      done.type = "button";
+      done.onclick = closeDayEdit;
+      end.appendChild(done);
+    } else {
+      var pen = el("button", "day-edit");
+      pen.type = "button";
+      pen.innerHTML = PEN_SVG;
+      pen.setAttribute("aria-label", "Change " + DAY_NAMES[day] + "'s plan");
+      pen.title = "Change this day";
+      pen.onclick = function () { openDayEdit(key, day); };
+      end.appendChild(pen);
+    }
+    head.appendChild(end);
+    return head;
+  }
+
+  /* One day on the week view: what's for dinner, or - with its pen tapped -
+     the controls that change it, in the same place on the page. */
+  function buildDayCard(key, day, i) {
+    var dateKey = addDays(key, i);
+    var cell = weekData(key)[day];
+    var editing = !!(state.editDay && state.editDay.key === key &&
+                     state.editDay.day === day);
+    var card = el("div", "day-card" + (dateKey === state.today ? " is-today" : "") +
+                         (editing ? " editing" : ""));
+    card.setAttribute("data-day", day);
+    card.setAttribute("data-week", key);
+    card.appendChild(dayHead(key, day, dateKey, editing));
+
+    if (editing) {
+      card.appendChild(buildPlanStack(key, day));
+      return card;
+    }
+
+    var sittings = cell.sittings;
+    var realOnes = sittings.filter(function (s) { return s.mealId || s.eaters.length; });
+
+    if (realOnes.length === 0) {
+      card.classList.add("no-plan");
+      card.appendChild(el("div", "meal-title empty", "Nothing planned"));
+    } else {
+      realOnes.forEach(function (sitting, n) {
+        card.appendChild(renderSitting(sitting, n > 0,
+                                       { key: key, day: day, on: dateKey }));
+      });
+
+      // One cook for the evening, however many meals there are, and how many
+      // they are cooking for. The count is worth its place because the chips
+      // above can't be counted for it: one of them may read "+ 3 guests".
+      //
+      // Nothing is said when nobody is marked yet - a card that reads
+      // "Cooking: not decided, for 0 people" is a worse answer than the same
+      // card without the second half.
+      var cook = cell.cookId ? personById(cell.cookId) : null;
+      var heads = dayHeadCount(realOnes);
+      var cookLine = el("div", "cook-line day-cook");
+      cookLine.appendChild(el("span", "label", "Cooking: "));
+      cookLine.appendChild(el("span", null, cook ? cook.name : "not decided"));
+      if (heads) {
+        cookLine.appendChild(el("span", "head-count", ", for " + peopleLabel(heads)));
+      }
+      card.appendChild(cookLine);
+    }
+
+    var missing = notEating(sittings);
+    if (realOnes.length && missing.length && missing.length < household().length) {
+      var out = el("div", "not-eating");
+      out.appendChild(el("span", "label", "Not eating: "));
+      out.appendChild(el("span", null, missing.map(function (p) { return p.name; }).join(", ")));
+      card.appendChild(out);
+    }
+    return card;
+  }
+
+  /* Swap in a rebuilt card for one day, leaving the rest of the week - and the
+     scroll position - alone. A full rebuild under a thumb that is still on a
+     guest's + button loses the next press. */
+  function refreshWeekDay(key, day) {
+    if (state.view !== "week" || state.viewWeek !== key) return;
+    var old = $("w-grid").querySelector('.day-card[data-day="' + day + '"]');
+    if (!old) { renderWeek(); return; }
+    closeStars();
+    old.parentNode.replaceChild(buildDayCard(key, day, DAYS.indexOf(day)), old);
+  }
+
+  /* One day at a time. Opening a second shuts the first: two open cards is
+     two sets of the same controls, and the question of which one you were
+     looking at. */
+  function openDayEdit(key, day) {
+    if (state.offline) return;
+    var was = state.editDay;
+    state.editDay = { key: key, day: day };
+    stopFocusingToday();
+    if (was && was.key === key && was.day !== day) refreshWeekDay(key, was.day);
+    refreshWeekDay(key, day);
+
+    /* Shutting a longer card above this one can pull this one up under the
+       bars. Only ever scrolls up to it - one already in view stays put. */
+    var card = $("w-grid").querySelector('.day-card[data-day="' + day + '"]');
+    if (!card) return;
+    var move = card.getBoundingClientRect().top - (barsBottom() + 8);
+    if (move < 0) window.scrollBy(0, move);
+  }
+
+  function closeDayEdit() {
+    var was = state.editDay;
+    state.editDay = null;
+    if (was) refreshWeekDay(was.key, was.day);
+    // The poll held off while the day was open; catch up now.
+    if (state.ready && !state.offline) refresh().catch(function () {});
   }
 
   /* The week is seven cards in one column on a phone, so by Friday the day you
@@ -1279,16 +1385,6 @@
   }
 
   function stopFocusingToday() { state.focusUntil = 0; }
-
-  /* The planner's version of the same idea, and a much smaller one. The week
-     view needs a re-aiming loop because its cards carry photos that can change
-     height after they are placed; a plan row is text and a couple of controls,
-     so it is where it is going to be by the time this runs. */
-  function scrollToPlanToday() {
-    var row = $("p-grid").querySelector(".plan-row.is-today");
-    if (!row) return;
-    window.scrollBy(0, row.getBoundingClientRect().top - (barsBottom("plan") + 8));
-  }
 
   /* Changing week lands you at the top of the week you asked for.
 
@@ -1752,11 +1848,21 @@
 
   // ----------------------------------------------------------- planner
 
+  /* "Saved" beside the open day's date. Remembered by time rather than kept on
+     the element, because a save often rebuilds the card the flag was on. */
+  var SAVED_MS = 1200;
+  var savedAt = 0;
+  var savedTimer = null;
+
   function flagSaved() {
-    var flag = $("p-saved");
-    flag.hidden = false;
-    clearTimeout(flag._t);
-    flag._t = setTimeout(function () { flag.hidden = true; }, 1200);
+    savedAt = Date.now();
+    var flag = document.querySelector("#w-grid .day-card.editing .save-flag");
+    if (flag) flag.hidden = false;
+    clearTimeout(savedTimer);
+    savedTimer = setTimeout(function () {
+      var shown = document.querySelector("#w-grid .day-card.editing .save-flag");
+      if (shown) shown.hidden = true;
+    }, SAVED_MS);
   }
 
   function saveSitting(key, day, sid, patch) {
@@ -1777,7 +1883,7 @@
   function saveEaters(key, day, sid, eaters) {
     return api("PUT", "/api/week/" + key + "/" + day + "/sittings/" + sid, { eaters: eaters })
       .then(function () { return reloadWeek(key); })
-      .then(function () { flagSaved(); refreshPlanDay(key, day); })
+      .then(function () { flagSaved(); refreshWeekDay(key, day); })
       .catch(fail);
   }
 
@@ -1795,15 +1901,15 @@
           state.weeks[key][day].sittings = sittings;
         }
         flagSaved();
-        refreshPlanDay(key, day);
+        refreshWeekDay(key, day);
       })
       .catch(fail);
   }
 
   /* Straight from the meal library onto a date. Creates the meal's block on
-     that day and hands over to the planner for the rest - who's cooking, who's
-     eating - because that is where those controls already live and there is no
-     good reason to build a second, smaller copy of them.
+     that day and opens that day on the week view for the rest - who's
+     cooking, who's eating - because that is where those controls already live
+     and there is no good reason to build a second, smaller copy of them.
 
      One request, with the meal already on it: a POST to make the block and
      then a PUT to set the meal would strand an empty block on that day if the
@@ -1816,15 +1922,18 @@
         if (!state.weeks[key]) state.weeks[key] = weekData(key);
         if (!state.weeks[key][day]) state.weeks[key][day] = { cookId: null, sittings: [] };
         state.weeks[key][day].sittings.push(sitting);
-        state.planWeek = key;
-        state.planFocus = { day: day, at: Date.now(), scrolled: false };
-        setView("plan");
+        state.viewWeek = key;
+        stopFocusingToday();
+        setView("week");
+        state.editDay = { key: key, day: day };
+        state.planFocus = { key: key, day: day, at: Date.now(), scrolled: false };
+        renderWeek();
         toast(meal.name + " added to " + DAY_NAMES[day] + " " + prettyDate(dateKey));
       })
       .catch(fail);
   }
 
-  /* Take the planner to the day just added to, and mark it long enough to be
+  /* Take the week to the day just added to, and mark it long enough to be
      seen. Re-applied on every render rather than consumed by the first,
      because setView triggers a refresh whose reply rebuilds the whole grid a
      moment later and would otherwise wipe the highlight mid-flash. Scrolling
@@ -1837,56 +1946,34 @@
     if (!focus) return;
     if (Date.now() - focus.at > PLAN_FOCUS_MS) { state.planFocus = null; return; }
 
-    var row = $("p-grid").querySelector('.plan-row[data-day="' + focus.day + '"]');
+    if (focus.key !== state.viewWeek) return;
+    var row = $("w-grid").querySelector('.day-card[data-day="' + focus.day + '"]');
     if (!row) return;
     row.classList.add("just-added");
     if (!focus.scrolled) {
       focus.scrolled = true;
-      /* Centred, not at the top: the topbar is sticky and would otherwise sit
-         over the row we just made a point of showing. */
-      if (row.scrollIntoView) row.scrollIntoView({ block: "center" });
+      /* Its top just under the bars rather than centred: the open card can
+         be taller than a phone screen, and centring that puts the meal you
+         just added above the top of it. */
+      window.scrollBy(0, row.getBoundingClientRect().top - (barsBottom() + 8));
     }
   }
 
-  function renderPlan() {
-    var key = state.planWeek;
-    $("p-title").textContent = "Plan: " + weekLabel(key).toLowerCase();
-    $("p-range").textContent = weekRange(key);
-    markTodayBtn("p-today", key);
-
-    var grid = $("p-grid");
-    clear(grid);
-
-    if (state.meals.length === 0) {
-      var warn = el("div", "empty-state");
-      warn.appendChild(el("p", null, "Your meal library is empty."));
-      var link = el("button", "btn small", "Add some meals");
-      link.onclick = function () { setView("meals"); };
-      warn.appendChild(link);
-      grid.appendChild(warn);
-      return;
-    }
-
-    DAYS.forEach(function (day, i) {
-      grid.appendChild(buildPlanRow(key, day, i));
-    });
-    applyPlanFocus();
-  }
-
-  /* One day's editable row. Built separately so a change to one day can
-     replace just that row - a full re-render collapses the page and throws
-     the browser's scroll position back to the top. */
-  function buildPlanRow(key, day, i) {
+  /* The open day's controls, in place of what the card usually shows. */
+  function buildPlanStack(key, day) {
     var days = weekData(key);
     {
-      var dateKey = addDays(key, i);
       var sittings = days[day].sittings;
-      var row = el("div", "plan-row" + (dateKey === state.today ? " is-today" : ""));
-      row.setAttribute("data-day", day);
 
-      var dayLabel = el("div", "plan-day", DAY_NAMES[day]);
-      dayLabel.appendChild(el("span", null, prettyDate(dateKey)));
-      row.appendChild(dayLabel);
+      if (state.meals.length === 0) {
+        var warn = el("div", "plan-stack day-empty");
+        warn.appendChild(el("p", "muted small", "Your meal library is empty."));
+        var link = el("button", "btn small", "Add some meals");
+        link.type = "button";
+        link.onclick = function () { setView("meals"); };
+        warn.appendChild(link);
+        return warn;
+      }
 
       var stack = el("div", "plan-stack");
 
@@ -1934,28 +2021,16 @@
             if (!state.weeks[key]) state.weeks[key] = weekData(key);
             if (!state.weeks[key][day]) state.weeks[key][day] = { sittings: [] };
             state.weeks[key][day].sittings.push(sitting);
-            refreshPlanDay(key, day);
+            refreshWeekDay(key, day);
           })
           .catch(function (err) { addBtn.disabled = false; fail(err); });
       };
       stack.appendChild(addBtn);
-
-      row.appendChild(stack);
-      return row;
+      return stack;
     }
   }
 
-  /* Swap in a rebuilt row for one day, leaving the rest of the page - and
-     the scroll position, and any half-typed notes on other days - alone. */
-  function refreshPlanDay(key, day) {
-    if (state.view !== "plan" || state.planWeek !== key) return;
-    var grid = $("p-grid");
-    var old = grid.querySelector('.plan-row[data-day="' + day + '"]');
-    if (!old) { renderPlan(); return; }
-    grid.replaceChild(buildPlanRow(key, day, DAYS.indexOf(day)), old);
-  }
-
-  /* One editable meal block within a day on the planner. */
+  /* One editable meal block within an open day. */
   function planSitting(key, day, sitting, index, total) {
     var box = el("div", "sitting-edit" + (index > 0 ? " extra" : ""));
 
@@ -1976,7 +2051,7 @@
     mealSel.value = sitting.mealId || "";
     mealSel.onchange = function () {
       saveSitting(key, day, sitting.id, { mealId: mealSel.value || null })
-        .then(function () { refreshPlanDay(key, day); });
+        .then(function () { refreshWeekDay(key, day); });
     };
     mealLine.appendChild(mealSel);
 
@@ -2097,7 +2172,7 @@
         .then(function () {
           state.weeks[key][day].sittings =
             sittingsFor(key, day).filter(function (s) { return s.id !== sitting.id; });
-          refreshPlanDay(key, day);
+          refreshWeekDay(key, day);
         })
         .catch(fail);
     };
@@ -4850,7 +4925,6 @@
 
   function render() {
     if (state.view === "week") renderWeek();
-    else if (state.view === "plan") renderPlan();
     else if (state.view === "shopping") renderShopping();
     else if (state.view === "meals") renderMeals();
     else if (state.view === "settings") {
@@ -4865,7 +4939,7 @@
       tab.onclick = function () { setView(tab.dataset.view); };
     });
 
-    /* All six go through goToWeek, which decides where in the new week to put
+    /* All four go through goToWeek, which decides where in the new week to put
        you - Monday, or today if the new week is this one. */
     function weekNav(field, ids, redraw, focus) {
       $(ids[0]).onclick = function () {
@@ -4880,7 +4954,6 @@
     }
 
     weekNav("viewWeek", ["w-prev", "w-next", "w-today"], renderWeek, focusOnToday);
-    weekNav("planWeek", ["p-prev", "p-next", "p-today"], renderPlan, scrollToPlanToday);
     /* No focus for shopping: it is one list for the whole week rather than
        seven days, so it has no "today" to land on. Top of the list every time,
        which is where you start reading it anyway. */
@@ -4900,16 +4973,18 @@
     $("s-share").onclick = shareShoppingList;
     updateShareBtn();
 
-    $("p-clear").onclick = function () {
-      if (!confirm("Clear the whole plan for " + weekRange(state.planWeek) + "?")) return;
-      api("POST", "/api/week/" + state.planWeek + "/clear")
+    $("w-clear").onclick = function () {
+      if (!confirm("Clear the whole plan for " + weekRange(state.viewWeek) + "?")) return;
+      state.editDay = null;
+      api("POST", "/api/week/" + state.viewWeek + "/clear")
         .then(refresh).then(function () { toast("Week cleared"); }).catch(fail);
     };
 
-    $("p-copy-last").onclick = function () {
-      var src = addDays(state.planWeek, -7);
+    $("w-copy-last").onclick = function () {
+      var src = addDays(state.viewWeek, -7);
       if (!confirm("Copy the plan from " + weekRange(src) + " into this week? Anything already planned will be replaced.")) return;
-      api("POST", "/api/week/copy", { from: src, to: state.planWeek })
+      state.editDay = null;
+      api("POST", "/api/week/copy", { from: src, to: state.viewWeek })
         .then(refresh).then(function () { toast("Copied"); }).catch(fail);
     };
 
@@ -5145,7 +5220,11 @@
     setInterval(function () {
       if (document.hidden) return;
       syncToday();
-      if (state.view === "week" || state.offline) refresh().catch(function () {});
+      /* Not while a day is open, though: the poll would redraw it under
+         someone choosing a meal. It picks up again when they press Done. */
+      if ((state.view === "week" && !state.editDay) || state.offline) {
+        refresh().catch(function () {});
+      }
     }, 20000);
 
     document.addEventListener("visibilitychange", function () {
@@ -5166,6 +5245,14 @@
        produces them. */
     ["touchstart", "wheel", "keydown"].forEach(function (name) {
       window.addEventListener(name, stopFocusingToday, { passive: true });
+    });
+
+    /* Escape shuts the open day, as Done does - unless the star picker is
+       up, which Escape shuts first. */
+    document.addEventListener("keydown", function (e) {
+      if (e.key !== "Escape" || state.view !== "week" || !state.editDay) return;
+      if (document.querySelector(".star-pop")) return;
+      closeDayEdit();
     });
 
     window.addEventListener("pagehide", function () { state.hiddenAt = Date.now(); });
